@@ -6,6 +6,8 @@ import software.constructs.Construct;
 
 import static java.lang.Boolean.TRUE;
 import static org.familydirectory.cdk.ddb.DdbTable.PK;
+import static software.amazon.awscdk.services.dynamodb.BillingMode.PAY_PER_REQUEST;
+import static software.amazon.awscdk.services.dynamodb.TableEncryption.AWS_MANAGED;
 
 public class FamilyDirectoryCdkDynamoDbStack extends Stack {
     public FamilyDirectoryCdkDynamoDbStack(final Construct scope, final String id, final StackProps stackProps) {
@@ -16,8 +18,8 @@ public class FamilyDirectoryCdkDynamoDbStack extends Stack {
                     .tableName(ddbtable.name())
                     .partitionKey(PK)
                     .sortKey(ddbtable.sortKey())
-                    .billingMode(BillingMode.PAY_PER_REQUEST)
-                    .encryption(TableEncryption.AWS_MANAGED)
+                    .billingMode(PAY_PER_REQUEST)
+                    .encryption(AWS_MANAGED)
                     .pointInTimeRecovery(TRUE)
                     .deletionProtection(TRUE)
                     .build();

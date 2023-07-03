@@ -1,13 +1,15 @@
 package org.familydirectory.cdk.ddb;
 
 import software.amazon.awscdk.services.dynamodb.Attribute;
-import software.amazon.awscdk.services.dynamodb.AttributeType;
+
+import static software.amazon.awscdk.services.dynamodb.AttributeType.NUMBER;
+import static software.amazon.awscdk.services.dynamodb.AttributeType.STRING;
 
 public enum DdbTable {
-    MEMBERS("MembersTableArn", Attribute.builder().name("fullName").type(AttributeType.STRING).build()),
-    FAMILIES("FamiliesTableArn", Attribute.builder().name("commonName").type(AttributeType.STRING).build());
+    MEMBERS("MembersTableArn", Attribute.builder().name("fullName").type(STRING).build()),
+    FAMILIES("FamiliesTableArn", Attribute.builder().name("commonName").type(STRING).build());
 
-    public static final Attribute PK = Attribute.builder().name("id").type(AttributeType.NUMBER).build();
+    public static final Attribute PK = Attribute.builder().name("id").type(NUMBER).build();
 
     public final String arnExportName() { return this.arnExportName; }
     public final Attribute sortKey() { return this.sortKey; }
