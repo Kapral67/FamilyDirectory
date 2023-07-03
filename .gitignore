@@ -1,0 +1,53 @@
+.classpath.txt
+target
+.idea
+.settings
+.vscode
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+# Gradle files
+.gradle/
+build/
+
+# Ignore Gradle GUI config
+gradle-app.setting
+
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
+
+# Avoid ignore Gradle wrapper properties
+!gradle-wrapper.properties
+
+# Cache of project
+.gradletasknamecache
+
+# Eclipse Gradle plugin generated files
+.project
+.classpath
+
+# IntelliJ IDEA files
+.idea/
+*.iml
+
+# Mac OS files
+.DS_Store
+
+# Other common ignore files
+*.log
+*.swp
+*~
+\#*\#
+.\#*
+
+# Java files
+*.class
+*.jar
+*.war
+*.ear
+
+# Ignore virtual machine crash logs
+hs_err_pid*
+
