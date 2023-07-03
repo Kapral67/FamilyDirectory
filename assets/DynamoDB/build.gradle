@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+group = 'org.familydirectory.assets.ddb'
+version = '0.1'
+
+sourceCompatibility JavaVersion.VERSION_17
+targetCompatibility JavaVersion.VERSION_17
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId 'familydirectory-ddb-assets'
+
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "${project.rootDir}/.mvn"
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'software.amazon.awscdk:aws-cdk-lib:2.86.0'
+}

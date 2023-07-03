@@ -1,11 +1,16 @@
 package org.familydirectory.cdk.ddb;
 
-import software.amazon.awscdk.*;
-import software.amazon.awscdk.services.dynamodb.*;
+import org.familydirectory.assets.ddb.DdbTable;
+import software.amazon.awscdk.CfnOutput;
+import software.amazon.awscdk.CfnOutputProps;
+import software.amazon.awscdk.Stack;
+import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.dynamodb.Table;
+import software.amazon.awscdk.services.dynamodb.TableProps;
 import software.constructs.Construct;
 
 import static java.lang.Boolean.TRUE;
-import static org.familydirectory.cdk.ddb.DdbTable.PK;
+import static org.familydirectory.assets.ddb.DdbTable.PK;
 import static software.amazon.awscdk.services.dynamodb.BillingMode.PAY_PER_REQUEST;
 import static software.amazon.awscdk.services.dynamodb.TableEncryption.AWS_MANAGED;
 

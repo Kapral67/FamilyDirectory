@@ -5,8 +5,21 @@ updates:
     schedule:
       interval: "daily"
     target-branch: "main"
+
+  - package-ecosystem: "gradle"
+    directory: "/assets/DynamoDB"
+    schedule:
+      interval: "daily"
+    target-branch: "main"
+
   - package-ecosystem: "maven"
     directory: "/CDK"
+    schedule:
+      interval: "daily"
+    target-branch: "main"
+
+  - package-ecosystem: "maven"
+    directory: "/assets/FamilyDirectoryAdminCreateMemberLambda"
     schedule:
       interval: "daily"
     target-branch: "main"

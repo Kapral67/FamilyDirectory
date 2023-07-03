@@ -1,4 +1,4 @@
-package org.familydirectory.cdk.ddb;
+package org.familydirectory.assets.ddb;
 
 import software.amazon.awscdk.services.dynamodb.Attribute;
 

@@ -51,3 +51,6 @@ gradle-app.setting
 # Ignore virtual machine crash logs
 hs_err_pid*
 
+# local maven repo
+.mvn/
+

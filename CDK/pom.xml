@@ -3,8 +3,16 @@
          xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
 
+    <repositories>
+        <repository>
+            <id>project.local</id>
+            <url>file://${project.basedir}/../assets/DynamoDB/.mvn</url>
+        </repository>
+    </repositories>
+
+
     <groupId>org.familydirectory.cdk</groupId>
-    <artifactId>family_directory_cdk</artifactId>
+    <artifactId>familydirectory-cdk</artifactId>
     <version>0.1</version>
 
     <properties>
@@ -56,6 +64,12 @@
           <artifactId>junit-jupiter</artifactId>
           <version>${junit.version}</version>
           <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.familydirectory.assets.ddb</groupId>
+            <artifactId>familydirectory-ddb-assets</artifactId>
+            <version>0.1</version>
         </dependency>
     </dependencies>
 </project>
