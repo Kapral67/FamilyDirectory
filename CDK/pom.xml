@@ -18,7 +18,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <cdk.version>2.86.0</cdk.version>
-        <constructs.version>10.2.25</constructs.version>
+        <constructs.version>10.2.68</constructs.version>
         <junit.version>5.10.0-M1</junit.version>
     </properties>
 
