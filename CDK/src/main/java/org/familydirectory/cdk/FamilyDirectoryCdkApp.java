@@ -9,7 +9,8 @@ import software.amazon.awscdk.StackProps;
 public class FamilyDirectoryCdkApp {
     public static void main(final String[] args) {
         App app = new App();
-        final Environment default_env = Environment.builder().account(app.getAccount()).region(app.getRegion()).build();
+        final Environment default_env = Environment.builder().account(app.getAccount()).region(app.getRegion())
+                .build();
 
         final String ddbStackName = "FamilyDirectoryDynamoDbStack";
         new FamilyDirectoryCdkDynamoDbStack(app, ddbStackName,

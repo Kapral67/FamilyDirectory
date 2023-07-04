@@ -38,11 +38,12 @@ public class FamilyDirectoryCdkLambdaStack extends Stack {
         }
     }
 
-    private static String getLambdaJar(final String lambdaName) {
+    public static String getLambdaJar(final String lambdaName) {
         final File jarDir =
                 new File(Paths.get(System.getProperty("user.dir"), "..", "assets", lambdaName, "target").toUri());
-        return Objects.requireNonNull(jarDir.listFiles(
+        final String jarName = Objects.requireNonNull(jarDir.listFiles(
                 (dir, name) -> name.toLowerCase().startsWith("familydirectory") &&
                         name.toLowerCase().endsWith(".jar")))[0].getName();
+        return String.format("%s/%s", jarDir.getPath(), jarName);
     }
 }
