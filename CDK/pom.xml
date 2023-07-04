@@ -1,26 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-         xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+         xmlns="http://maven.apache.org/POM/4.0.0">
     <modelVersion>4.0.0</modelVersion>
 
     <repositories>
         <repository>
-            <id>project.local</id>
-            <url>file://${project.basedir}/../assets/DynamoDB/.mvn</url>
+            <id>familydirectory-ddb-assets</id>
+            <url>file://${project.basedir}/../assets/familydirectory-ddb-assets/.mvn</url>
+        </repository>
+        <repository>
+            <id>familydirectory-lambda-assets</id>
+            <url>file://${project.basedir}/../assets/familydirectory-lambda-assets/.mvn</url>
         </repository>
     </repositories>
-
-
-    <groupId>org.familydirectory.cdk</groupId>
-    <artifactId>familydirectory-cdk</artifactId>
-    <version>0.1</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <cdk.version>2.86.0</cdk.version>
-        <constructs.version>[10.0.0,11.0.0)</constructs.version>
+        <constructs.version>10.2.25</constructs.version>
         <junit.version>5.10.0-M1</junit.version>
     </properties>
+
+    <groupId>org.familydirectory.cdk</groupId>
+    <artifactId>familydirectory-cdk</artifactId>
+    <version>0.1</version>
 
     <build>
         <plugins>
@@ -60,16 +64,23 @@
         </dependency>
 
         <dependency>
-          <groupId>org.junit.jupiter</groupId>
-          <artifactId>junit-jupiter</artifactId>
-          <version>${junit.version}</version>
-          <scope>test</scope>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.familydirectory.assets.ddb</groupId>
             <artifactId>familydirectory-ddb-assets</artifactId>
-            <version>0.1</version>
+            <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.familydirectory.assets.lambda</groupId>
+            <artifactId>familydirectory-lambda-assets</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
     </dependencies>
 </project>

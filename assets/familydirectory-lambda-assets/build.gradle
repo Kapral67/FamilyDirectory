@@ -3,7 +3,7 @@ plugins {
     id 'maven-publish'
 }
 
-group = 'org.familydirectory.assets.ddb'
+group = 'org.familydirectory.assets.lambda'
 version = '0.1'
 
 sourceCompatibility JavaVersion.VERSION_17
@@ -12,8 +12,6 @@ targetCompatibility JavaVersion.VERSION_17
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifactId 'familydirectory-ddb-assets'
-
             from components.java
         }
     }
@@ -29,5 +27,4 @@ repositories {
 }
 
 dependencies {
-    implementation 'software.amazon.awscdk:aws-cdk-lib:2.86.0'
 }

@@ -6,8 +6,13 @@ import static software.amazon.awscdk.services.dynamodb.AttributeType.NUMBER;
 import static software.amazon.awscdk.services.dynamodb.AttributeType.STRING;
 
 public enum DdbTable {
-    MEMBERS("MembersTableArn", Attribute.builder().name("fullName").type(STRING).build()),
-    FAMILIES("FamiliesTableArn", Attribute.builder().name("commonName").type(STRING).build());
+    MEMBERS(
+            "MembersTableArn",
+            Attribute.builder().name("fullName").type(STRING).build()
+    ),
+    FAMILIES("FamiliesTableArn",
+            Attribute.builder().name("commonName").type(STRING).build()
+    );
 
     public static final Attribute PK = Attribute.builder().name("id").type(NUMBER).build();
 

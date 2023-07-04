@@ -4,6 +4,13 @@
   xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
 
+  <repositories>
+    <repository>
+      <id>familydirectory-ddb-assets</id>
+      <url>file://${project.basedir}/../familydirectory-ddb-assets/.mvn</url>
+    </repository>
+  </repositories>
+
   <groupId>org.familydirectory.assets.lambda</groupId>
   <artifactId>familydirectory-admincreatememberlambda</artifactId>
   <version>0.1</version>
@@ -35,11 +42,42 @@
     </plugins>
   </build>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>bom</artifactId>
+        <version>2.20.97</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
+
+    <dependency>
+      <groupId>software.amazon.awscdk</groupId>
+      <artifactId>aws-cdk-lib</artifactId>
+      <version>2.86.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>dynamodb-enhanced</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-lambda-java-core</artifactId>
       <version>1.2.2</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.familydirectory.assets.ddb</groupId>
+      <artifactId>familydirectory-ddb-assets</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
   </dependencies>
 </project>

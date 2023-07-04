@@ -7,7 +7,13 @@ updates:
     target-branch: "main"
 
   - package-ecosystem: "gradle"
-    directory: "/assets/DynamoDB"
+    directory: "/assets/familydirectory-ddb-assets"
+    schedule:
+      interval: "daily"
+    target-branch: "main"
+
+  - package-ecosystem: "gradle"
+    directory: "/assets/familydirectory-lambda-assets"
     schedule:
       interval: "daily"
     target-branch: "main"
