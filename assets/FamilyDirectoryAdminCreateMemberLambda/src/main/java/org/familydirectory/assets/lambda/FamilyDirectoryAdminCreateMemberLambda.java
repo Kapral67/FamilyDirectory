@@ -9,7 +9,6 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static java.lang.Boolean.TRUE;
@@ -27,23 +26,23 @@ public class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<Me
         for (final MembersModel.Params field : MembersModel.Params.values()) {
             switch (field) {
                 case FIRST_NAME ->
-                        member.put(field.jsonFieldName(), AttributeValue.builder().s(event.firstName()).build());
+                        member.put(field.jsonFieldName(), AttributeValue.builder().s(event.getFirstName()).build());
                 case LAST_NAME ->
-                        member.put(field.jsonFieldName(), AttributeValue.builder().s(event.lastName()).build());
-                case SUFFIX -> Optional.ofNullable(event.suffix())
-                        .ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.builder().s(s).build()));
-                case BIRTHDAY ->
-                        member.put(field.jsonFieldName(), AttributeValue.builder().s(event.birthday()).build());
+                        member.put(field.jsonFieldName(), AttributeValue.builder().s(event.getLastName()).build());
+                case SUFFIX -> event.getSuffix().ifPresent(
+                        s -> member.put(field.jsonFieldName(), AttributeValue.builder().s(s.value()).build()));
+                case BIRTHDAY -> member.put(field.jsonFieldName(),
+                        AttributeValue.builder().s(event.getBirthdayString()).build());
                 case DEATHDAY -> {
-                    Optional.ofNullable(event.deathday())
+                    event.getDeathdayString()
                             .ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.builder().s(s).build()));
                     break loop;
                 }
-                case EMAIL -> Optional.ofNullable(event.email())
+                case EMAIL -> event.getEmail()
                         .ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.builder().s(s).build()));
                 case PHONES -> event.getPhonesDdbMap()
                         .ifPresent(m -> member.put(field.jsonFieldName(), AttributeValue.builder().m(m).build()));
-                case ADDRESS -> Optional.ofNullable(event.address())
+                case ADDRESS -> event.getAddress()
                         .ifPresent(ss -> member.put(field.jsonFieldName(), AttributeValue.builder().ss(ss).build()));
                 default -> throw new IllegalStateException("Invalid Member Table Field");
             }
