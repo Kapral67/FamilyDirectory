@@ -1,145 +1,175 @@
 package org.familydirectory.assets.ddb.models.members;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 import org.apache.commons.text.WordUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.familydirectory.assets.ddb.DdbType;
-import org.immutables.value.Value;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Date;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.familydirectory.assets.ddb.DdbType.MAP;
 import static org.familydirectory.assets.ddb.DdbType.STR;
 import static org.familydirectory.assets.ddb.DdbType.STR_SET;
 
-@JsonDeserialize(using = MembersModel.Deserializer.class)
-@JsonSerialize(as = ImmutableMembersModel.class)
-@Value.Style(visibility = Value.Style.ImplementationVisibility.PUBLIC)
-@Value.Immutable
-public abstract class MembersModel {
-    public MembersModel() {
-        super();
-    }
-    private static final Date PREHISTORIC =
-            Date.from(LocalDate.of(1915, 7, 11).atStartOfDay(ZoneId.systemDefault()).toInstant());
+@JsonDeserialize(builder = MembersModel.Builder.class)
+public final class MembersModel {
+    private static final LocalDate PREHISTORIC = LocalDate.of(1915, 7, 11);
     private static final String DATE_FORMAT_STRING = "yyyy-MM-dd";
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(DATE_FORMAT_STRING);
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(DATE_FORMAT_STRING);
+    private static final PhoneNumberUtil PHONE_NUMBER_UTIL = PhoneNumberUtil.getInstance();
 
-    public abstract String getFirstName();
+    @JsonProperty("firstName")
+    private final @NotNull String firstName;
 
-    public abstract String getLastName();
+    @JsonProperty("lastName")
+    private final @NotNull String lastName;
 
+    @JsonProperty("birthday")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_FORMAT_STRING)
-    public abstract Date getBirthday();
+    @JsonDeserialize(using = LocalDateDeserializer.class)
+    private final @NotNull LocalDate birthday;
 
-    public abstract Optional<String> getEmail();
+    @JsonProperty("email")
+    private final @Nullable String email;
 
+    @JsonProperty("deathday")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_FORMAT_STRING)
-    public abstract Optional<Date> getDeathday();
+    @JsonDeserialize(using = LocalDateDeserializer.class)
+    private final @Nullable LocalDate deathday;
 
-    public abstract Optional<Map<PhoneType, String>> getPhones();
+    @JsonProperty("phones")
+    private final @Nullable Map<PhoneType, String> phones;
 
-    public abstract Optional<List<String>> getAddress();
+    @JsonProperty("address")
+    private final @Nullable List<String> address;
 
-    public abstract Optional<SuffixType> getSuffix();
+    @JsonProperty("suffix")
+    private final @Nullable SuffixType suffix;
 
-    @Value.Check
-    protected MembersModel normalize() throws IllegalStateException {
-        ImmutableMembersModel.Builder cleaned = ImmutableMembersModel.builder();
+    @JsonIgnore
+    private final @NotNull String fullName;
 
-        if (this.getFirstName().isBlank()) {
-            throw new IllegalStateException("First Name Cannot Be Blank");
-        }
-        cleaned.firstName(WordUtils.capitalize(this.getFirstName().trim()));
+    @JsonIgnore
+    private final @NotNull String birthdayString;
 
-        if (this.getLastName().isBlank()) {
-            throw new IllegalStateException("Last Name Cannot Be Blank");
-        }
-        cleaned.lastName(WordUtils.capitalize(this.getLastName().trim()));
+    @JsonIgnore
+    private final @Nullable Map<String, AttributeValue> phonesDdbMap;
 
-        if (this.getBirthday().after(Date.from(Instant.now()))) {
-            throw new IllegalStateException("Birthday Cannot Be Future");
-        } else if (this.getBirthday().before(PREHISTORIC)) {
-            throw new IllegalStateException("Birthday Cannot Be PreHistoric");
-        }
-        cleaned.birthday(this.getBirthday());
+    @JsonIgnore
+    private final @Nullable String deathdayString;
 
-        if (this.getEmail().isPresent() && !EmailValidator.getInstance().isValid(this.getEmail().get())) {
-            throw new IllegalStateException("Email Invalid");
-        }
-        cleaned.email(this.getEmail().map(String::trim).map(WordUtils::capitalize));
-
-        if (this.getDeathday().isPresent()) {
-            if (this.getDeathday().get().before(this.getBirthday()))
-                throw new IllegalStateException("Cannot Have Died Before Birth");
-            if (this.getDeathday().get().after(Date.from(Instant.now())))
-                throw new IllegalStateException("Cannot Accept Predicted Death");
-        }
-        cleaned.deathday(this.getDeathday());
-
-        if (this.getPhones().isPresent()) {
-            for (final Map.Entry<PhoneType, String> entry : this.getPhones().get().entrySet()) {
-                Phonenumber.PhoneNumber phoneNumber = new Phonenumber.PhoneNumber().setRawInput(entry.getValue());
-                if (!PhoneNumberUtil.getInstance().isValidNumber(phoneNumber)) {
-                    throw new IllegalStateException(
-                            String.format("Invalid Phone Number: '%s' For '%s' Field", entry.getValue(),
-                                    entry.getKey().name()));
-                }
-            }
-        }
-        cleaned.phones(this.getPhones());
-        cleaned.address(this.getAddress());
-        cleaned.suffix(this.getSuffix());
-
-        return cleaned.build();
+    private MembersModel(final @NotNull String firstName, final @NotNull String lastName,
+                         final @NotNull LocalDate birthday, final @Nullable String email,
+                         final @Nullable LocalDate deathday, final @Nullable Map<PhoneType, String> phones,
+                         final @Nullable List<String> address, final @Nullable SuffixType suffix) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.birthday = birthday;
+        this.email = email;
+        this.deathday = deathday;
+        this.phones = phones;
+        this.address = address;
+        this.suffix = suffix;
+        // Derived
+        this.fullName =
+                (Objects.isNull(this.getSuffix())) ? String.format("%s %s", this.getFirstName(), this.getLastName()) :
+                        String.format("%s %s %s", this.getFirstName(), this.getLastName(), this.getSuffix().value());
+        this.birthdayString = DATE_FORMATTER.format(this.getBirthday());
+        this.deathdayString = (Objects.isNull(this.getDeathday())) ? null : DATE_FORMATTER.format(this.getDeathday());
+        this.phonesDdbMap = (Objects.isNull(this.getPhones())) ? null : this.getPhones().entrySet().stream().collect(
+                Collectors.toMap(entry -> entry.getKey().name(),
+                        entry -> AttributeValue.builder().s(entry.getValue()).build()));
     }
 
-    @Value.Lazy
-    public String getBirthdayString() {
-        return DATE_FORMAT.format(this.getBirthday());
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static @NotNull String getPhoneNumberIfValidElseThrow(final @NotNull String uncheckedPhoneNumber) {
+        final String errorMessage = String.format("Invalid Phone Number: '%s'", uncheckedPhoneNumber);
+        String region = (uncheckedPhoneNumber.contains("+")) ? null : "US";
+        final Phonenumber.PhoneNumber phoneNumber;
+        try {
+            phoneNumber = PHONE_NUMBER_UTIL.parse(uncheckedPhoneNumber, region);
+        } catch (final NumberParseException e) {
+            throw new IllegalArgumentException(errorMessage, e);
+        }
+        if (!PHONE_NUMBER_UTIL.isValidNumber(phoneNumber)) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+        return String.format("+%s%s", phoneNumber.getCountryCode(), phoneNumber.getNationalNumber());
+    }
+
+    public @NotNull String getFirstName() {
+        return this.firstName;
+    }
+
+    public @NotNull String getLastName() {
+        return this.lastName;
+    }
+
+    public @NotNull LocalDate getBirthday() {
+        return this.birthday;
+    }
+
+    public @Nullable String getEmail() {
+        return this.email;
+    }
+
+    public @Nullable LocalDate getDeathday() {
+        return this.deathday;
+    }
+
+    public @Nullable Map<PhoneType, String> getPhones() {
+        return this.phones;
+    }
+
+    public @Nullable List<String> getAddress() {
+        return this.address;
+    }
+
+    public @Nullable SuffixType getSuffix() {
+        return this.suffix;
     }
 
     /* DyanmoDB Artifacts */
-
-    @Value.Lazy
-    public Optional<String> getDeathdayString() {
-        return this.getDeathday().map(DATE_FORMAT::format);
+    public @NotNull String getBirthdayString() {
+        return this.birthdayString;
     }
 
-    @Value.Lazy
-    public Optional<Map<String, AttributeValue>> getPhonesDdbMap() {
-        return this.getPhones().map(phoneMap -> phoneMap.entrySet().stream().collect(
-                Collectors.toMap(entry -> entry.getKey().name(),
-                        entry -> AttributeValue.builder().s(entry.getValue()).build())));
+    public @Nullable String getDeathdayString() {
+        return this.deathdayString;
     }
 
-    @Value.Derived
-    public String getFullName() {
-        final Optional<String> suffix = this.getSuffix().map(SuffixType::value);
-        if (suffix.isPresent()) {
-            return String.format("%s %s %s", this.getFirstName(), this.getLastName(), suffix.get());
-        } else {
-            return String.format("%s %s", this.getFirstName(), this.getLastName());
-        }
+    public @Nullable Map<String, AttributeValue> getPhonesDdbMap() {
+        return this.phonesDdbMap;
+    }
+
+    public @NotNull String getFullName() {
+        return this.fullName;
+    }
+
+    public boolean equals(final @NotNull MembersModel member) {
+        return this.getFullName().equals(member.getFullName()) &&
+                this.getBirthdayString().equals(member.getBirthdayString());
     }
 
     public enum Params {
@@ -164,17 +194,162 @@ public abstract class MembersModel {
         }
     }
 
-    /*
-    * Not to be invoked directly. Leave for Jackson.
-    * */
-    public static class Deserializer extends JsonDeserializer<MembersModel> {
+    public static final class Builder {
+        private final LocalDate builderBegan;
+        private String firstName = null;
+        private boolean isFirstNameSet = false;
+        private String lastName = null;
+        private boolean isLastNameSet = false;
+        private LocalDate birthday = null;
+        private boolean isBirthdaySet = false;
+        private String email = null;
+        private boolean isEmailSet = false;
+        private LocalDate deathday = null;
+        private boolean isDeathdaySet = false;
+        private Map<PhoneType, String> phones = null;
+        private boolean isPhonesSet = false;
+        private List<String> address = null;
+        private boolean isAddressSet = false;
+        private SuffixType suffix = null;
+        private boolean isSuffixSet = false;
+        private boolean isBuilt = false;
+
+        public Builder() {
+            this.builderBegan = LocalDate.now();
+        }
+
+        @JsonProperty("firstName")
+        public Builder firstName(final @NotNull String firstName) {
+            if (this.isFirstNameSet) {
+                throw new IllegalStateException("First Name already set");
+            } else if (firstName.isBlank()) {
+                throw new IllegalArgumentException("First Name cannot be blank");
+            }
+            this.firstName = WordUtils.capitalizeFully(firstName.replaceAll("\\s", ""), '-');
+            this.isFirstNameSet = true;
+            return this;
+        }
+
+        @JsonProperty("lastName")
+        public Builder lastName(final @NotNull String lastName) {
+            if (this.isLastNameSet) {
+                throw new IllegalStateException("Last Name already set");
+            } else if (lastName.isBlank()) {
+                throw new IllegalArgumentException("Last Name cannot be blank");
+            }
+            this.lastName = WordUtils.capitalizeFully(lastName.replaceAll("\\s", ""), '-');
+            this.isLastNameSet = true;
+            return this;
+        }
+
+        @JsonProperty("birthday")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_FORMAT_STRING)
+        @JsonDeserialize(using = LocalDateDeserializer.class)
+        public Builder birthday(final @NotNull LocalDate birthday) {
+            if (this.isBirthdaySet) {
+                throw new IllegalStateException("Birthday already set");
+            } else if (birthday.isAfter(this.builderBegan)) {
+                throw new IllegalArgumentException("Birthday cannot be future");
+            } else if (birthday.isBefore(PREHISTORIC)) {
+                throw new IllegalArgumentException("Birthday cannot be prehistoric");
+            }
+            this.birthday = birthday;
+            this.isBirthdaySet = true;
+            return this;
+        }
+
+        @JsonProperty("email")
+        public Builder email(final @Nullable String email) {
+            if (this.isEmailSet) {
+                throw new IllegalStateException("Email already set");
+            } else if (Objects.isNull(email)) {
+                this.isEmailSet = true;
+                return this;
+            }
+            final String e_mail = email.replaceAll("\\s", "").toLowerCase();
+            if (!EmailValidator.getInstance().isValid(e_mail)) {
+                throw new IllegalArgumentException("Email Invalid");
+            }
+            this.email = e_mail;
+            this.isEmailSet = true;
+            return this;
+        }
+
+        @JsonProperty("deathday")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_FORMAT_STRING)
+        @JsonDeserialize(using = LocalDateDeserializer.class)
+        public Builder deathday(final @Nullable LocalDate deathday) {
+            if (this.isDeathdaySet) {
+                throw new IllegalStateException("Deathday already set");
+            } else if (!this.isBirthdaySet) {
+                throw new IllegalStateException("Birthday must be set before Deathday");
+            } else if (Objects.isNull(deathday)) {
+                this.isDeathdaySet = true;
+                return this;
+            } else if (deathday.isBefore(this.birthday)) {
+                throw new IllegalArgumentException("Cannot Have Died Before Birth");
+            } else if (deathday.isAfter(this.builderBegan)) {
+                throw new IllegalArgumentException("Cannot Accept Predicted Death");
+            }
+            this.deathday = deathday;
+            this.isDeathdaySet = true;
+            return this;
+        }
+
+        @JsonProperty("phones")
+        public Builder phones(final @Nullable Map<PhoneType, String> phones) {
+            if (this.isPhonesSet) {
+                throw new IllegalStateException("Phones already set");
+            } else if (Objects.isNull(phones)) {
+                this.isPhonesSet = true;
+                return this;
+            }
+            this.phones = phones.entrySet().stream().collect(
+                    Collectors.toMap(Map.Entry::getKey, entry -> getPhoneNumberIfValidElseThrow(entry.getValue())));
+            this.isPhonesSet = true;
+            return this;
+        }
+
+        @JsonProperty("address")
+        public Builder address(final @Nullable List<String> address) {
+            if (this.isAddressSet) {
+                throw new IllegalStateException("Address already set");
+            }
+            this.address = address;
+            this.isAddressSet = true;
+            return this;
+        }
+
+        @JsonProperty("suffix")
+        public Builder suffix(final @Nullable SuffixType suffix) {
+            if (this.isSuffixSet) {
+                throw new IllegalStateException("Suffix already set");
+            }
+            this.suffix = suffix;
+            this.isSuffixSet = true;
+            return this;
+        }
+
+        public MembersModel build() {
+            if (isBuilt) {
+                throw new IllegalStateException("Member already created");
+            }
+            this.isBuilt = true;
+            if (Objects.isNull(this.deathday)) {
+                return new MembersModel(this.firstName, this.lastName, this.birthday, this.email, null, this.phones,
+                        this.address, this.suffix);
+            } else {
+                return new MembersModel(this.firstName, this.lastName, this.birthday, null, this.deathday, null, null,
+                        this.suffix);
+            }
+        }
+    }
+
+    public static class LocalDateDeserializer extends JsonDeserializer<LocalDate> {
         @Override
-        @Deprecated
-        public MembersModel deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode node = parser.getCodec().readTree(parser);
-            ImmutableMembersModel.Json json = mapper.treeToValue(node, ImmutableMembersModel.Json.class);
-            return ImmutableMembersModel.fromJson(json);
+        public LocalDate deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
+                throws IOException {
+            return LocalDate.parse(jsonParser.getText(), DATE_FORMATTER);
         }
     }
 }

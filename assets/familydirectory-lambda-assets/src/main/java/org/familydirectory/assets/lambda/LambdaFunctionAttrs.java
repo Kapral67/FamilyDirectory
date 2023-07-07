@@ -4,7 +4,7 @@ import java.util.List;
 
 public enum LambdaFunctionAttrs {
     ADMIN_CREATE_MEMBER("FamilyDirectoryAdminCreateMemberLambda", "%s.%s::handleRequest",
-            List.of("dynamodb:PutItem"));
+            List.of("dynamodb:PutItem", "dynamodb:Query"));
 
     private final String functionName;
     private final String handler;

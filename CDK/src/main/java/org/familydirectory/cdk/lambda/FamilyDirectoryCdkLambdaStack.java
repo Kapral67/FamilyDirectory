@@ -1,10 +1,12 @@
 package org.familydirectory.cdk.lambda;
 
 import org.familydirectory.assets.lambda.LambdaFunctionAttrs;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Fn;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionProps;
@@ -28,7 +30,8 @@ public class FamilyDirectoryCdkLambdaStack extends Stack {
             Function function = new Function(this, functionAttrs.functionName(),
                     FunctionProps.builder().runtime(JAVA_17)
                             .code(Code.fromAsset(getLambdaJar(functionAttrs.functionName())))
-                            .handler(functionAttrs.handler()).build());
+                            .handler(functionAttrs.handler()).timeout(Duration.seconds(30))
+                            .architecture(Architecture.ARM_64).memorySize(512).build());
             if (functionAttrs == ADMIN_CREATE_MEMBER) {
                 PolicyStatement statement =
                         PolicyStatement.Builder.create().effect(ALLOW).actions(functionAttrs.actions())
