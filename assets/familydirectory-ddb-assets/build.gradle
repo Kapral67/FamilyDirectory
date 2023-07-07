@@ -31,6 +31,6 @@ dependencies {
     implementation 'org.apache.commons:commons-text:1.10.0'
     implementation 'commons-validator:commons-validator:1.7'
     implementation 'com.googlecode.libphonenumber:libphonenumber:8.13.16'
-    implementation platform('software.amazon.awssdk:bom:2.20.98')
+    implementation platform('software.amazon.awssdk:bom:2.20.100')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
 }
