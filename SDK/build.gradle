@@ -18,7 +18,7 @@ dependencies {
     implementation 'software.amazon.awssdk:dynamodb-enhanced:'
     implementation 'software.amazon.awssdk:sso'
     implementation 'software.amazon.awssdk:ssooidc'
-    testImplementation platform('org.junit:junit-bom:5.10.0-M1')
+    testImplementation platform('org.junit:junit-bom:5.10.0-RC1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
 
