@@ -4,22 +4,20 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum PhoneType {
-    MOBILE,
-    LANDLINE,
-    WORK;
-
-    @JsonValue
-    public String getJson() {
-        return this.name();
-    }
+    MOBILE, LANDLINE, WORK;
 
     @JsonCreator
     public static PhoneType forValue(final String value) {
-        for(final PhoneType phoneType : PhoneType.values()) {
-            if(phoneType.getJson().equalsIgnoreCase(value)) {
+        for (final PhoneType phoneType : values()) {
+            if (phoneType.getJson().equalsIgnoreCase(value)) {
                 return phoneType;
             }
         }
         throw new IllegalArgumentException("Invalid PhoneType: " + value);
+    }
+
+    @JsonValue
+    public String getJson() {
+        return this.name();
     }
 }

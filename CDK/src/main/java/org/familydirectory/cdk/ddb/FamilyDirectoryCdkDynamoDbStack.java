@@ -18,21 +18,13 @@ public class FamilyDirectoryCdkDynamoDbStack extends Stack {
     public FamilyDirectoryCdkDynamoDbStack(final Construct scope, final String id, final StackProps stackProps) {
         super(scope, id, stackProps);
 
-        for(final DdbTable ddbtable : DdbTable.values()) {
-            final TableProps tableProps = TableProps.builder()
-                    .tableName(ddbtable.name())
-                    .partitionKey(PK)
-                    .sortKey(ddbtable.sortKey())
-                    .billingMode(PAY_PER_REQUEST)
-                    .encryption(AWS_MANAGED)
-                    .pointInTimeRecovery(TRUE)
-                    .deletionProtection(TRUE)
-                    .build();
+        for (final DdbTable ddbtable : DdbTable.values()) {
+            final TableProps tableProps =
+                    TableProps.builder().tableName(ddbtable.name()).partitionKey(PK).billingMode(PAY_PER_REQUEST)
+                            .encryption(AWS_MANAGED).pointInTimeRecovery(TRUE).deletionProtection(TRUE).build();
             Table table = new Table(this, ddbtable.name(), tableProps);
-            new CfnOutput(this, ddbtable.arnExportName(), CfnOutputProps.builder()
-                    .value(table.getTableArn())
-                    .exportName(ddbtable.arnExportName())
-                    .build());
+            new CfnOutput(this, ddbtable.arnExportName(),
+                    CfnOutputProps.builder().value(table.getTableArn()).exportName(ddbtable.arnExportName()).build());
         }
     }
 }

@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
-import org.apache.commons.text.WordUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.familydirectory.assets.ddb.DdbType;
 import org.jetbrains.annotations.NotNull;
@@ -22,18 +21,27 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
+import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
+import static com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat.INTERNATIONAL;
+import static java.lang.String.format;
+import static java.time.LocalDate.now;
+import static java.time.LocalDate.of;
+import static java.time.LocalDate.parse;
+import static java.time.format.DateTimeFormatter.ofPattern;
+import static java.util.Objects.isNull;
+import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
+import static org.apache.commons.text.WordUtils.capitalizeFully;
 import static org.familydirectory.assets.ddb.DdbType.MAP;
 import static org.familydirectory.assets.ddb.DdbType.STR;
 import static org.familydirectory.assets.ddb.DdbType.STR_SET;
 
 @JsonDeserialize(builder = MembersModel.Builder.class)
 public final class MembersModel {
-    private static final LocalDate PREHISTORIC = LocalDate.of(1915, 7, 11);
+    private static final LocalDate PREHISTORIC = of(1915, 7, 11);
     private static final String DATE_FORMAT_STRING = "yyyy-MM-dd";
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(DATE_FORMAT_STRING);
+    private static final DateTimeFormatter DATE_FORMATTER = ofPattern(DATE_FORMAT_STRING);
     private static final PhoneNumberUtil PHONE_NUMBER_UTIL = PhoneNumberUtil.getInstance();
 
     @JsonProperty("firstName")
@@ -43,7 +51,7 @@ public final class MembersModel {
     private final @NotNull String lastName;
 
     @JsonProperty("birthday")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_FORMAT_STRING)
+    @JsonFormat(shape = STRING, pattern = DATE_FORMAT_STRING)
     @JsonDeserialize(using = LocalDateDeserializer.class)
     private final @NotNull LocalDate birthday;
 
@@ -51,7 +59,7 @@ public final class MembersModel {
     private final @Nullable String email;
 
     @JsonProperty("deathday")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_FORMAT_STRING)
+    @JsonFormat(shape = STRING, pattern = DATE_FORMAT_STRING)
     @JsonDeserialize(using = LocalDateDeserializer.class)
     private final @Nullable LocalDate deathday;
 
@@ -76,6 +84,9 @@ public final class MembersModel {
     @JsonIgnore
     private final @Nullable String deathdayString;
 
+    @JsonIgnore
+    private final @NotNull String primaryKey;
+
     private MembersModel(final @NotNull String firstName, final @NotNull String lastName,
                          final @NotNull LocalDate birthday, final @Nullable String email,
                          final @Nullable LocalDate deathday, final @Nullable Map<PhoneType, String> phones,
@@ -89,22 +100,21 @@ public final class MembersModel {
         this.address = address;
         this.suffix = suffix;
         // Derived
-        this.fullName =
-                (Objects.isNull(this.getSuffix())) ? String.format("%s %s", this.getFirstName(), this.getLastName()) :
-                        String.format("%s %s %s", this.getFirstName(), this.getLastName(), this.getSuffix().value());
+        this.fullName = (isNull(this.getSuffix())) ? format("%s %s", this.getFirstName(), this.getLastName()) :
+                format("%s %s %s", this.getFirstName(), this.getLastName(), this.getSuffix().value());
         this.birthdayString = DATE_FORMATTER.format(this.getBirthday());
-        this.deathdayString = (Objects.isNull(this.getDeathday())) ? null : DATE_FORMATTER.format(this.getDeathday());
-        this.phonesDdbMap = (Objects.isNull(this.getPhones())) ? null : this.getPhones().entrySet().stream().collect(
-                Collectors.toMap(entry -> entry.getKey().name(),
-                        entry -> AttributeValue.builder().s(entry.getValue()).build()));
+        this.primaryKey = sha256Hex(this.getFullName() + this.getBirthdayString());
+        this.deathdayString = (isNull(this.getDeathday())) ? null : DATE_FORMATTER.format(this.getDeathday());
+        this.phonesDdbMap = (isNull(this.getPhones())) ? null : this.getPhones().entrySet().stream().collect(
+                toMap(entry -> entry.getKey().name(), entry -> AttributeValue.builder().s(entry.getValue()).build()));
     }
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public static @NotNull String getPhoneNumberIfValidElseThrow(final @NotNull String uncheckedPhoneNumber) {
-        final String errorMessage = String.format("Invalid Phone Number: '%s'", uncheckedPhoneNumber);
+    public static @NotNull String normalizePhoneNumber(final @NotNull String uncheckedPhoneNumber) {
+        final String errorMessage = format("Invalid Phone Number: '%s'", uncheckedPhoneNumber);
         String region = (uncheckedPhoneNumber.contains("+")) ? null : "US";
         final Phonenumber.PhoneNumber phoneNumber;
         try {
@@ -115,7 +125,7 @@ public final class MembersModel {
         if (!PHONE_NUMBER_UTIL.isValidNumber(phoneNumber)) {
             throw new IllegalArgumentException(errorMessage);
         }
-        return String.format("+%s%s", phoneNumber.getCountryCode(), phoneNumber.getNationalNumber());
+        return PHONE_NUMBER_UTIL.format(phoneNumber, INTERNATIONAL);
     }
 
     public @NotNull String getFirstName() {
@@ -167,6 +177,10 @@ public final class MembersModel {
         return this.fullName;
     }
 
+    public @NotNull String getPrimaryKey() {
+        return this.primaryKey;
+    }
+
     public boolean equals(final @NotNull MembersModel member) {
         return this.getFullName().equals(member.getFullName()) &&
                 this.getBirthdayString().equals(member.getBirthdayString());
@@ -215,37 +229,46 @@ public final class MembersModel {
         private boolean isBuilt = false;
 
         public Builder() {
-            this.builderBegan = LocalDate.now();
+            this.builderBegan = now();
+        }
+
+        private void checkBuildStatus() {
+            if (isBuilt) {
+                throw new IllegalStateException("Member already created");
+            }
         }
 
         @JsonProperty("firstName")
         public Builder firstName(final @NotNull String firstName) {
+            this.checkBuildStatus();
             if (this.isFirstNameSet) {
                 throw new IllegalStateException("First Name already set");
             } else if (firstName.isBlank()) {
                 throw new IllegalArgumentException("First Name cannot be blank");
             }
-            this.firstName = WordUtils.capitalizeFully(firstName.replaceAll("\\s", ""), '-');
+            this.firstName = capitalizeFully(firstName.replaceAll("\\s", ""), '-');
             this.isFirstNameSet = true;
             return this;
         }
 
         @JsonProperty("lastName")
         public Builder lastName(final @NotNull String lastName) {
+            this.checkBuildStatus();
             if (this.isLastNameSet) {
                 throw new IllegalStateException("Last Name already set");
             } else if (lastName.isBlank()) {
                 throw new IllegalArgumentException("Last Name cannot be blank");
             }
-            this.lastName = WordUtils.capitalizeFully(lastName.replaceAll("\\s", ""), '-');
+            this.lastName = capitalizeFully(lastName.replaceAll("\\s", ""), '-');
             this.isLastNameSet = true;
             return this;
         }
 
         @JsonProperty("birthday")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_FORMAT_STRING)
+        @JsonFormat(shape = STRING, pattern = DATE_FORMAT_STRING)
         @JsonDeserialize(using = LocalDateDeserializer.class)
         public Builder birthday(final @NotNull LocalDate birthday) {
+            this.checkBuildStatus();
             if (this.isBirthdaySet) {
                 throw new IllegalStateException("Birthday already set");
             } else if (birthday.isAfter(this.builderBegan)) {
@@ -260,9 +283,10 @@ public final class MembersModel {
 
         @JsonProperty("email")
         public Builder email(final @Nullable String email) {
+            this.checkBuildStatus();
             if (this.isEmailSet) {
                 throw new IllegalStateException("Email already set");
-            } else if (Objects.isNull(email)) {
+            } else if (isNull(email)) {
                 this.isEmailSet = true;
                 return this;
             }
@@ -276,16 +300,17 @@ public final class MembersModel {
         }
 
         @JsonProperty("deathday")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_FORMAT_STRING)
+        @JsonFormat(shape = STRING, pattern = DATE_FORMAT_STRING)
         @JsonDeserialize(using = LocalDateDeserializer.class)
         public Builder deathday(final @Nullable LocalDate deathday) {
+            this.checkBuildStatus();
             if (this.isDeathdaySet) {
                 throw new IllegalStateException("Deathday already set");
-            } else if (!this.isBirthdaySet) {
-                throw new IllegalStateException("Birthday must be set before Deathday");
-            } else if (Objects.isNull(deathday)) {
+            } else if (isNull(deathday)) {
                 this.isDeathdaySet = true;
                 return this;
+            } else if (!this.isBirthdaySet) {
+                throw new IllegalStateException("Birthday must be set before Deathday");
             } else if (deathday.isBefore(this.birthday)) {
                 throw new IllegalArgumentException("Cannot Have Died Before Birth");
             } else if (deathday.isAfter(this.builderBegan)) {
@@ -298,20 +323,22 @@ public final class MembersModel {
 
         @JsonProperty("phones")
         public Builder phones(final @Nullable Map<PhoneType, String> phones) {
+            this.checkBuildStatus();
             if (this.isPhonesSet) {
                 throw new IllegalStateException("Phones already set");
-            } else if (Objects.isNull(phones)) {
+            } else if (isNull(phones)) {
                 this.isPhonesSet = true;
                 return this;
             }
-            this.phones = phones.entrySet().stream().collect(
-                    Collectors.toMap(Map.Entry::getKey, entry -> getPhoneNumberIfValidElseThrow(entry.getValue())));
+            this.phones = phones.entrySet().stream()
+                    .collect(toMap(Map.Entry::getKey, entry -> normalizePhoneNumber(entry.getValue())));
             this.isPhonesSet = true;
             return this;
         }
 
         @JsonProperty("address")
         public Builder address(final @Nullable List<String> address) {
+            this.checkBuildStatus();
             if (this.isAddressSet) {
                 throw new IllegalStateException("Address already set");
             }
@@ -322,6 +349,7 @@ public final class MembersModel {
 
         @JsonProperty("suffix")
         public Builder suffix(final @Nullable SuffixType suffix) {
+            this.checkBuildStatus();
             if (this.isSuffixSet) {
                 throw new IllegalStateException("Suffix already set");
             }
@@ -331,11 +359,9 @@ public final class MembersModel {
         }
 
         public MembersModel build() {
-            if (isBuilt) {
-                throw new IllegalStateException("Member already created");
-            }
+            this.checkBuildStatus();
             this.isBuilt = true;
-            if (Objects.isNull(this.deathday)) {
+            if (isNull(this.deathday)) {
                 return new MembersModel(this.firstName, this.lastName, this.birthday, this.email, null, this.phones,
                         this.address, this.suffix);
             } else {
@@ -349,7 +375,7 @@ public final class MembersModel {
         @Override
         public LocalDate deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
                 throws IOException {
-            return LocalDate.parse(jsonParser.getText(), DATE_FORMATTER);
+            return parse(jsonParser.getText(), DATE_FORMATTER);
         }
     }
 }
