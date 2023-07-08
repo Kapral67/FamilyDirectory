@@ -60,3 +60,7 @@ hs_err_pid*
 # misc
 bin/
 
+# extra maven artifacts
+!pom.xml
+*pom.xml
+

@@ -8,7 +8,7 @@
       "README.md",
       "cdk*.json",
       "target",
-      "pom.xml",
+      "*pom.xml",
       "src/test"
     ]
   },
