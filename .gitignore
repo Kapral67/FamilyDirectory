@@ -57,10 +57,13 @@ hs_err_pid*
 # CloudFormation Templates
 .CfnTemplates/
 
-# misc
-bin/
-
 # extra maven artifacts
 !pom.xml
 *pom.xml
+
+# npm
+package-lock.json
+
+# misc
+bin/
 

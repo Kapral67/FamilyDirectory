@@ -1,10 +1,12 @@
-package org.familydirectory.assets.ddb.models.families;
+package org.familydirectory.assets.ddb.models.family;
 
+import org.immutables.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public interface FamiliesModel {
+@Value.Immutable
+public interface Family {
     @Nullable String getSpouse();
 
     @Nullable List<String> getDescendants();

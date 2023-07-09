@@ -1,7 +1,7 @@
 package org.familydirectory.cdk;
 
-import org.familydirectory.cdk.ddb.FamilyDirectoryCdkDynamoDbStack;
-import org.familydirectory.cdk.lambda.FamilyDirectoryCdkLambdaStack;
+import org.familydirectory.cdk.ddb.FamilyDirectoryDynamoDbStack;
+import org.familydirectory.cdk.lambda.FamilyDirectoryLambdaStack;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
@@ -14,11 +14,11 @@ public class FamilyDirectoryCdkApp {
         final Environment env = Environment.builder().account(app.getAccount()).region(app.getRegion()).build();
 
         final String ddbStackName = "FamilyDirectoryDynamoDbStack";
-        new FamilyDirectoryCdkDynamoDbStack(app, ddbStackName,
+        new FamilyDirectoryDynamoDbStack(app, ddbStackName,
                 StackProps.builder().env(env).stackName(ddbStackName).build());
 
         final String lambdaStackName = "FamilyDirectoryLambdaStack";
-        new FamilyDirectoryCdkLambdaStack(app, lambdaStackName,
+        new FamilyDirectoryLambdaStack(app, lambdaStackName,
                 StackProps.builder().env(env).stackName(lambdaStackName).build());
 
         app.synth();

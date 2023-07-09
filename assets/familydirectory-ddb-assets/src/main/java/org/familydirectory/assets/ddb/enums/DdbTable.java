@@ -1,6 +1,6 @@
-package org.familydirectory.assets.ddb;
+package org.familydirectory.assets.ddb.enums;
 
-import org.familydirectory.assets.ddb.models.members.MembersModel;
+import org.familydirectory.assets.ddb.member.Member;
 import software.amazon.awscdk.services.dynamodb.Attribute;
 
 import static software.amazon.awscdk.services.dynamodb.Attribute.builder;
@@ -10,8 +10,8 @@ public enum DdbTable {
     MEMBERS("MembersTableArn"), FAMILIES("FamiliesTableArn");
 
     /**
-     * For {@link DdbTable#MEMBERS}: This is the sha256Hex hash of a Members fullName & birthdayString, concatenated.
-     * See {@link MembersModel} for how fullName and birthdayString are computed
+     * For {@link DdbTable#MEMBERS}: This is the sha256Hex hash of a Member fullName & birthdayString, concatenated.
+     * See {@link Member} for how fullName and birthdayString are computed
      * <br><br>
      * For {@link DdbTable#FAMILIES}: This is the familial side, head member's `PK` from the MEMBERS table
      */

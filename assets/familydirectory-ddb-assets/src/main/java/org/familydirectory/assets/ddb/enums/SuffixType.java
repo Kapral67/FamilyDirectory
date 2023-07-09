@@ -1,4 +1,4 @@
-package org.familydirectory.assets.ddb.models.members;
+package org.familydirectory.assets.ddb.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
