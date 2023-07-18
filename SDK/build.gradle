@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    implementation platform('software.amazon.awssdk:bom:2.20.101')
+    implementation platform('software.amazon.awssdk:bom:2.20.104')
     implementation 'software.amazon.awssdk:lambda'
     implementation 'software.amazon.awssdk:dynamodb-enhanced:'
     implementation 'software.amazon.awssdk:sso'
