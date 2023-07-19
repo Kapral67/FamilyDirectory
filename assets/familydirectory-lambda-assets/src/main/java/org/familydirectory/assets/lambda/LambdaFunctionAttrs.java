@@ -7,16 +7,19 @@ import static java.util.List.of;
 
 public enum LambdaFunctionAttrs {
     ADMIN_CREATE_MEMBER("FamilyDirectoryAdminCreateMemberLambda", "%s.%s::handleRequest",
-            of("dynamodb:PutItem", "dynamodb:Query", "dynamodb:UpdateItem"));
+            of("dynamodb:PutItem", "dynamodb:Query", "dynamodb:UpdateItem"), "create");
 
     private final String functionName;
     private final String handler;
     private final List<String> actions;
+    private final String endpoint;
 
-    LambdaFunctionAttrs(final String functionName, final String handler, final List<String> actions) {
+    LambdaFunctionAttrs(final String functionName, final String handler, final List<String> actions,
+                        final String endpoint) {
         this.functionName = functionName;
         this.handler = handler;
         this.actions = actions;
+        this.endpoint = endpoint;
     }
 
     public final String functionName() {
@@ -29,5 +32,17 @@ public enum LambdaFunctionAttrs {
 
     public final List<String> actions() {
         return this.actions;
+    }
+
+    public final String endpoint() {
+        return format("/%s", this.endpoint);
+    }
+
+    public final String arnExportName() {
+        return format("%sArn", this.functionName);
+    }
+
+    public final String httpIntegrationId() {
+        return format("%sHttpIntegration", this.functionName);
     }
 }

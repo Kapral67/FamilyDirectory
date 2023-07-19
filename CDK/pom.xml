@@ -18,6 +18,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <cdk.version>2.87.0</cdk.version>
+        <cdk-alpha.version>${cdk.version}-alpha.0</cdk-alpha.version>
         <constructs.version>10.2.69</constructs.version>
         <junit.version>5.10.0-RC1</junit.version>
     </properties>
@@ -80,6 +81,20 @@
             <groupId>org.familydirectory.assets.lambda</groupId>
             <artifactId>familydirectory-lambda-assets</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <!-- Unstable Dependencies -->
+
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>apigatewayv2-alpha</artifactId>
+            <version>${cdk-alpha.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>apigatewayv2-integrations-alpha</artifactId>
+            <version>${cdk-alpha.version}</version>
         </dependency>
 
     </dependencies>

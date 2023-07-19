@@ -2,6 +2,8 @@ package org.familydirectory.assets.lambda;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.familydirectory.assets.ddb.enums.member.MemberParams;
 import org.familydirectory.assets.ddb.member.Member;
@@ -32,14 +34,18 @@ import static org.familydirectory.assets.ddb.enums.family.FamilyParams.SPOUSE;
 import static software.amazon.awssdk.http.HttpStatusCode.OK;
 import static software.amazon.awssdk.services.dynamodb.DynamoDbClient.create;
 
-public class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<Map<String, Object>, Integer> {
+public class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
     private static final DynamoDbClient client = create();
     private static final ObjectMapper mapper = new ObjectMapper();
 
     @Override
-    public Integer handleRequest(Map<String, Object> event, Context context) {
+    public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent event, Context context) {
+//      Check Authorization
+        
+
+
 //      Deserialization
-        final Member input = mapper.convertValue(event, Member.class);
+        final Member input = mapper.convertValue(event.getBody(), Member.class);
 
 //      Check If Member Already Exists
         final QueryRequest queryRequest =
@@ -114,6 +120,6 @@ public class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<Ma
 //      Execute Transaction
         client.transactWriteItems(TransactWriteItemsRequest.builder().transactItems(transactWriteItems).build());
 
-        return OK;
+        return new APIGatewayProxyResponseEvent().withStatusCode(OK);
     }
 }

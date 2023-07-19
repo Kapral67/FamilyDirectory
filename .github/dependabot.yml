@@ -3,29 +3,29 @@ updates:
   - package-ecosystem: "gradle"
     directory: "/SDK"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "main"
 
   - package-ecosystem: "gradle"
     directory: "/assets/familydirectory-ddb-assets"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "main"
 
   - package-ecosystem: "gradle"
     directory: "/assets/familydirectory-lambda-assets"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "main"
 
   - package-ecosystem: "maven"
     directory: "/CDK"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "main"
 
   - package-ecosystem: "maven"
     directory: "/assets/FamilyDirectoryAdminCreateMemberLambda"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "main"

@@ -1,6 +1,8 @@
 package org.familydirectory.cdk.lambda;
 
 import org.familydirectory.assets.lambda.LambdaFunctionAttrs;
+import software.amazon.awscdk.CfnOutput;
+import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.iam.PolicyStatement;
@@ -28,6 +30,8 @@ import static software.amazon.awscdk.services.lambda.Code.fromAsset;
 import static software.amazon.awscdk.services.lambda.Runtime.JAVA_17;
 
 public class FamilyDirectoryLambdaStack extends Stack {
+    public static final Number ONE_GiB_IN_MiB = 1024;
+
     public FamilyDirectoryLambdaStack(final Construct scope, final String id, final StackProps stackProps)
             throws IOException {
         super(scope, id, stackProps);
@@ -36,13 +40,16 @@ public class FamilyDirectoryLambdaStack extends Stack {
             final Function function = new Function(this, functionAttrs.functionName(),
                     FunctionProps.builder().runtime(JAVA_17).code(fromAsset(getLambdaJar(functionAttrs.functionName())))
                             .handler(functionAttrs.handler()).timeout(seconds(60)).architecture(ARM_64)
-                            .memorySize(1024/*MB*/).build());
+                            .memorySize(ONE_GiB_IN_MiB).reservedConcurrentExecutions(1).build());
             if (functionAttrs == ADMIN_CREATE_MEMBER) {
                 final PolicyStatement statement = create().effect(ALLOW).actions(functionAttrs.actions())
                         .resources(List.of(importValue(MEMBERS.arnExportName()), importValue(FAMILIES.arnExportName())))
                         .build();
                 requireNonNull(function.getRole()).addToPrincipalPolicy(statement);
             }
+            new CfnOutput(this, functionAttrs.arnExportName(),
+                    CfnOutputProps.builder().value(function.getFunctionArn()).exportName(functionAttrs.arnExportName())
+                            .build());
         }
     }
 
