@@ -67,6 +67,6 @@ public class FamilyDirectoryApiGatewayStack extends Stack {
          *  {@link AddRoutesOptions.Builder#authorizer(IHttpRouteAuthorizer)} */
         httpApi.addRoutes(AddRoutesOptions.builder().path(ADMIN_CREATE_MEMBER.endpoint()).methods(singletonList(POST))
                 .integration(adminCreateMemberLambdaHttpIntegration).build());
-        // TODO: might need a CfnOutput here
+        /** TODO: might need a {@link software.amazon.awscdk.CfnOutput} here */
     }
 }
