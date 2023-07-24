@@ -20,7 +20,7 @@
         <cdk.version>2.88.0</cdk.version>
         <cdk-alpha.version>${cdk.version}-alpha.0</cdk-alpha.version>
         <constructs.version>10.2.69</constructs.version>
-        <junit.version>5.10.0-RC2</junit.version>
+        <junit.version>5.10.0</junit.version>
     </properties>
 
     <groupId>org.familydirectory.cdk</groupId>
