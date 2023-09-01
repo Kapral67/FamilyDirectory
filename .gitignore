@@ -15,12 +15,6 @@ build/
 # Ignore Gradle GUI config
 gradle-app.setting
 
-# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
-!gradle-wrapper.jar
-
-# Avoid ignore Gradle wrapper properties
-!gradle-wrapper.properties
-
 # Cache of project
 .gradletasknamecache
 
@@ -48,6 +42,12 @@ gradle-app.setting
 *.war
 *.ear
 
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
+
+# Avoid ignore Gradle wrapper properties
+!gradle-wrapper.properties
+
 # Ignore virtual machine crash logs
 hs_err_pid*
 
@@ -58,12 +58,11 @@ hs_err_pid*
 .CfnTemplates/
 
 # extra maven artifacts
-!pom.xml
 *pom.xml
+!pom.xml
 
 # npm
 package-lock.json
 
 # misc
 bin/
-

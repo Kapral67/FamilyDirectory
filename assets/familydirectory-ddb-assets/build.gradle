@@ -6,8 +6,10 @@ plugins {
 group = 'org.familydirectory.assets.ddb'
 version = '0.1'
 
-sourceCompatibility JavaVersion.VERSION_17
-targetCompatibility JavaVersion.VERSION_17
+compileJava {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
 
 publishing {
     publications {
