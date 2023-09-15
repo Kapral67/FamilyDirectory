@@ -12,7 +12,18 @@ For example, if my grandmother and grandfather on my mother's side are divorced 
 
 Of course, the "ostracized" grandparent in the above example could still be included as a contact (Member Table Entry), but they wouldn't be apart of the FamilyDirectory.
 
+### Architecture
+
+- ==The backend of this project will be AWS CDK & SDK code.==
+- ==These aspects are all written in Java. All "functionality" (RESTful APIs, etc.) is served via AWS Lambda functions.==
+   - ==This reduces the need to mantain any backend server==
+- ==AWS Lambda functions will also be written in Java.==
+- ==The frontend, which is most likely going to entail some sort of web-interface, will be in .NET Blazor==
+- ==Blazor uses razor files (similar to how Django combines html & python, this allows the combination of html & C#)==
+
 ### Member (Database Perspective)
+
+==This table stores the contact information for members in the directory==
 
 #### PRIMARY_KEY
 
@@ -36,6 +47,10 @@ So John Doe Sr. born January 3, 1992 would be `sha256hex("John Doe Sr" + "1992-0
 
 Family Table is used to store MemberReferences (Primary Keys of elements in the Member table) in a fashion that denotes the nuclear family relationships within a larger family-tree
 
+- ==This table enables traversing the directory==
+
+   - ==Beginning at the root ancestor, all members should be accessible via repeated recursion through descendants lists==
+
 #### PRIMARY_KEY
 
 The familial-side's nuclear family member
@@ -52,6 +67,9 @@ The familial-side's nuclear family member
 - Permission system granting certain users authority over other users (e.g. parents can change info of their minor children)
 - Interface for administrators to create new members and family tree links
 - logic to automatically generate [vCard](https://en.wikipedia.org/wiki/VCard) and pdf files containing nicely formatted/importable contacts for each member in the directory
+  - ==The pdf files are the main objective, since these can be formatted such that nuclear families within the directory are grouped==
+  - ==Also, we can order the pdf by generations==
+
 - Automated system to deliver family directory updates (email and/or push notification)
 - Backend databases and frontend interface are connected through RESTful API (accomplished via [AWS ApiGateway](https://aws.amazon.com/api-gateway/) and [AWS Lambda](https://aws.amazon.com/lambda/))
 
