@@ -41,7 +41,7 @@ public class FamilyDirectoryLambdaStack extends Stack {
                     FunctionProps.builder().runtime(JAVA_17).code(fromAsset(getLambdaJar(functionAttrs.functionName())))
                             .handler(functionAttrs.handler()).timeout(seconds(60)).architecture(ARM_64)
                             .memorySize(ONE_GiB_IN_MiB).reservedConcurrentExecutions(1).build());
-            if (functionAttrs == ADMIN_CREATE_MEMBER) {
+            if ( !functionAttrs.actions().isEmpty()) {
                 final PolicyStatement statement = create().effect(ALLOW).actions(functionAttrs.actions())
                         .resources(List.of(importValue(MEMBERS.arnExportName()), importValue(FAMILIES.arnExportName())))
                         .build();
