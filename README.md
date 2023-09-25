@@ -12,7 +12,7 @@
     
         - Should be a Fully-Qualified-Domain-Name (e.g. `example.com`, `aws.example.com`, etc.) whose DNS should be controlled by Route53
 
-    2. `ORG_FAMILYDIRECTORY_SUBDOMAIN_NAME`
+    2. `ORG_FAMILYDIRECTORY_API_SUBDOMAIN_NAME`
 
         - Should be the subdomain of `ORG_FAMILY_DIRECTORY_HOSTED_ZONE_NAME` where api endpoints are accessed (e.g. `api`)
 
