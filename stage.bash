@@ -29,6 +29,7 @@ function verify_project_env_vars {
   }
   local domain
   local sub
+  local auth
 
   domain="ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME"
   if [ -z "${!domain}" ]; then
@@ -38,6 +39,11 @@ function verify_project_env_vars {
   sub="ORG_FAMILYDIRECTORY_API_SUBDOMAIN_NAME"
   if [ -z "${!sub}" ]; then
     empty_env_var $sub
+  fi
+
+  auth="ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME"
+  if  [ -z "${!auth}" ]; then
+    empty_env_var $auth
   fi
 }
 
@@ -55,6 +61,12 @@ clean_maven_local
 
 # Lambda assets
 cd "$STAGE_DIR/assets/familydirectory-lambda-assets" || script_error
+./gradlew build
+./gradlew publish
+clean_maven_local
+
+# Domain assets
+cd "$STAGE_DIR/assets/familydirectory-domain-assets" || script_error
 ./gradlew build
 ./gradlew publish
 clean_maven_local

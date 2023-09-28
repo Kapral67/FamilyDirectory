@@ -13,6 +13,10 @@
             <id>familydirectory-lambda-assets</id>
             <url>file://${project.basedir}/../assets/familydirectory-lambda-assets/.mvn</url>
         </repository>
+        <repository>
+            <id>familydirectory-domain-assets</id>
+            <url>file://${project.basedir}/../assets/familydirectory-domain-assets/.mvn</url>
+        </repository>
     </repositories>
 
     <properties>
@@ -80,6 +84,12 @@
         <dependency>
             <groupId>org.familydirectory.assets.lambda</groupId>
             <artifactId>familydirectory-lambda-assets</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.familydirectory.assets.domain</groupId>
+            <artifactId>familydirectory-domain-assets</artifactId>
             <version>${project.version}</version>
         </dependency>
 
