@@ -4,12 +4,12 @@ import org.familydirectory.assets.ddb.member.Member;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awscdk.services.dynamodb.Attribute;
 import software.amazon.awscdk.services.dynamodb.GlobalSecondaryIndexProps;
-
 import static org.familydirectory.assets.ddb.enums.member.MemberParams.EMAIL;
 import static software.amazon.awscdk.services.dynamodb.AttributeType.STRING;
 import static software.amazon.awscdk.services.dynamodb.ProjectionType.KEYS_ONLY;
 
-public enum DdbTable {
+public
+enum DdbTable {
     MEMBERS("MembersTableArn", GlobalSecondaryIndexProps.builder()
                                                         .indexName("MemberEmail")
                                                         .partitionKey(Attribute.builder()
@@ -17,7 +17,8 @@ public enum DdbTable {
                                                                                .type(STRING)
                                                                                .build())
                                                         .projectionType(KEYS_ONLY)
-                                                        .build()), FAMILIES("FamiliesTableArn", null);
+                                                        .build()),
+    FAMILIES("FamiliesTableArn", null);
 
     /**
      * For {@link DdbTable#MEMBERS}: This is the sha256Hex hash of a Member fullName & birthdayString, concatenated.
@@ -33,16 +34,18 @@ public enum DdbTable {
     @Nullable
     private final GlobalSecondaryIndexProps globalSecondaryIndexProps;
 
-    DdbTable(final String arnExportName, final @Nullable GlobalSecondaryIndexProps globalSecondaryIndexProps) {
+    DdbTable (final String arnExportName, final @Nullable GlobalSecondaryIndexProps globalSecondaryIndexProps) {
         this.arnExportName = arnExportName;
         this.globalSecondaryIndexProps = globalSecondaryIndexProps;
     }
 
-    public final String arnExportName() {
+    public final
+    String arnExportName () {
         return this.arnExportName;
     }
 
-    public final @Nullable GlobalSecondaryIndexProps globalSecondaryIndexProps() {
+    public final @Nullable
+    GlobalSecondaryIndexProps globalSecondaryIndexProps () {
         return this.globalSecondaryIndexProps;
     }
 }

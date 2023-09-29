@@ -65,12 +65,6 @@ cd "$STAGE_DIR/assets/familydirectory-lambda-assets" || script_error
 ./gradlew publish
 clean_maven_local
 
-# Domain assets
-cd "$STAGE_DIR/assets/familydirectory-domain-assets" || script_error
-./gradlew build
-./gradlew publish
-clean_maven_local
-
 # Lambda Function Handler Shaded Jars
 cd "$STAGE_DIR/assets/FamilyDirectoryAdminCreateMemberLambda" || script_error
 mvn package

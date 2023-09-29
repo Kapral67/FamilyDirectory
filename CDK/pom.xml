@@ -13,10 +13,6 @@
             <id>familydirectory-lambda-assets</id>
             <url>file://${project.basedir}/../assets/familydirectory-lambda-assets/.mvn</url>
         </repository>
-        <repository>
-            <id>familydirectory-domain-assets</id>
-            <url>file://${project.basedir}/../assets/familydirectory-domain-assets/.mvn</url>
-        </repository>
     </repositories>
 
     <properties>
@@ -87,12 +83,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.familydirectory.assets.domain</groupId>
-            <artifactId>familydirectory-domain-assets</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <!-- Unstable Dependencies -->
 
         <dependency>
@@ -104,6 +94,12 @@
         <dependency>
             <groupId>software.amazon.awscdk</groupId>
             <artifactId>apigatewayv2-integrations-alpha</artifactId>
+            <version>${cdk-alpha.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>apigatewayv2-authorizers-alpha</artifactId>
             <version>${cdk-alpha.version}</version>
         </dependency>
 

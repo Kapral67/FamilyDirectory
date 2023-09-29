@@ -44,15 +44,12 @@ import software.amazon.awscdk.services.route53.targets.UserPoolDomainTarget;
 import software.constructs.Construct;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
+import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
-import static org.familydirectory.assets.domain.DomainAssets.COGNITO_CERTIFICATE_ARN_EXPORT_NAME;
-import static org.familydirectory.assets.domain.DomainAssets.COGNITO_CERTIFICATE_NAME;
-import static org.familydirectory.assets.domain.DomainAssets.COGNITO_CERTIFICATE_RESOURCE_ID;
-import static org.familydirectory.assets.domain.DomainAssets.COGNITO_DOMAIN_NAME;
-import static org.familydirectory.assets.domain.DomainAssets.COGNITO_SIGNIN_URL_EXPORT_NAME;
-import static org.familydirectory.assets.domain.DomainAssets.HOSTED_ZONE_ID_EXPORT_NAME;
-import static org.familydirectory.assets.domain.DomainAssets.HOSTED_ZONE_NAME;
-import static org.familydirectory.assets.domain.DomainAssets.HOSTED_ZONE_RESOURCE_ID;
+import static org.familydirectory.cdk.domain.FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME;
+import static org.familydirectory.cdk.domain.FamilyDirectoryDomainStack.HOSTED_ZONE_NAME;
+import static org.familydirectory.cdk.domain.FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID;
 import static software.amazon.awscdk.Duration.days;
 import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider.COGNITO;
@@ -61,11 +58,23 @@ import static software.amazon.awscdk.services.cognito.VerificationEmailStyle.LIN
 public
 class FamilyDirectoryCognitoStack extends Stack {
 
+    public static final String COGNITO_CERTIFICATE_RESOURCE_ID = "CognitoCertificate";
+    public static final String COGNITO_CERTIFICATE_NAME = format("%s-%s", HOSTED_ZONE_NAME, COGNITO_CERTIFICATE_RESOURCE_ID);
+    public static final String COGNITO_CERTIFICATE_ARN_EXPORT_NAME = format("%sArn", COGNITO_CERTIFICATE_RESOURCE_ID);
+    public static final String COGNITO_DOMAIN_NAME_RESOURCE_ID = "CognitoDomainName";
+    public static final String COGNITO_A_RECORD_RESOURCE_ID = "CognitoARecord";
+    public static final String COGNITO_USER_POOL_CLIENT_RESOURCE_ID = "UserPoolClient";
+    public static final String COGNITO_USER_POOL_RESOURCE_ID = "UserPool";
+    public static final String COGNITO_USER_POOL_ID_EXPORT_NAME = format("%sId", COGNITO_USER_POOL_RESOURCE_ID);
+    public static final String COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME = format("%sId", COGNITO_USER_POOL_CLIENT_RESOURCE_ID);
+    public static final String COGNITO_DOMAIN_NAME = format("%s.%s", getenv("ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME"), HOSTED_ZONE_NAME);
+    public static final String COGNITO_SIGNIN_URL_EXPORT_NAME = "CognitoSignInUrl";
     private static final StandardAttribute IMMUTABLE_REQUIRED_ATTRIBUTE = StandardAttribute.builder()
                                                                                            .required(TRUE)
                                                                                            .mutable(FALSE)
                                                                                            .build();
     private static final Duration TEMPORARY_PASSWORD_VALIDITY = days(15);
+    private static final Number MIN_PASSWORD_LENGTH = 8;
 
     public
     FamilyDirectoryCognitoStack (final Construct scope, final String id, final StackProps stackProps) {
@@ -94,7 +103,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                          .build())
                                                          .mfa(Mfa.OFF)
                                                          .passwordPolicy(PasswordPolicy.builder()
-                                                                                       .minLength(8)
+                                                                                       .minLength(MIN_PASSWORD_LENGTH)
                                                                                        .requireLowercase(TRUE)
                                                                                        .requireDigits(TRUE)
                                                                                        .requireSymbols(TRUE)
@@ -118,7 +127,11 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                                  .build())
                                                          .build();
 
-        final UserPool userPool = new UserPool(this, "UserPool", userPoolProps);
+        final UserPool userPool = new UserPool(this, COGNITO_USER_POOL_RESOURCE_ID, userPoolProps);
+        new CfnOutput(this, COGNITO_USER_POOL_ID_EXPORT_NAME, CfnOutputProps.builder()
+                                                                            .value(userPool.getUserPoolId())
+                                                                            .exportName(COGNITO_USER_POOL_ID_EXPORT_NAME)
+                                                                            .build());
         final OAuthSettings userPoolClientOAuthSettings = OAuthSettings.builder()
                                                                        // TODO: ADD CALLBACK URLS
                                                                        .callbackUrls(List.of(""))
@@ -143,7 +156,11 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                  .supportedIdentityProviders(singletonList(COGNITO))
                                                                                  .writeAttributes(userPoolClientAttributes)
                                                                                  .build();
-        final UserPoolClient userPoolClient = userPool.addClient("UserPoolClient", userPoolClientOptions);
+        final UserPoolClient userPoolClient = userPool.addClient(COGNITO_USER_POOL_CLIENT_RESOURCE_ID, userPoolClientOptions);
+        new CfnOutput(this, COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME, CfnOutputProps.builder()
+                                                                                   .value(userPoolClient.getUserPoolClientId())
+                                                                                   .exportName(COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME)
+                                                                                   .build());
         // Cognito Certificate
         final CertificateProps cognitoCertificateProps = CertificateProps.builder()
                                                                          .certificateName(COGNITO_CERTIFICATE_NAME)
@@ -162,7 +179,7 @@ class FamilyDirectoryCognitoStack extends Stack {
         final UserPoolDomainOptions userPoolDomainOptions = UserPoolDomainOptions.builder()
                                                                                  .customDomain(cognitoCustomDomainOptions)
                                                                                  .build();
-        final UserPoolDomain userPoolDomain = userPool.addDomain("UserPoolDomain", userPoolDomainOptions);
+        final UserPoolDomain userPoolDomain = userPool.addDomain(COGNITO_DOMAIN_NAME_RESOURCE_ID, userPoolDomainOptions);
         final UserPoolDomainTarget userPoolDomainTarget = new UserPoolDomainTarget(userPoolDomain);
         // Cognito Domain
         final ARecordProps cognitoARecordProps = ARecordProps.builder()
@@ -170,7 +187,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                              .recordName(COGNITO_DOMAIN_NAME)
                                                              .target(RecordTarget.fromAlias(userPoolDomainTarget))
                                                              .build();
-        new ARecord(this, "CognitoARecord", cognitoARecordProps);
+        new ARecord(this, COGNITO_A_RECORD_RESOURCE_ID, cognitoARecordProps);
         final String userPoolSignInUrl = userPoolDomain.signInUrl(userPoolClient, SignInUrlOptions.builder()
                                                                                                   // TODO: CHANGE TO VIEW URL WHEN FRONTEND EXISTS
                                                                                                   .redirectUri(HOSTED_ZONE_NAME)
