@@ -136,6 +136,7 @@ class FamilyDirectoryApiGatewayStack extends Stack {
         final HttpUserPoolAuthorizer userPoolAuthorizer = new HttpUserPoolAuthorizer(API_COGNITO_AUTHORIZER_RESOURCE_ID, userPool, userPoolAuthorizerProps);
         /** TODO: Figure out how to get the email address of the user who called the api from the adminCreateMember Lambda function */
         final AddRoutesOptions adminCreateMemberLambdaApiRouteOptions = AddRoutesOptions.builder()
+//                                                                                      .authorizationScopes(List.of(""))
                                                                                         .authorizer(userPoolAuthorizer)
                                                                                         .path(ADMIN_CREATE_MEMBER.endpoint())
                                                                                         .methods(singletonList(POST))
