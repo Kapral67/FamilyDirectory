@@ -17,15 +17,19 @@ import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.services.dynamodb.GlobalSecondaryIndexProps;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
-import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import software.amazon.awssdk.services.dynamodb.model.Update;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static java.lang.String.format;
+import static java.util.Collections.singletonMap;
 import static java.util.Map.of;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
@@ -56,8 +60,8 @@ class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<APIGatewa
     @Override
     public
     APIGatewayProxyResponseEvent handleRequest (APIGatewayProxyRequestEvent event, Context context) {
-//      Check Authorization
-        final String callerPK;
+//      Get Caller List
+        final List<Map<String, AttributeValue>> callerPKs;
         try {
             @SuppressWarnings("unchecked")
             final Map<String, Object> callerClaims = (Map<String, Object>) requireNonNull(event.getRequestContext()
@@ -69,21 +73,27 @@ class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<APIGatewa
                                                .filter(Predicate.not(String::isBlank))
                                                .orElseThrow(NullPointerException::new);
 
-            // TODO: Get the item from the table that is the caller's primary key
-//            final QueryRequest callerQuery = QueryRequest.builder()
-//                                                         .tableName(MEMBERS.name())
-//                                                         .indexName(MEMBERS_EMAIL_GSI.getIndexName())
-//                                                         .keyConditionExpression(format("%s = %s", KEY, VALUE))
-//                                                         .expressionAttributeNames(of(KEY, MEMBERS_EMAIL_GSI.getPartitionKey()
-//                                                                                                            .getName()))
-//                                                         .expressionAttributeValues(of(VALUE, AttributeValue.builder()
-//                                                                                                            .s(callerEmail)
-//                                                                                                            .build()))
-//                                                         .build();
-//            final QueryResponse callerQueryResponse = client.query(callerQuery);
-//            callerPK = callerQueryResponse.items().stream().filter(map -> map.containsKey())
+            context.getLogger()
+                   .log(format("Caller email: `%s`", callerEmail), INFO);
 
-        } catch (final NullPointerException | ClassCastException | ResourceNotFoundException e) {
+            // TODO: Get the item from the table that is the caller's primary key
+            final QueryRequest callerQuery = QueryRequest.builder()
+                                                         .tableName(MEMBERS.name())
+                                                         .indexName(MEMBERS_EMAIL_GSI.getIndexName())
+                                                         .keyConditionExpression(format("%s = %s", KEY, VALUE))
+                                                         .expressionAttributeNames(of(KEY, MEMBERS_EMAIL_GSI.getPartitionKey()
+                                                                                                            .getName()))
+                                                         .expressionAttributeValues(of(VALUE, AttributeValue.builder()
+                                                                                                            .s(callerEmail)
+                                                                                                            .build()))
+                                                         .build();
+            final QueryResponse callerQueryResponse = client.query(callerQuery);
+            if (!callerQueryResponse.hasItems()) {
+                throw new NullPointerException();
+            }
+            callerPKs = callerQueryResponse.items();
+
+        } catch (final NullPointerException | ClassCastException e) {
             return new APIGatewayProxyResponseEvent().withStatusCode(UNAUTHORIZED)
                                                      .withBody("Caller Email Not Found");
         }
@@ -97,27 +107,40 @@ class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<APIGatewa
                                                      .withBody("Invalid Member");
         }
 
-//      Check If Member Already Exists
-        final QueryRequest queryRequest = QueryRequest.builder()
-                                                      .tableName(MEMBERS.name())
-                                                      .keyConditionExpression(format("%s = %s", KEY, VALUE))
-                                                      .expressionAttributeNames(of(KEY, PK.getName()))
-                                                      .expressionAttributeValues(of(VALUE, AttributeValue.builder()
-                                                                                                         .s(input.getPrimaryKey())
-                                                                                                         .build()))
-                                                      .build();
-        try {
-            final QueryResponse queryResponse = client.query(queryRequest);
-            if (queryResponse.count() > 0) {
-                // FIXME: Should Allow Overwrites Given Restrictive Authorization
-                return new APIGatewayProxyResponseEvent().withStatusCode(UNAUTHORIZED)
-                                                         .withBody(format("EEXIST: '%s' Born: '%s' Already Exists", input.getFullName(), input.getBirthdayString()));
+//      Check Caller Authorization
+        {
+            boolean isCallerAuthorized = false;
+            for (final Map<String, AttributeValue> pk : callerPKs) {
+                final String callerPk = pk.get(PK.getName())
+                                          .s();
+                // TODO: SOLVE THE SPOUSE DILEMMA
+                if (callerPk.equals(input.getPrimaryKey()) || (!isNull(input.getAncestor()) && callerPk.equals(input.getAncestor()
+                                                                                                                    .getPrimaryKey())))
+                {
+                    isCallerAuthorized = true;
+                    context.getLogger()
+                           .log(format("Caller `%s` Creating Member `%s`", callerPk, input.getPrimaryKey()), INFO);
+                    break;
+                }
             }
-        } catch (final ResourceNotFoundException ignored) {
-            /* This exception is ignored because the whole purpose of this query is to ensure that the
-             * Member-To-Be-Created does not already exist, so letting this exception propagate, or even logging this
-             * exception, is not necessary as this exception is expected behavior.
-             */
+            if (!isCallerAuthorized) {
+                return new APIGatewayProxyResponseEvent().withStatusCode(UNAUTHORIZED)
+                                                         .withBody("Caller Not Authorized To Create Requested Member");
+            }
+        }
+
+//      Check If Member Already Exists
+        final GetItemRequest getItemRequest = GetItemRequest.builder()
+                                                            .tableName(MEMBERS.name())
+                                                            .key(singletonMap(PK.getName(), AttributeValue.builder()
+                                                                                                          .s(input.getPrimaryKey())
+                                                                                                          .build()))
+                                                            .build();
+        final GetItemResponse getItemResponse = client.getItem(getItemRequest);
+        if (getItemResponse.hasItem()) {
+            // FIXME: Should Allow Overwrites Given Restrictive Authorization
+            return new APIGatewayProxyResponseEvent().withStatusCode(UNAUTHORIZED)
+                                                     .withBody(format("EEXIST: '%s' Born: '%s' Already Exists", input.getFullName(), input.getBirthdayString()));
         }
 
 //      Build New Item
@@ -152,6 +175,12 @@ class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<APIGatewa
                 case ADDRESS -> ofNullable(input.getAddress()).ifPresent(ss -> member.put(field.jsonFieldName(), AttributeValue.builder()
                                                                                                                                .ss(ss)
                                                                                                                                .build()));
+                case ANCESTOR -> ofNullable(input.getAncestor()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.builder()
+                                                                                                                                .s(s.getPrimaryKey())
+                                                                                                                                .build()));
+                case IS_ANCESTOR_SPOUSE -> ofNullable(input.getIsAncestorSpouse()).ifPresent(bool -> member.put(field.jsonFieldName(), AttributeValue.builder()
+                                                                                                                                                     .bool(bool)
+                                                                                                                                                     .build()));
                 default -> {
                 }
             }
@@ -162,6 +191,7 @@ class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<APIGatewa
         if (nonNull(input.getAncestor())) {
             if (nonNull(input.getIsAncestorSpouse())) {
 //              Set spouse field in existing entry in FAMILIES Table
+                // TODO: INVENT SOME MECHANISM TO FREE UNWANTED SPOUSES
                 transactWriteItems.add(TransactWriteItem.builder()
                                                         .update(Update.builder()
                                                                       .tableName(FAMILIES.name())
@@ -224,5 +254,11 @@ class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<APIGatewa
                                                            .build());
 
         return new APIGatewayProxyResponseEvent().withStatusCode(OK);
+    }
+
+    private
+    enum CallerAuthorization {
+        UNAUTHORIZED,
+        AUTHORIZED
     }
 }
