@@ -33,3 +33,21 @@
             - They have ability to edit/create all members of that Family (themselves (PK), spouse, descendants (younger
               than Age of Majority))
         3. Else they can only edit themselves with no create permission
+
+## `UPSERT` Authentication
+
+- Caller can upsert:
+    - THEMSELF
+        - Caller PK in `MemberEmail` GSI will be equal to PK in `MEMBERS` table
+    - SPOUSE
+        - If: caller is the PK in their `FAMILIES` table Entry:
+            - then Ancestor attribute in `input` Member is equal to caller's PK in `MemberEmail` GSI
+        - Else: caller is SPOUSE in their `FAMILIES` table Entry:
+            - then caller's PK in `MemberEmail` GSI is equal to SPOUSE attribute in `FAMILIES` table entry pointed to
+              by `input` Member's Ancestor attribute
+    - DESCENDANTS
+        - If: caller is PK in their `FAMILIES` table Entry:
+            - then Ancestor attribute in `input` Member is equal to caller's PK in `MemberEmail` GSI
+        - Else: caller is SPOUSE in their `FAMILIES` table Entry:
+            - then caller's PK in `MemberEmail` GSI is equal to SPOUSE attribute in `FAMILIES` table entry pointed to
+              by `input` Member's Ancestor attribute
