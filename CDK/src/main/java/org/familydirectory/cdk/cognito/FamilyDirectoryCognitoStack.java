@@ -69,10 +69,10 @@ class FamilyDirectoryCognitoStack extends Stack {
     public static final String COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME = format("%sId", COGNITO_USER_POOL_CLIENT_RESOURCE_ID);
     public static final String COGNITO_DOMAIN_NAME = format("%s.%s", getenv("ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME"), HOSTED_ZONE_NAME);
     public static final String COGNITO_SIGNIN_URL_EXPORT_NAME = "CognitoSignInUrl";
-    private static final StandardAttribute IMMUTABLE_REQUIRED_ATTRIBUTE = StandardAttribute.builder()
-                                                                                           .required(TRUE)
-                                                                                           .mutable(FALSE)
-                                                                                           .build();
+    private static final StandardAttribute MUTABLE_REQUIRED_ATTRIBUTE = StandardAttribute.builder()
+                                                                                         .required(TRUE)
+                                                                                         .mutable(TRUE)
+                                                                                         .build();
     private static final Duration TEMPORARY_PASSWORD_VALIDITY = days(15);
     private static final Number MIN_PASSWORD_LENGTH = 8;
 
@@ -120,7 +120,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                      .build())
                                                          .signInCaseSensitive(FALSE)
                                                          .standardAttributes(StandardAttributes.builder()
-                                                                                               .email(IMMUTABLE_REQUIRED_ATTRIBUTE)
+                                                                                               .email(MUTABLE_REQUIRED_ATTRIBUTE)
                                                                                                .build())
                                                          .userVerification(UserVerificationConfig.builder()
                                                                                                  .emailStyle(LINK)

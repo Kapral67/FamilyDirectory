@@ -24,7 +24,10 @@ class MemberModel implements MemberReferenceModel {
     MemberReference getAncestor ();
 
     public abstract @Nullable
-    Boolean getIsAncestorSpouse ();
+    MemberReference getSpouse ();
+
+    public abstract @Nullable
+    List<MemberReference> getDescendants ();
 
     public @Nullable
     String getDeathdayString () {

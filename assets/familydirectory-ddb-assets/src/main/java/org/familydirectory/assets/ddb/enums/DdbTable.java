@@ -17,14 +17,12 @@ enum DdbTable {
                                                                                .type(STRING)
                                                                                .build())
                                                         .projectionType(KEYS_ONLY)
-                                                        .build()),
-    FAMILIES("FamiliesTableArn", null);
+                                                        .build());
+//    FAMILIES("FamiliesTableArn", null);
 
     /**
      * For {@link DdbTable#MEMBERS}: This is the sha256Hex hash of a Member fullName & birthdayString, concatenated.
      * See {@link Member} for how fullName and birthdayString are computed
-     * <br><br>
-     * For {@link DdbTable#FAMILIES}: This is the familial side, head member's `PK` from the MEMBERS table
      */
     public static final Attribute PK = Attribute.builder()
                                                 .name("id")

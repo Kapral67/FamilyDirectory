@@ -4,22 +4,21 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.time.LocalDate;
 import org.familydirectory.assets.ddb.enums.SuffixType;
 import org.familydirectory.assets.ddb.models.member.MemberReferenceModel;
 import org.familydirectory.assets.ddb.utils.LocalDateDeserializer;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.time.LocalDate;
-
 import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
 import static java.time.LocalDate.now;
 import static org.apache.commons.text.WordUtils.capitalizeFully;
 import static org.familydirectory.assets.ddb.utils.DdbUtils.DATE_FORMAT_STRING;
 
 @JsonDeserialize(builder = MemberReference.Builder.class)
-public final class MemberReference implements MemberReferenceModel {
+public final
+class MemberReference implements MemberReferenceModel {
 
     @JsonProperty("firstName")
     private final @NotNull String firstName;
@@ -44,8 +43,8 @@ public final class MemberReference implements MemberReferenceModel {
     @JsonIgnore
     private final @NotNull String primaryKey;
 
-    private MemberReference(final @NotNull String firstName, final @NotNull String lastName,
-                            final @NotNull LocalDate birthday, final @Nullable SuffixType suffix) {
+    private
+    MemberReference (final @NotNull String firstName, final @NotNull String lastName, final @NotNull LocalDate birthday, final @Nullable SuffixType suffix) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.birthday = birthday;
@@ -57,48 +56,57 @@ public final class MemberReference implements MemberReferenceModel {
     }
 
     @Contract(" -> new")
-    public static @NotNull Builder builder() {
+    public static @NotNull
+    Builder builder () {
         return new Builder();
     }
 
     @Override
-    public @NotNull String getFirstName() {
+    public @NotNull
+    String getFirstName () {
         return this.firstName;
     }
 
     @Override
-    public @NotNull String getLastName() {
+    public @NotNull
+    String getLastName () {
         return this.lastName;
     }
 
     @Override
-    public @NotNull LocalDate getBirthday() {
+    public @NotNull
+    LocalDate getBirthday () {
         return this.birthday;
     }
 
     /* DERIVED */
 
     @Override
-    public @Nullable SuffixType getSuffix() {
+    public @Nullable
+    SuffixType getSuffix () {
         return this.suffix;
     }
 
     @Override
-    public @NotNull String getFullName() {
-        return this.fullName;
-    }
-
-    @Override
-    public @NotNull String getBirthdayString() {
+    public @NotNull
+    String getBirthdayString () {
         return this.birthdayString;
     }
 
     @Override
-    public @NotNull String getPrimaryKey() {
+    public @NotNull
+    String getFullName () {
+        return this.fullName;
+    }
+
+    @Override
+    public @NotNull
+    String getPrimaryKey () {
         return this.primaryKey;
     }
 
-    public static final class Builder {
+    public static final
+    class Builder {
         private final LocalDate builderBegan;
         private String firstName = null;
         private boolean isFirstNameSet = false;
@@ -110,18 +118,14 @@ public final class MemberReference implements MemberReferenceModel {
         private boolean isSuffixSet = false;
         private boolean isBuilt = false;
 
-        public Builder() {
+        public
+        Builder () {
             this.builderBegan = now();
         }
 
-        private void checkBuildStatus() {
-            if (isBuilt) {
-                throw new IllegalStateException("Member already created");
-            }
-        }
-
         @JsonProperty("firstName")
-        public Builder firstName(final @NotNull String firstName) {
+        public
+        Builder firstName (final @NotNull String firstName) {
             this.checkBuildStatus();
             if (this.isFirstNameSet) {
                 throw new IllegalStateException("First Name already set");
@@ -133,8 +137,16 @@ public final class MemberReference implements MemberReferenceModel {
             return this;
         }
 
+        private
+        void checkBuildStatus () {
+            if (this.isBuilt) {
+                throw new IllegalStateException("Member already created");
+            }
+        }
+
         @JsonProperty("lastName")
-        public Builder lastName(final @NotNull String lastName) {
+        public
+        Builder lastName (final @NotNull String lastName) {
             this.checkBuildStatus();
             if (this.isLastNameSet) {
                 throw new IllegalStateException("Last Name already set");
@@ -149,7 +161,8 @@ public final class MemberReference implements MemberReferenceModel {
         @JsonProperty("birthday")
         @JsonFormat(shape = STRING, pattern = DATE_FORMAT_STRING)
         @JsonDeserialize(using = LocalDateDeserializer.class)
-        public Builder birthday(final @NotNull LocalDate birthday) {
+        public
+        Builder birthday (final @NotNull LocalDate birthday) {
             this.checkBuildStatus();
             if (this.isBirthdaySet) {
                 throw new IllegalStateException("Birthday already set");
@@ -162,7 +175,8 @@ public final class MemberReference implements MemberReferenceModel {
         }
 
         @JsonProperty("suffix")
-        public Builder suffix(final @Nullable SuffixType suffix) {
+        public
+        Builder suffix (final @Nullable SuffixType suffix) {
             this.checkBuildStatus();
             if (this.isSuffixSet) {
                 throw new IllegalStateException("Suffix already set");
@@ -172,7 +186,8 @@ public final class MemberReference implements MemberReferenceModel {
             return this;
         }
 
-        public MemberReference build() {
+        public
+        MemberReference build () {
             this.checkBuildStatus();
             this.isBuilt = true;
             return new MemberReference(this.firstName, this.lastName, this.birthday, this.suffix);

@@ -29,4 +29,5 @@ repositories {
 }
 
 dependencies {
+    implementation 'com.amazonaws:aws-lambda-java-events:3.11.3'
 }
