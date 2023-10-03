@@ -68,9 +68,9 @@ class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<APIGatewa
         MEMBERS_EMAIL_GSI = MEMBERS.globalSecondaryIndexProps();
     }
 
+    private final Map<String, AttributeValue> inputAncestorsSpouse = null;
     private LambdaLogger logger = null;
     private Map<String, AttributeValue> inputAncestor = null;
-    private final Map<String, AttributeValue> inputAncestorsSpouse = null;
 
     @Override
     public
@@ -110,7 +110,7 @@ class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<APIGatewa
                                     .map(obj -> obj.stream()
                                                    .map(m -> m.get(PK.getName())
                                                               .s())
-                                                   .filter(String::isBlank)
+                                                   .filter(Predicate.not(String::isBlank))
                                                    .toList())
                                     .orElseThrow(NullPointerException::new);
 
@@ -260,14 +260,21 @@ class FamilyDirectoryAdminCreateMemberLambda implements RequestHandler<APIGatewa
                 if (pk.equals(input.getAncestor()
                                    .getPrimaryKey()))
                 {
-                    this.logger.log(format("Caller <PK,`%s`> Upserting Descendant <PK,`%s`>", pk, input.getPrimaryKey()), INFO);
+                    this.logger.log(format("Caller <PK,`%s`> Upserting Descendant As Parent <PK,`%s`>", pk, input.getPrimaryKey()), INFO);
                     return pk;
                 } else {
                     this.inputAncestor = getDdbItem(input.getAncestor()
                                                          .getPrimaryKey());
-                    this.inputAncestorsSpouse = ofNullable(this.inputAncestor).flatMap(a -> {
-                        return ofNullable()
-                    }).orElse(null);
+//                    this.inputAncestorsSpouse = ofNullable(this.inputAncestor).flatMap(a -> ofNullable(a.get(SPOUSE.jsonFieldName())).map(AttributeValue::s)
+//                                                                                                                                     .filter(Predicate.not(String::isBlank))
+//                                                                                                                                     .flatMap(s -> ofNullable(getDdbItem(s))))
+//                                                                              .orElse(null);
+                    final String inputAncestorSpousePK = ofNullable(this.inputAncestor).flatMap(a -> ofNullable(a.get(SPOUSE.jsonFieldName())).map(AttributeValue::s))
+                                                                                       .orElse(null);
+                    if (pk.equals(inputAncestorSpousePK)) {
+                        this.logger.log(format("Caller <PK,`%s`> Upserting Descendant As Co-Parent <PK,`%s`>", pk, inputAncestorSpousePK), INFO);
+                        return pk;
+                    }
                 }
             }
         }
