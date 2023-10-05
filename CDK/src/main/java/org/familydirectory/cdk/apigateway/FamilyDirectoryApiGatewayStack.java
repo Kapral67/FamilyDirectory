@@ -41,7 +41,7 @@ import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
-import static org.familydirectory.assets.lambda.LambdaFunctionAttrs.ADMIN_CREATE_MEMBER;
+import static org.familydirectory.assets.lambda.LambdaFunctionAttrs.CREATE_MEMBER;
 import static org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME;
 import static org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_RESOURCE_ID;
 import static org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME;
@@ -117,14 +117,14 @@ class FamilyDirectoryApiGatewayStack extends Stack {
         final HttpApi httpApi = new HttpApi(this, HTTP_API_RESOURCE_ID, httpApiProps);
 
         // Get Lambda Function by arn
-        final String adminCreateMemberLambdaFunctionArn = importValue(ADMIN_CREATE_MEMBER.arnExportName());
-        final IFunction adminCreateMemberLambda = Function.fromFunctionArn(this, ADMIN_CREATE_MEMBER.functionName(), adminCreateMemberLambdaFunctionArn);
+        final String adminCreateMemberLambdaFunctionArn = importValue(CREATE_MEMBER.arnExportName());
+        final IFunction adminCreateMemberLambda = Function.fromFunctionArn(this, CREATE_MEMBER.functionName(), adminCreateMemberLambdaFunctionArn);
 
         // Add Lambda as HttpIntegration to HttpApi
         final HttpLambdaIntegrationProps adminCreateMemberLambdaHttpIntegrationProps = HttpLambdaIntegrationProps.builder()
                                                                                                                  .payloadFormatVersion(VERSION_2_0)
                                                                                                                  .build();
-        final HttpLambdaIntegration adminCreateMemberLambdaHttpIntegration = new HttpLambdaIntegration(ADMIN_CREATE_MEMBER.httpIntegrationId(), adminCreateMemberLambda,
+        final HttpLambdaIntegration adminCreateMemberLambdaHttpIntegration = new HttpLambdaIntegration(CREATE_MEMBER.httpIntegrationId(), adminCreateMemberLambda,
                                                                                                        adminCreateMemberLambdaHttpIntegrationProps);
         /** TODO: Research potential for {@link AddRoutesOptions.Builder#authorizationScopes(List)} &
          *  {@link AddRoutesOptions.Builder#authorizer(IHttpRouteAuthorizer)} */
@@ -138,7 +138,7 @@ class FamilyDirectoryApiGatewayStack extends Stack {
         final AddRoutesOptions adminCreateMemberLambdaApiRouteOptions = AddRoutesOptions.builder()
 //                                                                                      .authorizationScopes(List.of(""))
                                                                                         .authorizer(userPoolAuthorizer)
-                                                                                        .path(ADMIN_CREATE_MEMBER.endpoint())
+                                                                                        .path(CREATE_MEMBER.endpoint())
                                                                                         .methods(singletonList(POST))
                                                                                         .integration(adminCreateMemberLambdaHttpIntegration)
                                                                                         .build();

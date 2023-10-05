@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.SuffixType;
@@ -61,6 +62,7 @@ class FamilyDirectoryCreateMemberLambda implements RequestHandler<APIGatewayProx
     private static final String VALUE = ":v";
 
     private LambdaLogger logger = null;
+    private UUID inputId = null;
     private String callerMemberId = null;
     private Map<String, AttributeValue> callerMember = null;
     private Map<String, AttributeValue> inputAncestor = null;
@@ -221,9 +223,9 @@ class FamilyDirectoryCreateMemberLambda implements RequestHandler<APIGatewayProx
 
 //      Build New Item
         final Map<String, AttributeValue> member = new HashMap<>();
+        this.inputId = UUID.randomUUID();
         member.put(PK.getName(), AttributeValue.builder()
-                                               .s(input.getId()
-                                                       .toString())
+                                               .s(this.inputId.toString())
                                                .build());
 
         for (final MemberParams field : MemberParams.values()) {
