@@ -31,6 +31,9 @@ class Member extends MemberModel {
     @JsonProperty("firstName")
     private final @NotNull String firstName;
 
+    @JsonProperty("middleName")
+    private final @Nullable String middleName;
+
     @JsonProperty("lastName")
     private final @NotNull String lastName;
 
@@ -69,10 +72,11 @@ class Member extends MemberModel {
     private final @Nullable String deathdayString;
 
     private
-    Member (final @NotNull String firstName, final @NotNull String lastName, final @NotNull LocalDate birthday, final @Nullable String email, final @Nullable LocalDate deathday,
-            final @Nullable Map<PhoneType, String> phones, final @Nullable List<String> address, final @Nullable SuffixType suffix)
+    Member (final @NotNull String firstName, final @Nullable String middleName, final @NotNull String lastName, final @NotNull LocalDate birthday, final @Nullable String email,
+            final @Nullable LocalDate deathday, final @Nullable Map<PhoneType, String> phones, final @Nullable List<String> address, final @Nullable SuffixType suffix)
     {
         this.firstName = requireNonNull(firstName);
+        this.middleName = middleName;
         this.lastName = requireNonNull(lastName);
         this.birthday = requireNonNull(birthday);
         this.email = email;
@@ -107,18 +111,6 @@ class Member extends MemberModel {
 
     @Override
     public @Nullable
-    String getDeathdayString () {
-        return this.deathdayString;
-    }
-
-    @Override
-    public @Nullable
-    LocalDate getDeathday () {
-        return this.deathday;
-    }
-
-    @Override
-    public @Nullable
     Map<String, AttributeValue> getPhonesDdbMap () {
         return this.phonesDdbMap;
     }
@@ -133,6 +125,18 @@ class Member extends MemberModel {
     public @NotNull
     LocalDate getBirthday () {
         return this.birthday;
+    }
+
+    @Override
+    public @Nullable
+    String getDeathdayString () {
+        return this.deathdayString;
+    }
+
+    @Override
+    public @Nullable
+    LocalDate getDeathday () {
+        return this.deathday;
     }
 
     @Override
@@ -154,6 +158,12 @@ class Member extends MemberModel {
     }
 
     @Override
+    public @Nullable
+    String getMiddleName () {
+        return this.middleName;
+    }
+
+    @Override
     public @NotNull
     String getLastName () {
         return this.lastName;
@@ -170,6 +180,8 @@ class Member extends MemberModel {
         private final LocalDate builderBegan;
         private String firstName = null;
         private boolean isFirstNameSet = false;
+        private String middleName = null;
+        private boolean isMiddleNameSet = false;
         private String lastName = null;
         private boolean isLastNameSet = false;
         private LocalDate birthday = null;
@@ -210,6 +222,21 @@ class Member extends MemberModel {
             if (this.isBuilt) {
                 throw new IllegalStateException("Member already created");
             }
+        }
+
+        @JsonProperty("middleName")
+        public
+        Builder middleName (final @Nullable String middleName) {
+            this.checkBuildStatus();
+            if (this.isMiddleNameSet) {
+                throw new IllegalStateException("Middle Name already set");
+            } else if (isNull(middleName) || middleName.isBlank()) {
+                this.isMiddleNameSet = true;
+                return this;
+            }
+            this.middleName = capitalizeFully(middleName.replaceAll("\\s", ""), '-');
+            this.isMiddleNameSet = true;
+            return this;
         }
 
         @JsonProperty("lastName")
@@ -331,9 +358,9 @@ class Member extends MemberModel {
             this.checkBuildStatus();
             this.isBuilt = true;
             if (isNull(this.deathday)) {
-                return new Member(this.firstName, this.lastName, this.birthday, this.email, null, this.phones, this.address, this.suffix);
+                return new Member(this.firstName, this.middleName, this.lastName, this.birthday, this.email, null, this.phones, this.address, this.suffix);
             } else {
-                return new Member(this.firstName, this.lastName, this.birthday, null, this.deathday, null, null, this.suffix);
+                return new Member(this.firstName, this.middleName, this.lastName, this.birthday, null, this.deathday, null, null, this.suffix);
             }
         }
     }

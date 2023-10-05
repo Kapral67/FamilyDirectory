@@ -23,6 +23,7 @@ enum MemberParams {
                                              .projectionType(KEYS_ONLY)
                                              .build()),
     FIRST_NAME(STR, "firstName", null),
+    MIDDLE_NAME(STR, "middleName", null),
     LAST_NAME(STR, "lastName", null),
     SUFFIX(STR, "suffix", null),
     BIRTHDAY(STR, "birthday", null),
