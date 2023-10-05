@@ -33,6 +33,7 @@ import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolDomainOptions;
 import software.amazon.awscdk.services.cognito.UserPoolEmail;
 import software.amazon.awscdk.services.cognito.UserPoolProps;
+import software.amazon.awscdk.services.cognito.UserPoolSESOptions;
 import software.amazon.awscdk.services.cognito.UserPoolTriggers;
 import software.amazon.awscdk.services.cognito.UserVerificationConfig;
 import software.amazon.awscdk.services.route53.ARecord;
@@ -69,10 +70,10 @@ class FamilyDirectoryCognitoStack extends Stack {
     public static final String COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME = format("%sId", COGNITO_USER_POOL_CLIENT_RESOURCE_ID);
     public static final String COGNITO_DOMAIN_NAME = format("%s.%s", getenv("ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME"), HOSTED_ZONE_NAME);
     public static final String COGNITO_SIGNIN_URL_EXPORT_NAME = "CognitoSignInUrl";
-    private static final StandardAttribute IMMUTABLE_REQUIRED_ATTRIBUTE = StandardAttribute.builder()
-                                                                                           .required(TRUE)
-                                                                                           .mutable(FALSE)
-                                                                                           .build();
+    private static final StandardAttribute MUTABLE_REQUIRED_ATTRIBUTE = StandardAttribute.builder()
+                                                                                         .required(TRUE)
+                                                                                         .mutable(TRUE)
+                                                                                         .build();
     private static final Duration TEMPORARY_PASSWORD_VALIDITY = days(15);
     private static final Number MIN_PASSWORD_LENGTH = 8;
 
@@ -90,14 +91,15 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                       .phone(FALSE)
                                                                                       .build())
                                                          .deletionProtection(TRUE)
-                                                         .email(UserPoolEmail.withCognito())
+                                                         .email(UserPoolEmail.withSES(UserPoolSESOptions.builder()
+                                                                                                        // FIXME: Setup SES
+                                                                                                        .build()))
                                                          .enableSmsRole(FALSE)
                                                          .keepOriginal(KeepOriginalAttrs.builder()
                                                                                         .email(TRUE)
                                                                                         .phone(FALSE)
                                                                                         .build())
-                                                         // TODO: CREATE PRE-SIGNUP LAMBDA
-                                                         //// (MIGHT NOT BE NEEDED IF SELF-SIGN-UP IS DISABLED)
+                                                         // TODO: CREATE PRE-SIGNUP LAMBDA (TURN ON SELF-SIGN-UP)
                                                          .lambdaTriggers(UserPoolTriggers.builder()
                                                                                          .preSignUp(null)
                                                                                          .build())
@@ -111,6 +113,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                        .tempPasswordValidity(TEMPORARY_PASSWORD_VALIDITY)
                                                                                        .build())
                                                          .removalPolicy(RemovalPolicy.DESTROY)
+                                                         // FIXME: Implement some self-signup logic
                                                          .selfSignUpEnabled(FALSE)
                                                          .signInAliases(SignInAliases.builder()
                                                                                      .username(FALSE)
@@ -120,7 +123,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                      .build())
                                                          .signInCaseSensitive(FALSE)
                                                          .standardAttributes(StandardAttributes.builder()
-                                                                                               .email(IMMUTABLE_REQUIRED_ATTRIBUTE)
+                                                                                               .email(MUTABLE_REQUIRED_ATTRIBUTE)
                                                                                                .build())
                                                          .userVerification(UserVerificationConfig.builder()
                                                                                                  .emailStyle(LINK)

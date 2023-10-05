@@ -1,21 +1,17 @@
-package org.familydirectory.assets.ddb.enums.family;
+package org.familydirectory.assets.ddb.enums.cognito;
 
 import org.familydirectory.assets.ddb.enums.DdbType;
 import static org.familydirectory.assets.ddb.enums.DdbTable.PK;
 import static org.familydirectory.assets.ddb.enums.DdbType.STR;
-import static org.familydirectory.assets.ddb.enums.DdbType.STR_SET;
 
 public
-enum FamilyParams {
+enum CognitoParams {
     ID(STR, PK.getName()),
-    ANCESTOR(STR, "ancestor"),
-    SPOUSE(STR, "spouse"),
-    DESCENDANTS(STR_SET, "descendants");
-
+    MEMBER(STR, "member");
     private final DdbType ddbType;
     private final String jsonFieldName;
 
-    FamilyParams (final DdbType ddbType, final String jsonFieldName) {
+    CognitoParams (final DdbType ddbType, final String jsonFieldName) {
         this.ddbType = ddbType;
         this.jsonFieldName = jsonFieldName;
     }

@@ -14,7 +14,9 @@ import software.amazon.awscdk.services.lambda.FunctionProps;
 import software.constructs.Construct;
 import static java.lang.System.getProperty;
 import static java.nio.file.Paths.get;
+import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static org.familydirectory.assets.ddb.enums.DdbTable.COGNITO;
 import static org.familydirectory.assets.ddb.enums.DdbTable.FAMILIES;
 import static org.familydirectory.assets.ddb.enums.DdbTable.MEMBERS;
 import static org.familydirectory.assets.lambda.LambdaFunctionAttrs.values;
@@ -54,6 +56,11 @@ class FamilyDirectoryLambdaStack extends Stack {
                                                           .build();
                 requireNonNull(function.getRole()).addToPrincipalPolicy(statement);
             }
+            // Allow GetItem from Cognito Table
+            requireNonNull(function.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
+                                                                            .actions(singletonList("dynamodb:GetItem"))
+                                                                            .resources(singletonList(importValue(COGNITO.arnExportName())))
+                                                                            .build());
             new CfnOutput(this, functionAttrs.arnExportName(), CfnOutputProps.builder()
                                                                              .value(function.getFunctionArn())
                                                                              .exportName(functionAttrs.arnExportName())

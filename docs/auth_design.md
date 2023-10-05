@@ -16,7 +16,7 @@
         - Parents should have authorization over:
             - themselves
             - each-other
-            - their kids
+            - their minor kids
         - Whereas an eighteen-year-old should have authorization over:
             - only themselves
 - To do this we could
@@ -24,11 +24,30 @@
   that checks a DynamoDb table if the email address in the signup request is valid
 - We can add a [Global Secondary Index](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html)
   to the MEMBERS table where email address is the partition key for this index
-  - Obviously, non-members cannot onboard to access the website or any of the apis
-  - To check whom they are authorized for:
-      1. Check that they meet some minimum age requirement
-      2. If they are PK or SPOUSE in the FAMILIES table entry pointed to by their `ancestor` attribute in MEMBERS table
-         entry:
-          - They have ability to edit/create all members of that Family (themselves (PK), spouse, descendants (younger
-            than Age of Majority))
-      3. Else they can only edit themselves with no create permission
+    - Obviously, non-members cannot onboard to access the website or any of the apis
+    - To check whom they are authorized for:
+        1. Check that they meet some minimum age requirement
+        2. If they are PK or SPOUSE in the FAMILIES table entry pointed to by their `ancestor` attribute in MEMBERS
+           table
+           entry:
+            - They have ability to edit/create all members of that Family (themselves (PK), spouse, descendants (younger
+              than Age of Majority))
+        3. Else they can only edit themselves with no create permission
+
+## `UPSERT` Authentication
+
+- Caller can upsert:
+    - THEMSELF
+        - Caller PK in `MemberEmail` GSI will be equal to PK in `MEMBERS` table
+    - SPOUSE
+        - If: caller is the PK in their `FAMILIES` table Entry:
+            - then Ancestor attribute in `input` Member is equal to caller's PK in `MemberEmail` GSI
+        - Else: caller is SPOUSE in their `FAMILIES` table Entry:
+            - then caller's PK in `MemberEmail` GSI is equal to SPOUSE attribute in `FAMILIES` table entry pointed to
+              by `input` Member's Ancestor attribute
+    - DESCENDANTS
+        - If: caller is PK in their `FAMILIES` table Entry:
+            - then Ancestor attribute in `input` Member is equal to caller's PK in `MemberEmail` GSI
+        - Else: caller is SPOUSE in their `FAMILIES` table Entry:
+            - then caller's PK in `MemberEmail` GSI is equal to SPOUSE attribute in `FAMILIES` table entry pointed to
+              by `input` Member's Ancestor attribute
