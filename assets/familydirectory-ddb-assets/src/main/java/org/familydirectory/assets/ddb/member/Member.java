@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
 import static java.time.LocalDate.now;
 import static java.util.Objects.isNull;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.text.WordUtils.capitalizeFully;
 import static org.familydirectory.assets.ddb.utils.DdbUtils.DATE_FORMAT_STRING;
@@ -55,17 +56,6 @@ class Member extends MemberModel {
     @JsonProperty("suffix")
     private final @Nullable SuffixType suffix;
 
-    @JsonProperty("ancestor")
-    private final @Nullable MemberReference ancestor;
-
-    @JsonProperty("spouse")
-    private final @Nullable MemberReference spouse;
-
-    @JsonProperty("descendants")
-    private final @Nullable List<MemberReference> descendants;
-
-    /* DERIVED */
-
     @JsonIgnore
     private final @NotNull String fullName;
 
@@ -78,29 +68,21 @@ class Member extends MemberModel {
     @JsonIgnore
     private final @Nullable String deathdayString;
 
-    @JsonIgnore
-    private final @NotNull String primaryKey;
-
     private
     Member (final @NotNull String firstName, final @NotNull String lastName, final @NotNull LocalDate birthday, final @Nullable String email, final @Nullable LocalDate deathday,
-            final @Nullable Map<PhoneType, String> phones, final @Nullable List<String> address, final @Nullable SuffixType suffix, final @Nullable MemberReference ancestor,
-            final @Nullable MemberReference spouse, final @Nullable List<MemberReference> descendants)
+            final @Nullable Map<PhoneType, String> phones, final @Nullable List<String> address, final @Nullable SuffixType suffix)
     {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.birthday = birthday;
+        this.firstName = requireNonNull(firstName);
+        this.lastName = requireNonNull(lastName);
+        this.birthday = requireNonNull(birthday);
         this.email = email;
         this.deathday = deathday;
         this.phones = phones;
         this.address = address;
         this.suffix = suffix;
-        this.ancestor = ancestor;
-        this.spouse = spouse;
-        this.descendants = descendants;
         // Derived
         this.fullName = super.getFullName();
         this.birthdayString = super.getBirthdayString();
-        this.primaryKey = super.getPrimaryKey();
         this.deathdayString = super.getDeathdayString();
         this.phonesDdbMap = super.getPhonesDdbMap();
     }
@@ -109,48 +91,6 @@ class Member extends MemberModel {
     public static @NotNull
     Builder builder () {
         return new Builder();
-    }
-
-    @Override
-    public @NotNull
-    String getFirstName () {
-        return this.firstName;
-    }
-
-    @Override
-    public @NotNull
-    String getLastName () {
-        return this.lastName;
-    }
-
-    @Override
-    public @NotNull
-    LocalDate getBirthday () {
-        return this.birthday;
-    }
-
-    @Override
-    public @Nullable
-    SuffixType getSuffix () {
-        return this.suffix;
-    }
-
-    @Override
-    public @NotNull
-    String getBirthdayString () {
-        return this.birthdayString;
-    }
-
-    @Override
-    public @NotNull
-    String getFullName () {
-        return this.fullName;
-    }
-
-    @Override
-    public @NotNull
-    String getPrimaryKey () {
-        return this.primaryKey;
     }
 
     @Override
@@ -163,26 +103,6 @@ class Member extends MemberModel {
     public @Nullable
     List<String> getAddress () {
         return this.address;
-    }
-
-    @Override
-    public @Nullable
-    MemberReference getAncestor () {
-        return this.ancestor;
-    }
-
-    /* DERIVED */
-
-    @Override
-    public @Nullable
-    MemberReference getSpouse () {
-        return this.spouse;
-    }
-
-    @Override
-    public @Nullable
-    List<MemberReference> getDescendants () {
-        return this.descendants;
     }
 
     @Override
@@ -209,6 +129,42 @@ class Member extends MemberModel {
         return this.phones;
     }
 
+    @Override
+    public @NotNull
+    LocalDate getBirthday () {
+        return this.birthday;
+    }
+
+    @Override
+    public @NotNull
+    String getBirthdayString () {
+        return this.birthdayString;
+    }
+
+    @Override
+    public @NotNull
+    String getFullName () {
+        return this.fullName;
+    }
+
+    @Override
+    public @NotNull
+    String getFirstName () {
+        return this.firstName;
+    }
+
+    @Override
+    public @NotNull
+    String getLastName () {
+        return this.lastName;
+    }
+
+    @Override
+    public @Nullable
+    SuffixType getSuffix () {
+        return this.suffix;
+    }
+
     public static final
     class Builder {
         private final LocalDate builderBegan;
@@ -228,12 +184,6 @@ class Member extends MemberModel {
         private boolean isAddressSet = false;
         private SuffixType suffix = null;
         private boolean isSuffixSet = false;
-        private MemberReference ancestor = null;
-        private boolean isAncestorSet = false;
-        private MemberReference spouse = null;
-        private boolean isSpouseSet = false;
-        private List<MemberReference> descendants = null;
-        private boolean isDescendantsSet = false;
         private boolean isBuilt = false;
 
         public
@@ -247,7 +197,7 @@ class Member extends MemberModel {
             this.checkBuildStatus();
             if (this.isFirstNameSet) {
                 throw new IllegalStateException("First Name already set");
-            } else if (firstName.isBlank()) {
+            } else if (requireNonNull(firstName).isBlank()) {
                 throw new IllegalArgumentException("First Name cannot be blank");
             }
             this.firstName = capitalizeFully(firstName.replaceAll("\\s", ""), '-');
@@ -268,7 +218,7 @@ class Member extends MemberModel {
             this.checkBuildStatus();
             if (this.isLastNameSet) {
                 throw new IllegalStateException("Last Name already set");
-            } else if (lastName.isBlank()) {
+            } else if (requireNonNull(lastName).isBlank()) {
                 throw new IllegalArgumentException("Last Name cannot be blank");
             }
             this.lastName = capitalizeFully(lastName.replaceAll("\\s", ""), '-');
@@ -284,7 +234,7 @@ class Member extends MemberModel {
             this.checkBuildStatus();
             if (this.isBirthdaySet) {
                 throw new IllegalStateException("Birthday already set");
-            } else if (birthday.isAfter(this.builderBegan)) {
+            } else if (requireNonNull(birthday).isAfter(this.builderBegan)) {
                 throw new IllegalArgumentException("Birthday cannot be future");
             }
             this.birthday = birthday;
@@ -376,50 +326,14 @@ class Member extends MemberModel {
             return this;
         }
 
-        @JsonProperty("ancestor")
-        public
-        Builder ancestor (final @Nullable MemberReference ancestor) {
-            this.checkBuildStatus();
-            if (this.isAncestorSet) {
-                throw new IllegalStateException("Ancestor already set");
-            }
-            this.ancestor = ancestor;
-            this.isAncestorSet = true;
-            return this;
-        }
-
-        @JsonProperty("spouse")
-        public
-        Builder spouse (final @Nullable MemberReference spouse) {
-            this.checkBuildStatus();
-            if (this.isSpouseSet) {
-                throw new IllegalStateException("Spouse already set");
-            }
-            this.spouse = spouse;
-            this.isSpouseSet = true;
-            return this;
-        }
-
-        @JsonProperty("descendants")
-        public
-        Builder descendants (final @Nullable List<MemberReference> descendants) {
-            this.checkBuildStatus();
-            if (this.isDescendantsSet) {
-                throw new IllegalStateException("Descendants already set");
-            }
-            this.descendants = descendants;
-            this.isDescendantsSet = true;
-            return this;
-        }
-
         public
         Member build () {
             this.checkBuildStatus();
             this.isBuilt = true;
             if (isNull(this.deathday)) {
-                return new Member(this.firstName, this.lastName, this.birthday, this.email, null, this.phones, this.address, this.suffix, this.ancestor, this.spouse, this.descendants);
+                return new Member(this.firstName, this.lastName, this.birthday, this.email, null, this.phones, this.address, this.suffix);
             } else {
-                return new Member(this.firstName, this.lastName, this.birthday, null, this.deathday, null, null, this.suffix, this.ancestor, this.spouse, this.descendants);
+                return new Member(this.firstName, this.lastName, this.birthday, null, this.deathday, null, null, this.suffix);
             }
         }
     }

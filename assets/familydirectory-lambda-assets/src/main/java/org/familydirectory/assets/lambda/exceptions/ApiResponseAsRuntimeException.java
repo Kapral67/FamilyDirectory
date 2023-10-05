@@ -3,11 +3,11 @@ package org.familydirectory.assets.lambda.exceptions;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 
 public final
-class ResponseThrowable extends Throwable {
+class ApiResponseAsRuntimeException extends RuntimeException {
     private final APIGatewayProxyResponseEvent responseEvent;
 
     public
-    ResponseThrowable (final APIGatewayProxyResponseEvent responseEvent) {
+    ApiResponseAsRuntimeException (final APIGatewayProxyResponseEvent responseEvent) {
         this.responseEvent = responseEvent;
     }
 

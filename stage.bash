@@ -66,7 +66,19 @@ cd "$STAGE_DIR/assets/familydirectory-lambda-assets" || script_error
 clean_maven_local
 
 # Lambda Function Handler Shaded Jars
-cd "$STAGE_DIR/assets/FamilyDirectoryAdminCreateMemberLambda" || script_error
+cd "$STAGE_DIR/assets/FamilyDirectoryCreateMemberLambda" || script_error
+mvn package
+
+#cd "$STAGE_DIR/assets/FamilyDirectoryUpdateMemberLambda" || script_error
+#mvn package
+#
+#cd "$STAGE_DIR/assets/FamilyDirectoryDeleteMemberLambda" || script_error
+#mvn package
+#
+#cd "$STAGE_DIR/assets/FamilyDirectoryGetMemberLambda" || script_error
+#mvn package
+
+cd "$STAGE_DIR/assets/FamilyDirectoryCognitoPreSignUpTrigger" || script_error
 mvn package
 
 # CDK

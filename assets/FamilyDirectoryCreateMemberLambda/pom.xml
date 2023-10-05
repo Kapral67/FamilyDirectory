@@ -16,8 +16,8 @@
         </repository>
     </repositories>
 
-    <groupId>org.familydirectory.assets.lambda</groupId>
-    <artifactId>familydirectory-admincreatememberlambda</artifactId>
+    <groupId>org.familydirectory.assets.lambda.functions</groupId>
+    <artifactId>familydirectory-creatememberlambda</artifactId>
     <version>0.1</version>
 
     <properties>
@@ -60,6 +60,12 @@
     </dependencyManagement>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>4.4.14</version>
+        </dependency>
 
         <dependency>
             <groupId>software.amazon.awscdk</groupId>
