@@ -63,9 +63,9 @@ clean_maven_local
 cd "$STAGE_DIR/assets/FamilyDirectoryCreateMemberLambda" || script_error
 mvn package
 
-#cd "$STAGE_DIR/assets/FamilyDirectoryUpdateMemberLambda" || script_error
-#mvn package
-#
+cd "$STAGE_DIR/assets/FamilyDirectoryUpdateMemberLambda" || script_error
+mvn package
+
 #cd "$STAGE_DIR/assets/FamilyDirectoryDeleteMemberLambda" || script_error
 #mvn package
 #
