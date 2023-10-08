@@ -1,13 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: "gradle"
-    directory: "/assets/familydirectory-ddb-assets"
-    schedule:
-      interval: "daily"
-    target-branch: "main"
-
-  - package-ecosystem: "gradle"
-    directory: "/assets/familydirectory-lambda-assets"
+    directory: "/assets/familydirectory-service-assets"
     schedule:
       interval: "daily"
     target-branch: "main"

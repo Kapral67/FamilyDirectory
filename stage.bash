@@ -53,14 +53,8 @@ CURRENT_DIR="$(pwd)"
 cd "$(dirname -- "$0")" || script_error
 STAGE_DIR="$(pwd)"
 
-# DynamoDB assets
-cd "$STAGE_DIR/assets/familydirectory-ddb-assets" || script_error
-./gradlew build
-./gradlew publish
-clean_maven_local
-
-# Lambda assets
-cd "$STAGE_DIR/assets/familydirectory-lambda-assets" || script_error
+# service assets
+cd "$STAGE_DIR/assets/familydirectory-service-assets" || script_error
 ./gradlew build
 ./gradlew publish
 clean_maven_local

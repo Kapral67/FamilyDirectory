@@ -3,7 +3,7 @@ plugins {
     id 'maven-publish'
 }
 
-group = 'org.familydirectory.assets.ddb'
+group = 'org.familydirectory.assets'
 version = '0.1'
 
 compileJava {
@@ -29,14 +29,16 @@ repositories {
 }
 
 dependencies {
-    implementation 'software.amazon.awscdk:aws-cdk-lib:2.99.1'
-    implementation 'org.apache.commons:commons-text:1.10.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.1'
+    implementation 'org.jetbrains:annotations:24.0.0'
+    implementation 'com.googlecode.libphonenumber:libphonenumber:8.13.22'
     implementation 'commons-codec:commons-codec:1.16.0'
     implementation 'commons-validator:commons-validator:1.7'
-    implementation 'com.googlecode.libphonenumber:libphonenumber:8.13.22'
-    implementation platform('org.immutables:bom:2.9.3')
-    implementation 'org.immutables:value'
-    annotationProcessor 'org.immutables:value:2.9.3'
+    implementation 'org.apache.commons:commons-text:1.10.0'
+    implementation 'org.apache.httpcomponents:httpcore:4.4.16'
+    implementation 'software.amazon.awscdk:aws-cdk-lib:2.99.1'
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
+    implementation 'com.amazonaws:aws-lambda-java-events:3.11.3'
     implementation platform('software.amazon.awssdk:bom:2.20.161')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
 }

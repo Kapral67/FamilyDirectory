@@ -6,12 +6,8 @@
 
     <repositories>
         <repository>
-            <id>familydirectory-ddb-assets</id>
-            <url>file://${project.basedir}/../assets/familydirectory-ddb-assets/.mvn</url>
-        </repository>
-        <repository>
-            <id>familydirectory-lambda-assets</id>
-            <url>file://${project.basedir}/../assets/familydirectory-lambda-assets/.mvn</url>
+            <id>familydirectory-service-assets</id>
+            <url>file://${project.basedir}/../assets/familydirectory-service-assets/.mvn</url>
         </repository>
     </repositories>
 
@@ -72,14 +68,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.familydirectory.assets.ddb</groupId>
-            <artifactId>familydirectory-ddb-assets</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.familydirectory.assets.lambda</groupId>
-            <artifactId>familydirectory-lambda-assets</artifactId>
+            <groupId>org.familydirectory.assets</groupId>
+            <artifactId>familydirectory-service-assets</artifactId>
             <version>${project.version}</version>
         </dependency>
 
