@@ -106,7 +106,7 @@ class CreateHelper extends ApiHelper {
     public @NotNull
     TransactWriteItemsRequest buildCreateTransaction (final @NotNull Caller caller, final @NotNull CreateEvent createEvent) {
         final List<TransactWriteItem> transactionItems = new ArrayList<>();
-        Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), FAMILIES)).orElseThrow();
+        final Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), FAMILIES)).orElseThrow();
         final String inputFamilyId;
         if (caller.memberId()
                   .equals(caller.familyId()) && createEvent.getIsSpouse())
