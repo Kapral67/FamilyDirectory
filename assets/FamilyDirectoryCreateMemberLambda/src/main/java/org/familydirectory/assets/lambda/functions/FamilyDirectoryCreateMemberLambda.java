@@ -34,12 +34,13 @@ class FamilyDirectoryCreateMemberLambda implements RequestHandler<APIGatewayProx
             createHelper.getDynamoDbClient()
                         .transactWriteItems(transaction);
 
-            return new APIGatewayProxyResponseEvent().withStatusCode(SC_CREATED);
         } catch (final ApiHelper.ResponseException e) {
             return e.getResponseEvent();
         } catch (final Exception e) {
             createHelper.logTrace(e, FATAL);
             return new APIGatewayProxyResponseEvent().withStatusCode(SC_INTERNAL_SERVER_ERROR);
         }
+
+        return new APIGatewayProxyResponseEvent().withStatusCode(SC_CREATED);
     }
 }

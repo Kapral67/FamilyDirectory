@@ -33,9 +33,7 @@ class MemberModel {
                       .entrySet()
                       .stream()
                       .collect(toMap(entry -> entry.getKey()
-                                                   .name(), entry -> AttributeValue.builder()
-                                                                                   .s(entry.getValue())
-                                                                                   .build()));
+                                                   .name(), entry -> AttributeValue.fromS(entry.getValue())));
     }
 
     public abstract @Nullable

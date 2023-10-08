@@ -81,9 +81,7 @@ class ApiHelper {
     Map<String, AttributeValue> getDdbItem (final @NotNull String primaryKey, final @NotNull DdbTable ddbTable) {
         final GetItemRequest request = GetItemRequest.builder()
                                                      .tableName(ddbTable.name())
-                                                     .key(singletonMap(PK.getName(), AttributeValue.builder()
-                                                                                                   .s(primaryKey)
-                                                                                                   .build()))
+                                                     .key(singletonMap(PK.getName(), AttributeValue.fromS(primaryKey)))
                                                      .build();
         final GetItemResponse response = this.getDynamoDbClient()
                                              .getItem(request);

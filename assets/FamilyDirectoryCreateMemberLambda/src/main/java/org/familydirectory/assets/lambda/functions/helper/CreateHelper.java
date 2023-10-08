@@ -25,7 +25,6 @@ import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
@@ -57,12 +56,6 @@ class CreateHelper extends ApiHelper {
 
     public @NotNull
     CreateEvent getCreateEvent (final @NotNull Caller caller) {
-        if (isNull(this.requestEvent.getBody()) || this.requestEvent.getBody()
-                                                                    .isBlank())
-        {
-            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
-        }
-
         final CreateEvent createEvent;
         try {
             createEvent = this.objectMapper.convertValue(this.requestEvent.getBody(), CreateEvent.class);
@@ -80,9 +73,12 @@ class CreateHelper extends ApiHelper {
                                                                                                                 .getName()))
                                                   .expressionAttributeValues(singletonMap(":key", AttributeValue.fromS(createEvent.getMember()
                                                                                                                                   .getKey())))
+                                                  .limit(1)
                                                   .build())
                                .hasItems())
         {
+            this.logger.log("<MEMBER,`%s`> Requested Create for Existing Member `%s`".formatted(caller.memberId(), createEvent.getMember()
+                                                                                                                              .getKey()), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT));
         }
 
@@ -157,6 +153,7 @@ class CreateHelper extends ApiHelper {
                                                           .build())
                                                   .build());
         } else {
+            this.logger.log("Naturalized <MEMBER,`%s`> Attempted to Create New Spouse".formatted(caller.memberId()), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_UNAUTHORIZED));
         }
         transactionItems.add(TransactWriteItem.builder()
