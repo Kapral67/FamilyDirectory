@@ -6,6 +6,7 @@ import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.ddb.FamilyDirectoryDynamoDbStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.lambda.FamilyDirectoryLambdaStack;
+import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
@@ -26,12 +27,19 @@ class FamilyDirectoryCdkApp {
                                                                                                                       .stackName(domainStackName)
                                                                                                                       .build());
 
+        final String sesStackName = "FamilyDirectorySesStack";
+        final FamilyDirectorySesStack sesStack = new FamilyDirectorySesStack(app, sesStackName, StackProps.builder()
+                                                                                                          .env(env)
+                                                                                                          .stackName(sesStackName)
+                                                                                                          .build());
+        sesStack.addDependency(domainStack);
+
         final String cognitoStackName = "FamilyDirectoryCognitoStack";
         final FamilyDirectoryCognitoStack cognitoStack = new FamilyDirectoryCognitoStack(app, cognitoStackName, StackProps.builder()
                                                                                                                           .env(env)
                                                                                                                           .stackName(cognitoStackName)
                                                                                                                           .build());
-        cognitoStack.addDependency(domainStack);
+        cognitoStack.addDependency(sesStack);
 
         final String ddbStackName = "FamilyDirectoryDynamoDbStack";
         final FamilyDirectoryDynamoDbStack dynamoDbStack = new FamilyDirectoryDynamoDbStack(app, ddbStackName, StackProps.builder()
@@ -46,7 +54,6 @@ class FamilyDirectoryCdkApp {
                                                                                                                       .build());
         lambdaStack.addDependency(dynamoDbStack);
         lambdaStack.addDependency(cognitoStack);
-        lambdaStack.addDependency(domainStack);
 
         final String apiGatewayStackName = "FamilyDirectoryApiGatewayStack";
         final FamilyDirectoryApiGatewayStack apiGatewayStack = new FamilyDirectoryApiGatewayStack(app, apiGatewayStackName, StackProps.builder()
@@ -54,8 +61,6 @@ class FamilyDirectoryCdkApp {
                                                                                                                                       .stackName(apiGatewayStackName)
                                                                                                                                       .build());
         apiGatewayStack.addDependency(lambdaStack);
-        apiGatewayStack.addDependency(cognitoStack);
-        apiGatewayStack.addDependency(domainStack);
 
         app.synth();
     }
