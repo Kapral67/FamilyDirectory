@@ -23,6 +23,10 @@ class FamilyDirectoryUpdateMemberLambda implements RequestHandler<APIGatewayProx
 //      Get Event
             final UpdateHelper.EventWrapper updateEvent = updateHelper.getUpdateEvent(caller);
 
+//      Update Member
+            updateHelper.getDynamoDbClient()
+                        .putItem(updateHelper.getPutRequest(caller, updateEvent));
+
         } catch (final ApiHelper.ResponseException e) {
             return e.getResponseEvent();
         } catch (final Exception e) {

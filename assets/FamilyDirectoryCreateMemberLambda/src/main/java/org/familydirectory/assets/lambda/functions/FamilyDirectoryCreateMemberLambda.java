@@ -33,7 +33,7 @@ class FamilyDirectoryCreateMemberLambda implements RequestHandler<APIGatewayProx
 //      Execute Transaction
             createHelper.getDynamoDbClient()
                         .transactWriteItems(transaction);
-
+            
         } catch (final ApiHelper.ResponseException e) {
             return e.getResponseEvent();
         } catch (final Exception e) {

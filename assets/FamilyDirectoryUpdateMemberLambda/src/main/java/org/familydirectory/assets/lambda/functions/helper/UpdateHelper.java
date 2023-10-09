@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -18,10 +19,10 @@ import org.familydirectory.assets.lambda.models.UpdateEvent;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
-import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN;
@@ -33,6 +34,8 @@ import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
+import static org.familydirectory.assets.ddb.enums.DdbTable.MEMBERS;
+import static org.familydirectory.assets.ddb.enums.DdbTable.PK;
 import static org.familydirectory.assets.ddb.enums.family.FamilyParams.DESCENDANTS;
 import static org.familydirectory.assets.ddb.utils.DdbUtils.DATE_FORMATTER;
 
@@ -61,7 +64,7 @@ class UpdateHelper extends ApiHelper {
         }
 
         final QueryResponse response = this.dynamoDbClient.query(QueryRequest.builder()
-                                                                             .tableName(DdbTable.MEMBERS.name())
+                                                                             .tableName(MEMBERS.name())
                                                                              .indexName(requireNonNull(MemberParams.KEY.gsiProps()).getIndexName())
                                                                              .keyConditionExpression("%s = :key".formatted(MemberParams.KEY.gsiProps()
                                                                                                                                            .getPartitionKey()
@@ -146,34 +149,79 @@ class UpdateHelper extends ApiHelper {
     }
 
     public @NotNull
-    TransactWriteItemsRequest buildUpdateTransaction (final @NotNull Caller caller, final @NotNull EventWrapper eventWrapper) {
+    PutItemRequest getPutRequest (final @NotNull Caller caller, final @NotNull EventWrapper eventWrapper) {
         final List<TransactWriteItem> transactionItems = new ArrayList<>();
         final Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), DdbTable.FAMILIES)).orElseThrow();
 
         if (caller.memberId()
                   .equals(eventWrapper.ddbMemberId()))
         {
-            // TODO: UPDATE SELF (CALLER)
             this.logger.log("<MEMBER,`%s`> update SELF".formatted(caller.memberId()), INFO);
         } else if (caller.memberId()
                          .equals(eventWrapper.ddbFamilyId()) || caller.familyId()
                                                                       .equals(eventWrapper.ddbMemberId()))
         {
-            // TODO: UPDATE SPOUSE
             this.logger.log("<MEMBER,`%s`> update <SPOUSE,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
         } else if (ofNullable(callerFamily.get(DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
                                                                             .map(AttributeValue::ss)
                                                                             .filter(ss -> ss.contains(eventWrapper.ddbMemberId()))
                                                                             .isPresent())
         {
-            // TODO: UPDATE DESCENDANT
             this.logger.log("<MEMBER,`%s`> update <DESCENDANT,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
         } else {
             this.logger.log("<MEMBER,`%s`> attempted to update <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_UNAUTHORIZED));
         }
-        return TransactWriteItemsRequest.builder()
-                                        .build();
+
+        return PutItemRequest.builder()
+                             .tableName(MEMBERS.name())
+                             .item(this.buildMember(eventWrapper))
+                             .build();
+    }
+
+    private @NotNull
+    Map<String, AttributeValue> buildMember (final @NotNull EventWrapper eventWrapper) {
+        final Map<String, AttributeValue> member = new HashMap<>();
+
+        for (final MemberParams field : MemberParams.values()) {
+            switch (field) {
+                case ID -> member.put(PK.getName(), AttributeValue.fromS(eventWrapper.ddbMemberId()));
+                case KEY -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
+                                                                                               .getMember()
+                                                                                               .getKey()));
+                case FIRST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
+                                                                                                      .getMember()
+                                                                                                      .getFirstName()));
+                case MIDDLE_NAME -> ofNullable(eventWrapper.updateEvent()
+                                                           .getMember()
+                                                           .getMiddleName()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
+                case LAST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
+                                                                                                     .getMember()
+                                                                                                     .getLastName()));
+                case SUFFIX -> ofNullable(eventWrapper.updateEvent()
+                                                      .getMember()
+                                                      .getSuffix()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s.value())));
+                case BIRTHDAY -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
+                                                                                                    .getMember()
+                                                                                                    .getBirthdayString()));
+                case DEATHDAY -> ofNullable(eventWrapper.updateEvent()
+                                                        .getMember()
+                                                        .getDeathdayString()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
+                case EMAIL -> ofNullable(eventWrapper.updateEvent()
+                                                     .getMember()
+                                                     .getEmail()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
+                case PHONES -> ofNullable(eventWrapper.updateEvent()
+                                                      .getMember()
+                                                      .getPhonesDdbMap()).ifPresent(m -> member.put(field.jsonFieldName(), AttributeValue.fromM(m)));
+                case ADDRESS -> ofNullable(eventWrapper.updateEvent()
+                                                       .getMember()
+                                                       .getAddress()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromSs(s)));
+                case FAMILY_ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbFamilyId()));
+                default -> throw new IllegalStateException("Unhandled Member Parameter: `%s`".formatted(field.jsonFieldName()));
+            }
+        }
+
+        return member;
     }
 
     @Override
