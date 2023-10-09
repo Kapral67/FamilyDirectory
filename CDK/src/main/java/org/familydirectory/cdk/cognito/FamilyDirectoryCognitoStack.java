@@ -34,7 +34,6 @@ import software.amazon.awscdk.services.cognito.UserPoolDomainOptions;
 import software.amazon.awscdk.services.cognito.UserPoolEmail;
 import software.amazon.awscdk.services.cognito.UserPoolProps;
 import software.amazon.awscdk.services.cognito.UserPoolSESOptions;
-import software.amazon.awscdk.services.cognito.UserPoolTriggers;
 import software.amazon.awscdk.services.cognito.UserVerificationConfig;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
@@ -100,10 +99,11 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                         .phone(FALSE)
                                                                                         .build())
                                                          // TODO: CREATE PRE-SIGNUP LAMBDA (TURN ON SELF-SIGN-UP)
+                                                         /*
                                                          .lambdaTriggers(UserPoolTriggers.builder()
                                                                                          .preSignUp(null)
                                                                                          .build())
-                                                         .mfa(Mfa.OFF)
+                                                          */.mfa(Mfa.OFF)
                                                          .passwordPolicy(PasswordPolicy.builder()
                                                                                        .minLength(MIN_PASSWORD_LENGTH)
                                                                                        .requireLowercase(TRUE)

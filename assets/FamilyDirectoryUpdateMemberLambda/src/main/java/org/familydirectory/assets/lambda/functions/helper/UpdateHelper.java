@@ -6,6 +6,8 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.member.MemberParams;
 import org.familydirectory.assets.lambda.models.UpdateEvent;
@@ -19,9 +21,11 @@ import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN;
 import static java.util.Collections.singletonMap;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
+import static org.apache.http.HttpStatus.SC_CONFLICT;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
@@ -48,7 +52,7 @@ class UpdateHelper extends ApiHelper {
         try {
             updateEvent = this.objectMapper.convertValue(this.requestEvent.getBody(), UpdateEvent.class);
         } catch (final IllegalArgumentException e) {
-            this.logger.log("<MEMBER,`%s`> submitted invalid UpdateMember request".formatted(caller.memberId()), WARN);
+            this.logger.log("<MEMBER,`%s`> submitted invalid Update request".formatted(caller.memberId()), WARN);
             this.logTrace(e, WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
         }
@@ -65,23 +69,54 @@ class UpdateHelper extends ApiHelper {
                                                                              .build());
 
         if (!response.hasItems()) {
-            this.logger.log("<MEMBER,`%s`> Requested Update to Non-Existent Member `%s`".formatted(caller.memberId(), updateEvent.getMember()
-                                                                                                                                 .getKey()), WARN);
+            this.logger.log("<MEMBER,`%s`> Requested Update to Non-Existent Member <KEY,`%s`>".formatted(caller.memberId(), updateEvent.getMember()
+                                                                                                                                       .getKey()), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_NOT_FOUND));
         } else if (response.items()
                            .size() > 1)
         {
-            this.logger.log("<MEMBER,`%s`> Multiple Members with Key `%s` found in DDB".formatted(caller.memberId(), updateEvent.getMember()
-                                                                                                                                .getKey()), ERROR);
+            this.logger.log("<MEMBER,`%s`> Requested Update to Ambiguous <KEY,`%s`> Referencing Multiple Members".formatted(caller.memberId(), updateEvent.getMember()
+                                                                                                                                                          .getKey()), ERROR);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_INTERNAL_SERVER_ERROR));
         }
 
         final Map<String, AttributeValue> ddbMemberMap = response.items()
                                                                  .get(0);
+        final String ddbMemberId = ddbMemberMap.get(MemberParams.ID.jsonFieldName())
+                                               .s();
+        final String ddbFamilyId = ddbMemberMap.get(MemberParams.FAMILY_ID.jsonFieldName())
+                                               .s();
+        final String ddbMemberEmail = ofNullable(ddbMemberMap.get(MemberParams.EMAIL.jsonFieldName())).map(AttributeValue::s)
+                                                                                                      .filter(Predicate.not(String::isBlank))
+                                                                                                      .orElse(null);
+        final String updateMemberEmail = ofNullable(updateEvent.getMember()
+                                                               .getEmail()).filter(Predicate.not(String::isBlank))
+                                                                           .orElse(null);
 
-        return new EventWrapper(updateEvent, ddbMemberMap.get(MemberParams.ID.jsonFieldName())
-                                                         .s(), ddbMemberMap.get(MemberParams.FAMILY_ID.jsonFieldName())
-                                                                           .s());
+        if (nonNull(updateMemberEmail) && !Objects.equals(ddbMemberEmail, updateMemberEmail)) {
+            final QueryRequest emailRequest = QueryRequest.builder()
+                                                          .tableName(DdbTable.MEMBERS.name())
+                                                          .indexName(requireNonNull(MemberParams.EMAIL.gsiProps()).getIndexName())
+                                                          .keyConditionExpression("%s = :email".formatted(MemberParams.EMAIL.gsiProps()
+                                                                                                                            .getPartitionKey()
+                                                                                                                            .getName()))
+                                                          .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(updateMemberEmail)))
+                                                          .limit(1)
+                                                          .build();
+            final QueryResponse emailResponse = this.dynamoDbClient.query(emailRequest);
+            if (emailResponse.hasItems()) {
+                final String emailResponseMemberId = emailResponse.items()
+                                                                  .get(0)
+                                                                  .get(MemberParams.ID.jsonFieldName())
+                                                                  .s();
+                this.logger.log("<MEMBER,`%s`> Requested Update For <MEMBER,`%s`>, but <MEMBER,`%s`> Already Claims <EMAIL,`%s`>".formatted(caller.memberId(), ddbMemberId, emailResponseMemberId,
+                                                                                                                                            updateMemberEmail), WARN);
+                throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
+                                                                              .withBody("EMAIL Already Registered With Another Member"));
+            }
+        }
+
+        return new EventWrapper(updateEvent, ddbMemberId, ddbFamilyId);
     }
 
     public @NotNull

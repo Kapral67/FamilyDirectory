@@ -14,7 +14,6 @@ import software.amazon.awscdk.services.apigatewayv2.alpha.DomainNameProps;
 import software.amazon.awscdk.services.apigatewayv2.alpha.EndpointType;
 import software.amazon.awscdk.services.apigatewayv2.alpha.HttpApi;
 import software.amazon.awscdk.services.apigatewayv2.alpha.HttpApiProps;
-import software.amazon.awscdk.services.apigatewayv2.alpha.IHttpRouteAuthorizer;
 import software.amazon.awscdk.services.apigatewayv2.alpha.SecurityPolicy;
 import software.amazon.awscdk.services.apigatewayv2.authorizers.alpha.HttpUserPoolAuthorizer;
 import software.amazon.awscdk.services.apigatewayv2.authorizers.alpha.HttpUserPoolAuthorizerProps;
@@ -117,32 +116,27 @@ class FamilyDirectoryApiGatewayStack extends Stack {
         final HttpApi httpApi = new HttpApi(this, HTTP_API_RESOURCE_ID, httpApiProps);
 
         // Get Lambda Function by arn
-        final String adminCreateMemberLambdaFunctionArn = importValue(CREATE_MEMBER.arnExportName());
-        final IFunction adminCreateMemberLambda = Function.fromFunctionArn(this, CREATE_MEMBER.functionName(), adminCreateMemberLambdaFunctionArn);
+        final IFunction adminCreateMemberLambda = Function.fromFunctionArn(this, CREATE_MEMBER.functionName(), importValue(CREATE_MEMBER.arnExportName()));
 
         // Add Lambda as HttpIntegration to HttpApi
-        final HttpLambdaIntegrationProps adminCreateMemberLambdaHttpIntegrationProps = HttpLambdaIntegrationProps.builder()
-                                                                                                                 .payloadFormatVersion(VERSION_2_0)
-                                                                                                                 .build();
-        final HttpLambdaIntegration adminCreateMemberLambdaHttpIntegration = new HttpLambdaIntegration(CREATE_MEMBER.httpIntegrationId(), adminCreateMemberLambda,
-                                                                                                       adminCreateMemberLambdaHttpIntegrationProps);
-        /** TODO: Research potential for {@link AddRoutesOptions.Builder#authorizationScopes(List)} &
-         *  {@link AddRoutesOptions.Builder#authorizer(IHttpRouteAuthorizer)} */
+        final HttpLambdaIntegrationProps createMemberLambdaHttpIntegrationProps = HttpLambdaIntegrationProps.builder()
+                                                                                                            .payloadFormatVersion(VERSION_2_0)
+                                                                                                            .build();
+        final HttpLambdaIntegration createMemberLambdaHttpIntegration = new HttpLambdaIntegration(CREATE_MEMBER.httpIntegrationId(), adminCreateMemberLambda, createMemberLambdaHttpIntegrationProps);
         final IUserPoolClient userPoolClient = UserPoolClient.fromUserPoolClientId(this, COGNITO_USER_POOL_CLIENT_RESOURCE_ID, importValue(COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME));
         final HttpUserPoolAuthorizerProps userPoolAuthorizerProps = HttpUserPoolAuthorizerProps.builder()
                                                                                                .userPoolClients(singletonList(userPoolClient))
                                                                                                .build();
         final IUserPool userPool = UserPool.fromUserPoolId(this, COGNITO_USER_POOL_RESOURCE_ID, importValue(COGNITO_USER_POOL_ID_EXPORT_NAME));
         final HttpUserPoolAuthorizer userPoolAuthorizer = new HttpUserPoolAuthorizer(API_COGNITO_AUTHORIZER_RESOURCE_ID, userPool, userPoolAuthorizerProps);
-        /** TODO: Figure out how to get the email address of the user who called the api from the adminCreateMember Lambda function */
-        final AddRoutesOptions adminCreateMemberLambdaApiRouteOptions = AddRoutesOptions.builder()
-//                                                                                      .authorizationScopes(List.of(""))
-                                                                                        .authorizer(userPoolAuthorizer)
-                                                                                        .path(CREATE_MEMBER.endpoint())
-                                                                                        .methods(singletonList(POST))
-                                                                                        .integration(adminCreateMemberLambdaHttpIntegration)
-                                                                                        .build();
-        httpApi.addRoutes(adminCreateMemberLambdaApiRouteOptions);
+        final AddRoutesOptions createMemberLambdaApiRouteOptions = AddRoutesOptions.builder()
+//      TODO:                                                                      .authorizationScopes(List.of(""))
+                                                                                   .authorizer(userPoolAuthorizer)
+                                                                                   .path(CREATE_MEMBER.endpoint())
+                                                                                   .methods(singletonList(POST))
+                                                                                   .integration(createMemberLambdaHttpIntegration)
+                                                                                   .build();
+        httpApi.addRoutes(createMemberLambdaApiRouteOptions);
         /** TODO: might need a {@link software.amazon.awscdk.CfnOutput} here */
     }
 }

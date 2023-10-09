@@ -14,10 +14,12 @@ import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.member.MemberParams;
 import org.familydirectory.assets.lambda.models.CreateEvent;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import software.amazon.awssdk.services.dynamodb.model.Update;
@@ -25,6 +27,7 @@ import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
@@ -60,29 +63,58 @@ class CreateHelper extends ApiHelper {
         try {
             createEvent = this.objectMapper.convertValue(this.requestEvent.getBody(), CreateEvent.class);
         } catch (final IllegalArgumentException e) {
-            this.logger.log("<MEMBER,`%s`> submitted invalid CreateMember request".formatted(caller.memberId()), WARN);
+            this.logger.log("<MEMBER,`%s`> submitted invalid Create request".formatted(caller.memberId()), WARN);
             this.logTrace(e, WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
         }
 
-        if (this.dynamoDbClient.query(QueryRequest.builder()
-                                                  .tableName(DdbTable.MEMBERS.name())
-                                                  .indexName(requireNonNull(MemberParams.KEY.gsiProps()).getIndexName())
-                                                  .keyConditionExpression("%s = :key".formatted(MemberParams.KEY.gsiProps()
-                                                                                                                .getPartitionKey()
-                                                                                                                .getName()))
-                                                  .expressionAttributeValues(singletonMap(":key", AttributeValue.fromS(createEvent.getMember()
-                                                                                                                                  .getKey())))
-                                                  .limit(1)
-                                                  .build())
-                               .hasItems())
-        {
-            this.logger.log("<MEMBER,`%s`> Requested Create for Existing Member `%s`".formatted(caller.memberId(), createEvent.getMember()
-                                                                                                                              .getKey()), WARN);
-            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT));
-        }
+        this.validateMemberIsUnique(createEvent.getMember()
+                                               .getKey(), caller.memberId(), createEvent.getMember()
+                                                                                        .getEmail());
 
         return createEvent;
+    }
+
+    private
+    void validateMemberIsUnique (final @NotNull String memberKey, final @NotNull String callerMemberId, final @Nullable String memberEmail) {
+        final QueryRequest keyRequest = QueryRequest.builder()
+                                                    .tableName(DdbTable.MEMBERS.name())
+                                                    .indexName(requireNonNull(MemberParams.KEY.gsiProps()).getIndexName())
+                                                    .keyConditionExpression("%s = :key".formatted(MemberParams.KEY.gsiProps()
+                                                                                                                  .getPartitionKey()
+                                                                                                                  .getName()))
+                                                    .expressionAttributeValues(singletonMap(":key", AttributeValue.fromS(memberKey)))
+                                                    .limit(1)
+                                                    .build();
+        final QueryResponse keyResponse = this.dynamoDbClient.query(keyRequest);
+        if (keyResponse.hasItems()) {
+            final String keyMemberId = keyResponse.items()
+                                                  .get(0)
+                                                  .get(MemberParams.ID.jsonFieldName())
+                                                  .s();
+            this.logger.log("<MEMBER,`%s`> Requested Create for Existing <MEMBER,`%s`> Using <KEY,`%s`>".formatted(callerMemberId, keyMemberId, memberKey), WARN);
+            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT));
+        } else if (nonNull(memberEmail) && !memberEmail.isBlank()) {
+            final QueryRequest emailRequest = QueryRequest.builder()
+                                                          .tableName(DdbTable.MEMBERS.name())
+                                                          .indexName(requireNonNull(MemberParams.EMAIL.gsiProps()).getIndexName())
+                                                          .keyConditionExpression("%s = :email".formatted(MemberParams.EMAIL.gsiProps()
+                                                                                                                            .getPartitionKey()
+                                                                                                                            .getName()))
+                                                          .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(memberEmail)))
+                                                          .limit(1)
+                                                          .build();
+            final QueryResponse emailResponse = this.dynamoDbClient.query(emailRequest);
+            if (emailResponse.hasItems()) {
+                final String emailResponseMemberId = emailResponse.items()
+                                                                  .get(0)
+                                                                  .get(MemberParams.ID.jsonFieldName())
+                                                                  .s();
+                this.logger.log("<MEMBER,`%s`> Requested Create, but Existing <MEMBER,`%s`> Already Claims <EMAIL,`%s`>".formatted(callerMemberId, emailResponseMemberId, memberEmail), WARN);
+                throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
+                                                                              .withBody("Email Already Registered With Another Member"));
+            }
+        }
     }
 
     @Override
