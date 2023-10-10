@@ -1,4 +1,4 @@
-package org.familydirectory.assets.lambda.functions.helper;
+package org.familydirectory.assets.lambda.function.api.helper;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
@@ -9,8 +9,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
-import org.familydirectory.assets.ddb.enums.member.MemberParams;
-import org.familydirectory.assets.lambda.models.UpdateEvent;
+import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
+import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.lambda.function.api.models.UpdateEvent;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -29,9 +30,6 @@ import static org.apache.http.HttpStatus.SC_CONFLICT;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
-import static org.familydirectory.assets.ddb.enums.DdbTable.MEMBERS;
-import static org.familydirectory.assets.ddb.enums.DdbTable.PK;
-import static org.familydirectory.assets.ddb.enums.family.FamilyParams.DESCENDANTS;
 
 public final
 class UpdateHelper extends ApiHelper {
@@ -58,11 +56,11 @@ class UpdateHelper extends ApiHelper {
         }
 
         final QueryResponse response = this.dynamoDbClient.query(QueryRequest.builder()
-                                                                             .tableName(MEMBERS.name())
-                                                                             .indexName(requireNonNull(MemberParams.KEY.gsiProps()).getIndexName())
-                                                                             .keyConditionExpression("%s = :key".formatted(MemberParams.KEY.gsiProps()
-                                                                                                                                           .getPartitionKey()
-                                                                                                                                           .getName()))
+                                                                             .tableName(DdbTable.MEMBER.name())
+                                                                             .indexName(requireNonNull(MemberTableParameter.KEY.gsiProps()).getIndexName())
+                                                                             .keyConditionExpression("%s = :key".formatted(MemberTableParameter.KEY.gsiProps()
+                                                                                                                                                   .getPartitionKey()
+                                                                                                                                                   .getName()))
                                                                              .expressionAttributeValues(singletonMap(":key", AttributeValue.fromS(updateEvent.getMember()
                                                                                                                                                              .getKey())))
                                                                              .limit(2)
@@ -82,24 +80,24 @@ class UpdateHelper extends ApiHelper {
 
         final Map<String, AttributeValue> ddbMemberMap = response.items()
                                                                  .get(0);
-        final String ddbMemberId = ddbMemberMap.get(MemberParams.ID.jsonFieldName())
+        final String ddbMemberId = ddbMemberMap.get(MemberTableParameter.ID.jsonFieldName())
                                                .s();
-        final String ddbFamilyId = ddbMemberMap.get(MemberParams.FAMILY_ID.jsonFieldName())
+        final String ddbFamilyId = ddbMemberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
                                                .s();
-        final String ddbMemberEmail = ofNullable(ddbMemberMap.get(MemberParams.EMAIL.jsonFieldName())).map(AttributeValue::s)
-                                                                                                      .filter(Predicate.not(String::isBlank))
-                                                                                                      .orElse(null);
+        final String ddbMemberEmail = ofNullable(ddbMemberMap.get(MemberTableParameter.EMAIL.jsonFieldName())).map(AttributeValue::s)
+                                                                                                              .filter(Predicate.not(String::isBlank))
+                                                                                                              .orElse(null);
         final String updateMemberEmail = ofNullable(updateEvent.getMember()
                                                                .getEmail()).filter(Predicate.not(String::isBlank))
                                                                            .orElse(null);
 
         if (nonNull(updateMemberEmail) && !Objects.equals(ddbMemberEmail, updateMemberEmail)) {
             final QueryRequest emailRequest = QueryRequest.builder()
-                                                          .tableName(DdbTable.MEMBERS.name())
-                                                          .indexName(requireNonNull(MemberParams.EMAIL.gsiProps()).getIndexName())
-                                                          .keyConditionExpression("%s = :email".formatted(MemberParams.EMAIL.gsiProps()
-                                                                                                                            .getPartitionKey()
-                                                                                                                            .getName()))
+                                                          .tableName(DdbTable.MEMBER.name())
+                                                          .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())
+                                                          .keyConditionExpression("%s = :email".formatted(MemberTableParameter.EMAIL.gsiProps()
+                                                                                                                                    .getPartitionKey()
+                                                                                                                                    .getName()))
                                                           .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(updateMemberEmail)))
                                                           .limit(1)
                                                           .build();
@@ -107,7 +105,7 @@ class UpdateHelper extends ApiHelper {
             if (emailResponse.hasItems()) {
                 final String emailResponseMemberId = emailResponse.items()
                                                                   .get(0)
-                                                                  .get(MemberParams.ID.jsonFieldName())
+                                                                  .get(MemberTableParameter.ID.jsonFieldName())
                                                                   .s();
                 this.logger.log("<MEMBER,`%s`> Requested Update For <MEMBER,`%s`>, but <MEMBER,`%s`> Already Claims <EMAIL,`%s`>".formatted(caller.memberId(), ddbMemberId, emailResponseMemberId,
                                                                                                                                             updateMemberEmail), WARN);
@@ -121,7 +119,7 @@ class UpdateHelper extends ApiHelper {
 
     public @NotNull
     PutItemRequest getPutRequest (final @NotNull Caller caller, final @NotNull EventWrapper eventWrapper) {
-        final Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), DdbTable.FAMILIES)).orElseThrow();
+        final Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), DdbTable.FAMILY)).orElseThrow();
 
         if (caller.memberId()
                   .equals(eventWrapper.ddbMemberId()))
@@ -132,10 +130,10 @@ class UpdateHelper extends ApiHelper {
                                                                       .equals(eventWrapper.ddbMemberId()))
         {
             this.logger.log("<MEMBER,`%s`> update <SPOUSE,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
-        } else if (ofNullable(callerFamily.get(DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
-                                                                            .map(AttributeValue::ss)
-                                                                            .filter(ss -> ss.contains(eventWrapper.ddbMemberId()))
-                                                                            .isPresent())
+        } else if (ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
+                                                                                                 .map(AttributeValue::ss)
+                                                                                                 .filter(ss -> ss.contains(eventWrapper.ddbMemberId()))
+                                                                                                 .isPresent())
         {
             this.logger.log("<MEMBER,`%s`> update <DESCENDANT,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
         } else {
@@ -144,7 +142,7 @@ class UpdateHelper extends ApiHelper {
         }
 
         return PutItemRequest.builder()
-                             .tableName(MEMBERS.name())
+                             .tableName(DdbTable.MEMBER.name())
                              .item(this.buildMember(eventWrapper))
                              .build();
     }
@@ -153,9 +151,9 @@ class UpdateHelper extends ApiHelper {
     Map<String, AttributeValue> buildMember (final @NotNull EventWrapper eventWrapper) {
         final Map<String, AttributeValue> member = new HashMap<>();
 
-        for (final MemberParams field : MemberParams.values()) {
+        for (final MemberTableParameter field : MemberTableParameter.values()) {
             switch (field) {
-                case ID -> member.put(PK.getName(), AttributeValue.fromS(eventWrapper.ddbMemberId()));
+                case ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbMemberId()));
                 case KEY -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
                                                                                                .getMember()
                                                                                                .getKey()));

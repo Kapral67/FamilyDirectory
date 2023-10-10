@@ -1,6 +1,7 @@
 package org.familydirectory.cdk.cognito;
 
-import java.util.List;
+import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
+import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Duration;
@@ -47,9 +48,6 @@ import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
-import static org.familydirectory.cdk.domain.FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME;
-import static org.familydirectory.cdk.domain.FamilyDirectoryDomainStack.HOSTED_ZONE_NAME;
-import static org.familydirectory.cdk.domain.FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID;
 import static software.amazon.awscdk.Duration.days;
 import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider.COGNITO;
@@ -59,7 +57,7 @@ public
 class FamilyDirectoryCognitoStack extends Stack {
 
     public static final String COGNITO_CERTIFICATE_RESOURCE_ID = "CognitoCertificate";
-    public static final String COGNITO_CERTIFICATE_NAME = format("%s-%s", HOSTED_ZONE_NAME, COGNITO_CERTIFICATE_RESOURCE_ID);
+    public static final String COGNITO_CERTIFICATE_NAME = format("%s-%s", FamilyDirectoryDomainStack.HOSTED_ZONE_NAME, COGNITO_CERTIFICATE_RESOURCE_ID);
     public static final String COGNITO_CERTIFICATE_ARN_EXPORT_NAME = format("%sArn", COGNITO_CERTIFICATE_RESOURCE_ID);
     public static final String COGNITO_DOMAIN_NAME_RESOURCE_ID = "CognitoDomainName";
     public static final String COGNITO_A_RECORD_RESOURCE_ID = "CognitoARecord";
@@ -67,7 +65,8 @@ class FamilyDirectoryCognitoStack extends Stack {
     public static final String COGNITO_USER_POOL_RESOURCE_ID = "UserPool";
     public static final String COGNITO_USER_POOL_ID_EXPORT_NAME = format("%sId", COGNITO_USER_POOL_RESOURCE_ID);
     public static final String COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME = format("%sId", COGNITO_USER_POOL_CLIENT_RESOURCE_ID);
-    public static final String COGNITO_DOMAIN_NAME = format("%s.%s", getenv("ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME"), HOSTED_ZONE_NAME);
+    public static final String COGNITO_DOMAIN_NAME = format("%s.%s", getenv("ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME"), FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
+    public static final String COGNITO_REPLY_TO_EMAIL_ADDRESS = getenv("ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS");
     public static final String COGNITO_SIGNIN_URL_EXPORT_NAME = "CognitoSignInUrl";
     private static final StandardAttribute MUTABLE_REQUIRED_ATTRIBUTE = StandardAttribute.builder()
                                                                                          .required(TRUE)
@@ -80,7 +79,7 @@ class FamilyDirectoryCognitoStack extends Stack {
     FamilyDirectoryCognitoStack (final Construct scope, final String id, final StackProps stackProps) {
         super(scope, id, stackProps);
 
-        final IHostedZone hostedZone = HostedZone.fromHostedZoneId(this, HOSTED_ZONE_RESOURCE_ID, importValue(HOSTED_ZONE_ID_EXPORT_NAME));
+        final IHostedZone hostedZone = HostedZone.fromHostedZoneId(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, importValue(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME));
 
         final UserPoolProps userPoolProps = UserPoolProps.builder()
                                                          .accountRecovery(AccountRecovery.EMAIL_ONLY)
@@ -91,7 +90,10 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                       .build())
                                                          .deletionProtection(TRUE)
                                                          .email(UserPoolEmail.withSES(UserPoolSESOptions.builder()
-                                                                                                        // FIXME: Setup SES
+                                                                                                        .configurationSetName(FamilyDirectorySesStack.CONFIGURATION_SET_NAME)
+                                                                                                        .fromEmail("noreply@%s".formatted(hostedZone.getZoneName()))
+                                                                                                        .replyTo(COGNITO_REPLY_TO_EMAIL_ADDRESS)
+                                                                                                        .sesVerifiedDomain(hostedZone.getZoneName())
                                                                                                         .build()))
                                                          .enableSmsRole(FALSE)
                                                          .keepOriginal(KeepOriginalAttrs.builder()
@@ -137,9 +139,9 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                             .build());
         final OAuthSettings userPoolClientOAuthSettings = OAuthSettings.builder()
                                                                        // TODO: ADD CALLBACK URLS
-                                                                       .callbackUrls(List.of(""))
+                                                                       .callbackUrls(singletonList(""))
                                                                        // TODO: ADD LOGOUT URLS
-                                                                       .logoutUrls(List.of(""))
+                                                                       .logoutUrls(singletonList(""))
                                                                        .flows(OAuthFlows.builder()
                                                                                         .authorizationCodeGrant(TRUE)
                                                                                         .build())
@@ -164,7 +166,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                    .value(userPoolClient.getUserPoolClientId())
                                                                                    .exportName(COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME)
                                                                                    .build());
-        // Cognito Certificate
+//  Cognito Certificate
         final CertificateProps cognitoCertificateProps = CertificateProps.builder()
                                                                          .certificateName(COGNITO_CERTIFICATE_NAME)
                                                                          .domainName(COGNITO_DOMAIN_NAME)
@@ -184,7 +186,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                  .build();
         final UserPoolDomain userPoolDomain = userPool.addDomain(COGNITO_DOMAIN_NAME_RESOURCE_ID, userPoolDomainOptions);
         final UserPoolDomainTarget userPoolDomainTarget = new UserPoolDomainTarget(userPoolDomain);
-        // Cognito Domain
+//  Cognito Domain
         final ARecordProps cognitoARecordProps = ARecordProps.builder()
                                                              .zone(hostedZone)
                                                              .recordName(COGNITO_DOMAIN_NAME)
@@ -193,7 +195,7 @@ class FamilyDirectoryCognitoStack extends Stack {
         new ARecord(this, COGNITO_A_RECORD_RESOURCE_ID, cognitoARecordProps);
         final String userPoolSignInUrl = userPoolDomain.signInUrl(userPoolClient, SignInUrlOptions.builder()
                                                                                                   // TODO: CHANGE TO VIEW URL WHEN FRONTEND EXISTS
-                                                                                                  .redirectUri(HOSTED_ZONE_NAME)
+                                                                                                  .redirectUri(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
                                                                                                   .build());
         new CfnOutput(this, COGNITO_SIGNIN_URL_EXPORT_NAME, CfnOutputProps.builder()
                                                                           .value(userPoolSignInUrl)

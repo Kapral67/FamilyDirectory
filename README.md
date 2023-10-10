@@ -25,6 +25,11 @@
         - Should be the subdomain of `ORG_FAMILY_DIRECTORY_HOSTED_ZONE_NAME` where authentication is handled (
           e.g. `auth`)
 
+    4. `ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS`
+
+        - Should be an externally-managed email address that captures responses to cognito *noreply* emails (
+          e.g. `familydirectory@gmail.com`)
+
 3. Now is a good time to bootstrap you're aws account for cdk if you haven't already
 
     - This only needs to be done once before the first deployment

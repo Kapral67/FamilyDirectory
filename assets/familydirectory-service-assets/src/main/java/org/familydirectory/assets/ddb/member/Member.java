@@ -10,6 +10,7 @@ import java.util.Map;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
 import org.familydirectory.assets.ddb.models.member.MemberModel;
+import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.ddb.utils.LocalDateDeserializer;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -21,9 +22,6 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.text.WordUtils.capitalizeFully;
-import static org.familydirectory.assets.ddb.utils.DdbUtils.DATE_FORMAT_STRING;
-import static org.familydirectory.assets.ddb.utils.DdbUtils.EMAIL_VALIDATOR;
-import static org.familydirectory.assets.ddb.utils.DdbUtils.normalizePhoneNumber;
 
 @JsonDeserialize(builder = Member.Builder.class)
 public final
@@ -38,7 +36,7 @@ class Member extends MemberModel {
     private final @NotNull String lastName;
 
     @JsonProperty("birthday")
-    @JsonFormat(shape = STRING, pattern = DATE_FORMAT_STRING)
+    @JsonFormat(shape = STRING, pattern = DdbUtils.DATE_FORMAT_STRING)
     @JsonDeserialize(using = LocalDateDeserializer.class)
     private final @NotNull LocalDate birthday;
 
@@ -46,7 +44,7 @@ class Member extends MemberModel {
     private final @Nullable String email;
 
     @JsonProperty("deathday")
-    @JsonFormat(shape = STRING, pattern = DATE_FORMAT_STRING)
+    @JsonFormat(shape = STRING, pattern = DdbUtils.DATE_FORMAT_STRING)
     @JsonDeserialize(using = LocalDateDeserializer.class)
     private final @Nullable LocalDate deathday;
 
@@ -254,7 +252,7 @@ class Member extends MemberModel {
         }
 
         @JsonProperty("birthday")
-        @JsonFormat(shape = STRING, pattern = DATE_FORMAT_STRING)
+        @JsonFormat(shape = STRING, pattern = DdbUtils.DATE_FORMAT_STRING)
         @JsonDeserialize(using = LocalDateDeserializer.class)
         public
         Builder birthday (final @NotNull LocalDate birthday) {
@@ -281,7 +279,7 @@ class Member extends MemberModel {
             }
             final String e_mail = email.replaceAll("\\s", "")
                                        .toLowerCase();
-            if (!EMAIL_VALIDATOR.isValid(e_mail)) {
+            if (!DdbUtils.EMAIL_VALIDATOR.isValid(e_mail)) {
                 throw new IllegalArgumentException("Email Invalid");
             }
             this.email = e_mail;
@@ -290,7 +288,7 @@ class Member extends MemberModel {
         }
 
         @JsonProperty("deathday")
-        @JsonFormat(shape = STRING, pattern = DATE_FORMAT_STRING)
+        @JsonFormat(shape = STRING, pattern = DdbUtils.DATE_FORMAT_STRING)
         @JsonDeserialize(using = LocalDateDeserializer.class)
         public
         Builder deathday (final @Nullable LocalDate deathday) {
@@ -324,7 +322,7 @@ class Member extends MemberModel {
             }
             this.phones = phones.entrySet()
                                 .stream()
-                                .collect(toMap(Map.Entry::getKey, entry -> normalizePhoneNumber(entry.getValue())));
+                                .collect(toMap(Map.Entry::getKey, entry -> DdbUtils.normalizePhoneNumber(entry.getValue())));
             this.isPhonesSet = true;
             return this;
         }

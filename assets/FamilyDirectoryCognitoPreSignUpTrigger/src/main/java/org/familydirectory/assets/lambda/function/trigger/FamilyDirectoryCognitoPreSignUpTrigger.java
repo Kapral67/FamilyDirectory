@@ -1,8 +1,10 @@
-package org.familydirectory.assets.cognito.triggers;
+package org.familydirectory.assets.lambda.function.trigger;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.CognitoUserPoolPreSignUpEvent;
+import java.util.function.Predicate;
+import static java.util.Optional.ofNullable;
 
 public
 class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUserPoolPreSignUpEvent, CognitoUserPoolPreSignUpEvent> {
@@ -11,9 +13,10 @@ class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUs
     public
     CognitoUserPoolPreSignUpEvent handleRequest (CognitoUserPoolPreSignUpEvent event, Context context)
     {
-        final String email = event.getRequest()
-                                  .getUserAttributes()
-                                  .get("email");
+        final String email = ofNullable(event.getRequest()
+                                             .getUserAttributes()
+                                             .get("email")).filter(Predicate.not(String::isBlank))
+                                                           .orElseThrow();
 
         return CognitoUserPoolPreSignUpEvent.builder()
                                             .withVersion(event.getVersion())

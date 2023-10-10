@@ -1,4 +1,4 @@
-package org.familydirectory.assets.lambda.functions.helper;
+package org.familydirectory.assets.lambda.function.api.helper;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
+import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -19,16 +21,10 @@ import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.TRACE;
-import static java.lang.String.format;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
-import static org.familydirectory.assets.ddb.enums.DdbTable.COGNITO;
-import static org.familydirectory.assets.ddb.enums.DdbTable.MEMBERS;
-import static org.familydirectory.assets.ddb.enums.DdbTable.PK;
-import static org.familydirectory.assets.ddb.enums.cognito.CognitoParams.MEMBER;
-import static org.familydirectory.assets.ddb.enums.member.MemberParams.FAMILY_ID;
 
 public abstract
 class ApiHelper {
@@ -49,17 +45,17 @@ class ApiHelper {
                                              .orElseThrow(NullPointerException::new);
 
             this.getLogger()
-                .log(format("<COGNITO_SUB,`%s`> Invoked CreateMember Lambda", callerSub), INFO);
+                .log("<COGNITO_SUB,`%s`> Invoked CreateMember Lambda".formatted(callerSub), INFO);
 
-            final Map<String, AttributeValue> callerCognito = ofNullable(this.getDdbItem(callerSub, COGNITO)).orElseThrow(NullPointerException::new);
+            final Map<String, AttributeValue> callerCognito = ofNullable(this.getDdbItem(callerSub, DdbTable.COGNITO)).orElseThrow(NullPointerException::new);
 
-            callerMemberId = ofNullable(callerCognito.get(MEMBER.jsonFieldName())).map(AttributeValue::s)
-                                                                                  .filter(Predicate.not(String::isBlank))
-                                                                                  .orElseThrow(NullPointerException::new);
-            caller = ofNullable(this.getDdbItem(callerMemberId, MEMBERS)).orElseThrow(NullPointerException::new);
-            callerFamilyId = ofNullable(caller.get(FAMILY_ID.jsonFieldName())).map(AttributeValue::s)
-                                                                              .filter(Predicate.not(String::isBlank))
-                                                                              .orElseThrow(NullPointerException::new);
+            callerMemberId = ofNullable(callerCognito.get(CognitoTableParameter.MEMBER.jsonFieldName())).map(AttributeValue::s)
+                                                                                                        .filter(Predicate.not(String::isBlank))
+                                                                                                        .orElseThrow(NullPointerException::new);
+            caller = ofNullable(this.getDdbItem(callerMemberId, DdbTable.MEMBER)).orElseThrow(NullPointerException::new);
+            callerFamilyId = ofNullable(caller.get(MemberTableParameter.FAMILY_ID.jsonFieldName())).map(AttributeValue::s)
+                                                                                                   .filter(Predicate.not(String::isBlank))
+                                                                                                   .orElseThrow(NullPointerException::new);
 
         } catch (final NullPointerException | ClassCastException e) {
             this.logTrace(e, ERROR);
@@ -67,7 +63,7 @@ class ApiHelper {
         }
 
         this.getLogger()
-            .log(format("<MEMBER,`%s`> Authenticated", callerMemberId), INFO);
+            .log("<MEMBER,`%s`> Authenticated".formatted(callerMemberId), INFO);
         return new Caller(callerMemberId, caller, callerFamilyId);
     }
 
@@ -81,7 +77,7 @@ class ApiHelper {
     Map<String, AttributeValue> getDdbItem (final @NotNull String primaryKey, final @NotNull DdbTable ddbTable) {
         final GetItemRequest request = GetItemRequest.builder()
                                                      .tableName(ddbTable.name())
-                                                     .key(singletonMap(PK.getName(), AttributeValue.fromS(primaryKey)))
+                                                     .key(singletonMap(DdbTable.PK.getName(), AttributeValue.fromS(primaryKey)))
                                                      .build();
         final GetItemResponse response = this.getDynamoDbClient()
                                              .getItem(request);

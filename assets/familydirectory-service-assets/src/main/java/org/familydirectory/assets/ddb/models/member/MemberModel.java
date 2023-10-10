@@ -3,19 +3,18 @@ package org.familydirectory.assets.ddb.models.member;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
+import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
-import static org.familydirectory.assets.ddb.utils.DdbUtils.DATE_FORMATTER;
-import static org.familydirectory.assets.ddb.utils.DdbUtils.isPersonAdult;
 
 public abstract
 class MemberModel {
@@ -41,7 +40,7 @@ class MemberModel {
 
     public
     boolean isAdult () {
-        return isPersonAdult(this.getBirthday());
+        return DdbUtils.isPersonAdult(this.getBirthday());
     }
 
     public abstract @NotNull
@@ -56,9 +55,8 @@ class MemberModel {
 
     public @Nullable
     String getDeathdayString () {
-        return Optional.ofNullable(this.getDeathday())
-                       .map(DATE_FORMATTER::format)
-                       .orElse(null);
+        return ofNullable(this.getDeathday()).map(DdbUtils.DATE_FORMATTER::format)
+                                             .orElse(null);
     }
 
     public abstract @Nullable
@@ -66,7 +64,7 @@ class MemberModel {
 
     public @NotNull
     String getBirthdayString () {
-        return DATE_FORMATTER.format(this.getBirthday());
+        return DdbUtils.DATE_FORMATTER.format(this.getBirthday());
     }
 
     public @NotNull

@@ -1,12 +1,12 @@
-package org.familydirectory.assets.lambda.functions;
+package org.familydirectory.assets.lambda.function.api;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import org.familydirectory.assets.lambda.functions.helper.ApiHelper;
-import org.familydirectory.assets.lambda.functions.helper.CreateHelper;
-import org.familydirectory.assets.lambda.models.CreateEvent;
+import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
+import org.familydirectory.assets.lambda.function.api.helper.CreateHelper;
+import org.familydirectory.assets.lambda.function.api.models.CreateEvent;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
 import static org.apache.http.HttpStatus.SC_CREATED;

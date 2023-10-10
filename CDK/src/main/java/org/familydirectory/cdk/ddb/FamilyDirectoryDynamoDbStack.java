@@ -1,7 +1,7 @@
 package org.familydirectory.cdk.ddb;
 
 import org.familydirectory.assets.ddb.enums.DdbTable;
-import org.familydirectory.assets.ddb.enums.member.MemberParams;
+import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Stack;
@@ -10,8 +10,7 @@ import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.dynamodb.TableProps;
 import software.constructs.Construct;
 import static java.lang.Boolean.TRUE;
-import static java.util.Objects.nonNull;
-import static org.familydirectory.assets.ddb.enums.DdbTable.PK;
+import static java.util.Optional.ofNullable;
 import static software.amazon.awscdk.services.dynamodb.BillingMode.PAY_PER_REQUEST;
 import static software.amazon.awscdk.services.dynamodb.TableEncryption.AWS_MANAGED;
 
@@ -24,18 +23,16 @@ class FamilyDirectoryDynamoDbStack extends Stack {
         for (final DdbTable ddbtable : DdbTable.values()) {
             final TableProps tableProps = TableProps.builder()
                                                     .tableName(ddbtable.name())
-                                                    .partitionKey(PK)
+                                                    .partitionKey(DdbTable.PK)
                                                     .billingMode(PAY_PER_REQUEST)
                                                     .encryption(AWS_MANAGED)
                                                     .pointInTimeRecovery(TRUE)
                                                     .deletionProtection(TRUE)
                                                     .build();
             Table table = new Table(this, ddbtable.name(), tableProps);
-            if (ddbtable == DdbTable.MEMBERS) {
-                for (final MemberParams param : MemberParams.values()) {
-                    if (nonNull(param.gsiProps())) {
-                        table.addGlobalSecondaryIndex(param.gsiProps());
-                    }
+            if (ddbtable == DdbTable.MEMBER) {
+                for (final MemberTableParameter param : MemberTableParameter.values()) {
+                    ofNullable(param.gsiProps()).ifPresent(table::addGlobalSecondaryIndex);
                 }
             }
             new CfnOutput(this, ddbtable.arnExportName(), CfnOutputProps.builder()

@@ -6,8 +6,8 @@ import static software.amazon.awscdk.services.dynamodb.AttributeType.STRING;
 public
 enum DdbTable {
     COGNITO("CognitoTableArn"),
-    MEMBERS("MembersTableArn"),
-    FAMILIES("FamiliesTableArn");
+    MEMBER("MemberTableArn"),
+    FAMILY("FamilyTableArn");
 
     public static final Attribute PK = Attribute.builder()
                                                 .name("id")

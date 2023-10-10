@@ -22,7 +22,7 @@ class FamilyDirectoryDomainStack extends Stack {
     FamilyDirectoryDomainStack (final Construct scope, final String id, final StackProps stackProps) {
         super(scope, id, stackProps);
 
-        // The HostedZone is the domain/subdomain for which the dns is controlled by Route53
+//  The HostedZone is the domain/subdomain for which the dns is controlled by Route53
         final PublicHostedZoneProps hostedZoneProps = PublicHostedZoneProps.builder()
                                                                            .zoneName(HOSTED_ZONE_NAME)
                                                                            .addTrailingDot(FALSE)

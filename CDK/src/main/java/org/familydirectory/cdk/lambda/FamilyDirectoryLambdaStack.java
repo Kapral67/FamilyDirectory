@@ -3,7 +3,8 @@ package org.familydirectory.cdk.lambda;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import org.familydirectory.assets.lambda.LambdaFunctionAttrs;
+import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Stack;
@@ -16,10 +17,6 @@ import static java.lang.System.getProperty;
 import static java.nio.file.Paths.get;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
-import static org.familydirectory.assets.ddb.enums.DdbTable.COGNITO;
-import static org.familydirectory.assets.ddb.enums.DdbTable.FAMILIES;
-import static org.familydirectory.assets.ddb.enums.DdbTable.MEMBERS;
-import static org.familydirectory.assets.lambda.LambdaFunctionAttrs.values;
 import static software.amazon.awscdk.Duration.seconds;
 import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.iam.Effect.ALLOW;
@@ -37,34 +34,34 @@ class FamilyDirectoryLambdaStack extends Stack {
     {
         super(scope, id, stackProps);
 
-        for (final LambdaFunctionAttrs functionAttrs : values()) {
-            final Function function = new Function(this, functionAttrs.functionName(), FunctionProps.builder()
-                                                                                                    .runtime(JAVA_17)
-                                                                                                    .code(fromAsset(getLambdaJar(functionAttrs.functionName())))
-                                                                                                    .handler(functionAttrs.handler())
-                                                                                                    .timeout(seconds(60))
-                                                                                                    .architecture(ARM_64)
-                                                                                                    .memorySize(ONE_GiB_IN_MiB)
-                                                                                                    .reservedConcurrentExecutions(1)
-                                                                                                    .build());
-            if (!functionAttrs.actions()
-                              .isEmpty())
+        for (final ApiFunction func : ApiFunction.values()) {
+            final Function function = new Function(this, func.functionName(), FunctionProps.builder()
+                                                                                           .runtime(JAVA_17)
+                                                                                           .code(fromAsset(getLambdaJar(func.functionName())))
+                                                                                           .handler(func.handler())
+                                                                                           .timeout(seconds(60))
+                                                                                           .architecture(ARM_64)
+                                                                                           .memorySize(ONE_GiB_IN_MiB)
+                                                                                           .reservedConcurrentExecutions(1)
+                                                                                           .build());
+            if (!func.actions()
+                     .isEmpty())
             {
                 final PolicyStatement statement = create().effect(ALLOW)
-                                                          .actions(functionAttrs.actions())
-                                                          .resources(List.of(importValue(MEMBERS.arnExportName()), importValue(FAMILIES.arnExportName())))
+                                                          .actions(func.actions())
+                                                          .resources(List.of(importValue(DdbTable.MEMBER.arnExportName()), importValue(DdbTable.FAMILY.arnExportName())))
                                                           .build();
                 requireNonNull(function.getRole()).addToPrincipalPolicy(statement);
             }
-            // Allow GetItem from Cognito Table
+//      Allow GetItem from Cognito Table
             requireNonNull(function.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
                                                                             .actions(singletonList("dynamodb:GetItem"))
-                                                                            .resources(singletonList(importValue(COGNITO.arnExportName())))
+                                                                            .resources(singletonList(importValue(DdbTable.COGNITO.arnExportName())))
                                                                             .build());
-            new CfnOutput(this, functionAttrs.arnExportName(), CfnOutputProps.builder()
-                                                                             .value(function.getFunctionArn())
-                                                                             .exportName(functionAttrs.arnExportName())
-                                                                             .build());
+            new CfnOutput(this, func.arnExportName(), CfnOutputProps.builder()
+                                                                    .value(function.getFunctionArn())
+                                                                    .exportName(func.arnExportName())
+                                                                    .build());
         }
     }
 

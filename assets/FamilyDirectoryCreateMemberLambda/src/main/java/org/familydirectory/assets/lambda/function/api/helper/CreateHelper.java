@@ -1,4 +1,4 @@
-package org.familydirectory.assets.lambda.functions.helper;
+package org.familydirectory.assets.lambda.function.api.helper;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
@@ -11,8 +11,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
-import org.familydirectory.assets.ddb.enums.member.MemberParams;
-import org.familydirectory.assets.lambda.models.CreateEvent;
+import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
+import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.lambda.function.api.models.CreateEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -33,12 +34,6 @@ import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_CONFLICT;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
-import static org.familydirectory.assets.ddb.enums.DdbTable.FAMILIES;
-import static org.familydirectory.assets.ddb.enums.DdbTable.MEMBERS;
-import static org.familydirectory.assets.ddb.enums.DdbTable.PK;
-import static org.familydirectory.assets.ddb.enums.family.FamilyParams.ANCESTOR;
-import static org.familydirectory.assets.ddb.enums.family.FamilyParams.DESCENDANTS;
-import static org.familydirectory.assets.ddb.enums.family.FamilyParams.SPOUSE;
 
 public final
 class CreateHelper extends ApiHelper {
@@ -58,7 +53,7 @@ class CreateHelper extends ApiHelper {
     }
 
     public @NotNull
-    CreateEvent getCreateEvent (final @NotNull Caller caller) {
+    CreateEvent getCreateEvent (final @NotNull ApiHelper.Caller caller) {
         final CreateEvent createEvent;
         try {
             createEvent = this.objectMapper.convertValue(this.requestEvent.getBody(), CreateEvent.class);
@@ -78,11 +73,11 @@ class CreateHelper extends ApiHelper {
     private
     void validateMemberIsUnique (final @NotNull String memberKey, final @NotNull String callerMemberId, final @Nullable String memberEmail) {
         final QueryRequest keyRequest = QueryRequest.builder()
-                                                    .tableName(DdbTable.MEMBERS.name())
-                                                    .indexName(requireNonNull(MemberParams.KEY.gsiProps()).getIndexName())
-                                                    .keyConditionExpression("%s = :key".formatted(MemberParams.KEY.gsiProps()
-                                                                                                                  .getPartitionKey()
-                                                                                                                  .getName()))
+                                                    .tableName(DdbTable.MEMBER.name())
+                                                    .indexName(requireNonNull(MemberTableParameter.KEY.gsiProps()).getIndexName())
+                                                    .keyConditionExpression("%s = :key".formatted(MemberTableParameter.KEY.gsiProps()
+                                                                                                                          .getPartitionKey()
+                                                                                                                          .getName()))
                                                     .expressionAttributeValues(singletonMap(":key", AttributeValue.fromS(memberKey)))
                                                     .limit(1)
                                                     .build();
@@ -90,17 +85,17 @@ class CreateHelper extends ApiHelper {
         if (keyResponse.hasItems()) {
             final String keyMemberId = keyResponse.items()
                                                   .get(0)
-                                                  .get(MemberParams.ID.jsonFieldName())
+                                                  .get(MemberTableParameter.ID.jsonFieldName())
                                                   .s();
             this.logger.log("<MEMBER,`%s`> Requested Create for Existing <MEMBER,`%s`> Using <KEY,`%s`>".formatted(callerMemberId, keyMemberId, memberKey), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT));
         } else if (nonNull(memberEmail) && !memberEmail.isBlank()) {
             final QueryRequest emailRequest = QueryRequest.builder()
-                                                          .tableName(DdbTable.MEMBERS.name())
-                                                          .indexName(requireNonNull(MemberParams.EMAIL.gsiProps()).getIndexName())
-                                                          .keyConditionExpression("%s = :email".formatted(MemberParams.EMAIL.gsiProps()
-                                                                                                                            .getPartitionKey()
-                                                                                                                            .getName()))
+                                                          .tableName(DdbTable.MEMBER.name())
+                                                          .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())
+                                                          .keyConditionExpression("%s = :email".formatted(MemberTableParameter.EMAIL.gsiProps()
+                                                                                                                                    .getPartitionKey()
+                                                                                                                                    .getName()))
                                                           .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(memberEmail)))
                                                           .limit(1)
                                                           .build();
@@ -108,7 +103,7 @@ class CreateHelper extends ApiHelper {
             if (emailResponse.hasItems()) {
                 final String emailResponseMemberId = emailResponse.items()
                                                                   .get(0)
-                                                                  .get(MemberParams.ID.jsonFieldName())
+                                                                  .get(MemberTableParameter.ID.jsonFieldName())
                                                                   .s();
                 this.logger.log("<MEMBER,`%s`> Requested Create, but Existing <MEMBER,`%s`> Already Claims <EMAIL,`%s`>".formatted(callerMemberId, emailResponseMemberId, memberEmail), WARN);
                 throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
@@ -138,22 +133,22 @@ class CreateHelper extends ApiHelper {
     public @NotNull
     TransactWriteItemsRequest buildCreateTransaction (final @NotNull Caller caller, final @NotNull CreateEvent createEvent) {
         final List<TransactWriteItem> transactionItems = new ArrayList<>();
-        final Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), FAMILIES)).orElseThrow();
+        final Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), DdbTable.FAMILY)).orElseThrow();
         final String inputFamilyId;
         if (caller.memberId()
                   .equals(caller.familyId()) && createEvent.getIsSpouse())
         {
-            if (ofNullable(callerFamily.get(SPOUSE.jsonFieldName())).map(AttributeValue::s)
-                                                                    .filter(Predicate.not(String::isBlank))
-                                                                    .isEmpty())
+            if (ofNullable(callerFamily.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
+                                                                                         .filter(Predicate.not(String::isBlank))
+                                                                                         .isEmpty())
             {
                 this.logger.log("<MEMBER,`%s`> Creating Spouse".formatted(caller.memberId()), INFO);
                 inputFamilyId = caller.familyId();
                 transactionItems.add(TransactWriteItem.builder()
                                                       .update(Update.builder()
-                                                                    .tableName(FAMILIES.name())
-                                                                    .key(singletonMap(PK.getName(), AttributeValue.fromS(caller.familyId())))
-                                                                    .updateExpression("SET %s = :spouseKey".formatted(SPOUSE.jsonFieldName()))
+                                                                    .tableName(DdbTable.FAMILY.name())
+                                                                    .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(caller.familyId())))
+                                                                    .updateExpression("SET %s = :spouseKey".formatted(FamilyTableParameter.SPOUSE.jsonFieldName()))
                                                                     .expressionAttributeValues(singletonMap(":spouseKey", AttributeValue.fromS(this.inputMemberId.toString())))
                                                                     .build())
                                                       .build());
@@ -164,24 +159,25 @@ class CreateHelper extends ApiHelper {
         } else if (!createEvent.getIsSpouse()) {
             this.logger.log("<MEMBER,`%s`> Creating Descendant".formatted(caller.memberId()), INFO);
             inputFamilyId = this.inputMemberId.toString();
-            final String descendantsUpdateExpression = (ofNullable(callerFamily.get(DESCENDANTS.jsonFieldName())).filter(Predicate.not(AttributeValue::hasSs))
-                                                                                                                 .map(AttributeValue::ss)
-                                                                                                                 .filter(Predicate.not(List::isEmpty))
-                                                                                                                 .isEmpty())
-                    ? "SET %s = :descendants".formatted(DESCENDANTS.jsonFieldName())
-                    : "SET %s = list_append(%s, :descendants)".formatted(DESCENDANTS.jsonFieldName(), DESCENDANTS.jsonFieldName());
+            final String descendantsUpdateExpression = (ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(Predicate.not(AttributeValue::hasSs))
+                                                                                                                                      .map(AttributeValue::ss)
+                                                                                                                                      .filter(Predicate.not(List::isEmpty))
+                                                                                                                                      .isEmpty())
+                    ? "SET %s = :descendants".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName())
+                    : "SET %s = list_append(%s, :descendants)".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName(), FamilyTableParameter.DESCENDANTS.jsonFieldName());
             transactionItems.add(TransactWriteItem.builder()
                                                   .update(Update.builder()
-                                                                .tableName(FAMILIES.name())
-                                                                .key(singletonMap(PK.getName(), AttributeValue.fromS(caller.familyId())))
+                                                                .tableName(DdbTable.FAMILY.name())
+                                                                .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(caller.familyId())))
                                                                 .updateExpression(descendantsUpdateExpression)
                                                                 .expressionAttributeValues(singletonMap(":descendants", AttributeValue.fromSs(singletonList(inputFamilyId))))
                                                                 .build())
                                                   .build());
             transactionItems.add(TransactWriteItem.builder()
                                                   .put(Put.builder()
-                                                          .tableName(FAMILIES.name())
-                                                          .item(Map.of(PK.getName(), AttributeValue.fromS(inputFamilyId), ANCESTOR.jsonFieldName(), AttributeValue.fromS(caller.familyId())))
+                                                          .tableName(DdbTable.FAMILY.name())
+                                                          .item(Map.of(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(inputFamilyId), FamilyTableParameter.ANCESTOR.jsonFieldName(),
+                                                                       AttributeValue.fromS(caller.familyId())))
                                                           .build())
                                                   .build());
         } else {
@@ -190,7 +186,7 @@ class CreateHelper extends ApiHelper {
         }
         transactionItems.add(TransactWriteItem.builder()
                                               .put(Put.builder()
-                                                      .tableName(MEMBERS.name())
+                                                      .tableName(DdbTable.MEMBER.name())
                                                       .item(this.buildMember(createEvent, inputFamilyId))
                                                       .build())
                                               .build());
@@ -203,9 +199,9 @@ class CreateHelper extends ApiHelper {
     Map<String, AttributeValue> buildMember (final @NotNull CreateEvent createEvent, final @NotNull String inputFamilyId) {
         final Map<String, AttributeValue> member = new HashMap<>();
 
-        for (final MemberParams field : MemberParams.values()) {
+        for (final MemberTableParameter field : MemberTableParameter.values()) {
             switch (field) {
-                case ID -> member.put(PK.getName(), AttributeValue.fromS(this.inputMemberId.toString()));
+                case ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(this.inputMemberId.toString()));
                 case KEY -> member.put(field.jsonFieldName(), AttributeValue.fromS(createEvent.getMember()
                                                                                               .getKey()));
                 case FIRST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(createEvent.getMember()

@@ -45,6 +45,11 @@ function verify_project_env_vars {
   if  [ -z "${!auth}" ]; then
     empty_env_var $auth
   fi
+
+  reply="ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS"
+  if [ -z "${!reply}" ]; then
+    empty_env_var $reply
+  fi
 }
 
 verify_project_env_vars
@@ -68,9 +73,9 @@ mvn package
 
 #cd "$STAGE_DIR/assets/FamilyDirectoryDeleteMemberLambda" || script_error
 #mvn package
-#
-#cd "$STAGE_DIR/assets/FamilyDirectoryGetMemberLambda" || script_error
-#mvn package
+
+##cd "$STAGE_DIR/assets/FamilyDirectoryGetMemberLambda" || script_error
+##mvn package
 
 cd "$STAGE_DIR/assets/FamilyDirectoryCognitoPreSignUpTrigger" || script_error
 mvn package

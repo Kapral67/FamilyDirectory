@@ -1,5 +1,6 @@
 package org.familydirectory.cdk.ses;
 
+import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.route53.IPublicHostedZone;
@@ -14,14 +15,13 @@ import software.amazon.awscdk.services.ses.MailFromBehaviorOnMxFailure;
 import software.amazon.awscdk.services.ses.SuppressionReasons;
 import software.constructs.Construct;
 import static java.lang.Boolean.TRUE;
-import static org.familydirectory.cdk.domain.FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME;
-import static org.familydirectory.cdk.domain.FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID;
 import static software.amazon.awscdk.Fn.importValue;
 
 public
 class FamilyDirectorySesStack extends Stack {
 
     public static final String CONFIGURATION_SET_RESOURCE_ID = "ConfigurationSet";
+    public static final String CONFIGURATION_SET_NAME = "DefaultSES%s".formatted(CONFIGURATION_SET_RESOURCE_ID);
     public static final String EMAIL_IDENTITY_RESOURCE_ID = "EmailIdentity";
 
     public
@@ -29,10 +29,12 @@ class FamilyDirectorySesStack extends Stack {
         super(scope, id, stackProps);
 
 //  PUBLIC HOSTED ZONE
-        final IPublicHostedZone hostedZone = PublicHostedZone.fromPublicHostedZoneId(this, HOSTED_ZONE_RESOURCE_ID, importValue(HOSTED_ZONE_ID_EXPORT_NAME));
+        final IPublicHostedZone hostedZone = PublicHostedZone.fromPublicHostedZoneId(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID,
+                                                                                     importValue(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME));
 
 //  CONFIGURATION SET
         final ConfigurationSetProps configurationSetProps = ConfigurationSetProps.builder()
+                                                                                 .configurationSetName(CONFIGURATION_SET_NAME)
                                                                                  .suppressionReasons(SuppressionReasons.BOUNCES_AND_COMPLAINTS)
                                                                                  .tlsPolicy(ConfigurationSetTlsPolicy.REQUIRE)
                                                                                  .build();
