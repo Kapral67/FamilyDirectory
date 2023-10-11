@@ -7,11 +7,14 @@ import java.util.Map;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
+import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.cognito.IUserPool;
+import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionProps;
@@ -69,6 +72,7 @@ class FamilyDirectoryLambdaStack extends Stack {
                                                                     .build());
         }
 
+        final IUserPool userPool = UserPool.fromUserPoolId(this, FamilyDirectoryCognitoStack.COGNITO_USER_POOL_RESOURCE_ID, importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME));
         for (final TriggerFunction func : TriggerFunction.values()) {
             final Function function = new Function(this, func.functionName(), FunctionProps.builder()
                                                                                            .runtime(JAVA_17)
@@ -80,8 +84,12 @@ class FamilyDirectoryLambdaStack extends Stack {
                                                                                            .reservedConcurrentExecutions(1)
                                                                                            .build());
             requireNonNull(function.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
-                                                                            .actions(func.actions())
+                                                                            .actions(func.dynamoDbActions())
                                                                             .resources(List.of(DDB_TABLE_ARN_IMPORT_MAP.get(DdbTable.COGNITO), DDB_TABLE_ARN_IMPORT_MAP.get(DdbTable.MEMBER)))
+                                                                            .build());
+            requireNonNull(function.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
+                                                                            .actions(func.cognitoActions())
+                                                                            .resources(singletonList(userPool.getUserPoolArn()))
                                                                             .build());
             new CfnOutput(this, func.arnExportName(), CfnOutputProps.builder()
                                                                     .value(function.getFunctionArn())

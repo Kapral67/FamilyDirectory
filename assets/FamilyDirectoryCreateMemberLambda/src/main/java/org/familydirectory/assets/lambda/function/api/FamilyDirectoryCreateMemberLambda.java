@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.familydirectory.assets.lambda.function.api.helper.CreateHelper;
 import org.familydirectory.assets.lambda.function.api.models.CreateEvent;
+import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
 import static org.apache.http.HttpStatus.SC_CREATED;
@@ -16,8 +17,8 @@ public
 class FamilyDirectoryCreateMemberLambda implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
     @Override
-    public
-    APIGatewayProxyResponseEvent handleRequest (APIGatewayProxyRequestEvent event, Context context)
+    public final @NotNull
+    APIGatewayProxyResponseEvent handleRequest (final @NotNull APIGatewayProxyRequestEvent event, final @NotNull Context context)
     {
         final CreateHelper createHelper = new CreateHelper(context.getLogger(), event);
         try {

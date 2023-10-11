@@ -9,7 +9,6 @@ import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import static java.lang.String.format;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
@@ -49,8 +48,8 @@ class MemberModel {
     public @NotNull
     String getKey () {
         return sha256Hex((isNull(this.getDeathdayString()))
-                                 ? format("%s %s", this.getFullName(), this.getBirthdayString())
-                                 : format("%s %s %s", this.getFullName(), this.getBirthdayString(), this.getDeathdayString()));
+                                 ? "%s %s".formatted(this.getFullName(), this.getBirthdayString())
+                                 : "%s %s %s".formatted(this.getFullName(), this.getBirthdayString(), this.getDeathdayString()));
     }
 
     public @Nullable
@@ -70,14 +69,14 @@ class MemberModel {
     public @NotNull
     String getFullName () {
         final StringBuilder fullName = new StringBuilder();
-        fullName.append(format("%s ", this.getFirstName()));
+        fullName.append("%s ".formatted(this.getFirstName()));
         if (nonNull(this.getMiddleName())) {
-            fullName.append(format("%s ", this.getMiddleName()));
+            fullName.append("%s ".formatted(this.getMiddleName()));
         }
-        fullName.append(format("%s", this.getLastName()));
+        fullName.append(this.getLastName());
         if (nonNull(this.getSuffix())) {
-            fullName.append(format(" %s", this.getSuffix()
-                                              .value()));
+            fullName.append(" %s".formatted(this.getSuffix()
+                                                .value()));
         }
         return fullName.toString();
     }

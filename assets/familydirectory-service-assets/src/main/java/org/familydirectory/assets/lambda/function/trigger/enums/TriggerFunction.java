@@ -12,7 +12,10 @@ enum TriggerFunction {
     private final String functionName;
 
     @NotNull
-    private final List<String> actions = List.of("dynamodb:Query", "dynamodb:GetItem");
+    private final List<String> dynamoDbActions = List.of("dynamodb:Query", "dynamodb:GetItem");
+
+    @NotNull
+    private final List<String> cognitoActions = List.of("cognito-idp:AdminDisableUser");
 
     TriggerFunction (final @NotNull String functionName) {
         this.functionName = "FamilyDirectoryCognito%sTrigger".formatted(functionName);
@@ -32,8 +35,14 @@ enum TriggerFunction {
 
     @NotNull
     public final
-    List<String> actions () {
-        return this.actions;
+    List<String> dynamoDbActions () {
+        return this.dynamoDbActions;
+    }
+
+    @NotNull
+    public final
+    List<String> cognitoActions () {
+        return this.cognitoActions;
     }
 
     @NotNull

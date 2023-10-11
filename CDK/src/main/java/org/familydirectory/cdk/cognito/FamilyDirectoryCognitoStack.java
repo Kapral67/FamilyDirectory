@@ -52,7 +52,6 @@ import software.amazon.awscdk.services.route53.targets.UserPoolDomainTarget;
 import software.constructs.Construct;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-import static java.lang.String.format;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
 import static software.amazon.awscdk.Duration.days;
@@ -64,17 +63,17 @@ public
 class FamilyDirectoryCognitoStack extends Stack {
 
     public static final String COGNITO_CERTIFICATE_RESOURCE_ID = "CognitoCertificate";
-    public static final String COGNITO_CERTIFICATE_NAME = format("%s-%s", FamilyDirectoryDomainStack.HOSTED_ZONE_NAME, COGNITO_CERTIFICATE_RESOURCE_ID);
-    public static final String COGNITO_CERTIFICATE_ARN_EXPORT_NAME = format("%sArn", COGNITO_CERTIFICATE_RESOURCE_ID);
+    public static final String COGNITO_CERTIFICATE_NAME = "%s-%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME, COGNITO_CERTIFICATE_RESOURCE_ID);
+    public static final String COGNITO_CERTIFICATE_ARN_EXPORT_NAME = "%sArn".formatted(COGNITO_CERTIFICATE_RESOURCE_ID);
     public static final String COGNITO_DOMAIN_NAME_RESOURCE_ID = "CognitoDomainName";
     public static final String COGNITO_A_RECORD_RESOURCE_ID = "CognitoARecord";
     public static final String COGNITO_USER_POOL_CLIENT_RESOURCE_ID = "UserPoolClient";
     public static final String COGNITO_USER_POOL_RESOURCE_ID = "UserPool";
-    public static final String COGNITO_USER_POOL_ID_EXPORT_NAME = format("%sId", COGNITO_USER_POOL_RESOURCE_ID);
-    public static final String COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME = format("%sId", COGNITO_USER_POOL_CLIENT_RESOURCE_ID);
-    public static final String COGNITO_DOMAIN_NAME = format("%s.%s", getenv("ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME"), FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
+    public static final String COGNITO_USER_POOL_ID_EXPORT_NAME = "%sId".formatted(COGNITO_USER_POOL_RESOURCE_ID);
+    public static final String COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME = "%sId".formatted(COGNITO_USER_POOL_CLIENT_RESOURCE_ID);
+    public static final String COGNITO_DOMAIN_NAME = "%s.%s".formatted(getenv("ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME"), FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
     public static final String COGNITO_REPLY_TO_EMAIL_ADDRESS = getenv("ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS");
-    public static final String COGNITO_SIGNIN_URL_EXPORT_NAME = "CognitoSignInUrl";
+    public static final String COGNITO_SIGN_IN_URL_EXPORT_NAME = "CognitoSignInUrl";
     private static final StandardAttribute MUTABLE_REQUIRED_ATTRIBUTE = StandardAttribute.builder()
                                                                                          .required(TRUE)
                                                                                          .mutable(TRUE)
@@ -206,9 +205,9 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                                   // TODO: CHANGE TO VIEW URL WHEN FRONTEND EXISTS
                                                                                                   .redirectUri(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
                                                                                                   .build());
-        new CfnOutput(this, COGNITO_SIGNIN_URL_EXPORT_NAME, CfnOutputProps.builder()
-                                                                          .value(userPoolSignInUrl)
-                                                                          .exportName(COGNITO_SIGNIN_URL_EXPORT_NAME)
-                                                                          .build());
+        new CfnOutput(this, COGNITO_SIGN_IN_URL_EXPORT_NAME, CfnOutputProps.builder()
+                                                                           .value(userPoolSignInUrl)
+                                                                           .exportName(COGNITO_SIGN_IN_URL_EXPORT_NAME)
+                                                                           .build());
     }
 }

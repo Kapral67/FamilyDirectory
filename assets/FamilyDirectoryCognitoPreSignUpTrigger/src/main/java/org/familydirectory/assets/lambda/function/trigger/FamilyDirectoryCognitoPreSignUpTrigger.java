@@ -9,6 +9,7 @@ import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -26,8 +27,8 @@ class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUs
     private static final DynamoDbClient DDB_CLIENT = DynamoDbClient.create();
 
     @Override
-    public
-    CognitoUserPoolPreSignUpEvent handleRequest (CognitoUserPoolPreSignUpEvent event, Context context)
+    public final @NotNull
+    CognitoUserPoolPreSignUpEvent handleRequest (final @NotNull CognitoUserPoolPreSignUpEvent event, final @NotNull Context context)
     {
         final LambdaLogger logger = context.getLogger();
 

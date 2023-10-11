@@ -6,6 +6,9 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.CognitoUserPoolPostConfirmationEvent;
 import java.util.Map;
 import java.util.function.Predicate;
+import org.jetbrains.annotations.NotNull;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderAsyncClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDisableUserRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import static java.util.Optional.ofNullable;
 
@@ -13,19 +16,31 @@ public
 class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<CognitoUserPoolPostConfirmationEvent, CognitoUserPoolPostConfirmationEvent> {
 
     private static final DynamoDbClient DDB_CLIENT = DynamoDbClient.create();
+    private static final CognitoIdentityProviderAsyncClient COGNITO_CLIENT = CognitoIdentityProviderAsyncClient.create();
 
     @Override
-    public
-    CognitoUserPoolPostConfirmationEvent handleRequest (CognitoUserPoolPostConfirmationEvent event, Context context)
+    public final @NotNull
+    CognitoUserPoolPostConfirmationEvent handleRequest (final @NotNull CognitoUserPoolPostConfirmationEvent event, final @NotNull Context context)
     {
         final LambdaLogger logger = context.getLogger();
+        final String email;
+        try {
+            email = ofNullable(event.getRequest()
+                                    .getUserAttributes()
+                                    .get("email")).filter(Predicate.not(String::isBlank))
+                                                  .orElseThrow();
 
-        final String email = ofNullable(event.getRequest()
-                                             .getUserAttributes()
-                                             .get("email")).filter(Predicate.not(String::isBlank))
-                                                           .orElseThrow();
-
-        logger.log("ACCEPT");
+        } catch (final Exception e) {
+            // TODO: Disabling this user is mandatory and we need to avoid potential failures:
+            // TODO: - Use Async Call
+            // TODO: - Use Retry Logic
+            // TODO: - Setup DLQ/SNS/SQS (more Research needed) to ensure that this request eventually succeeds even if retries fail
+            COGNITO_CLIENT.adminDisableUser(AdminDisableUserRequest.builder()
+                                                                   .userPoolId(event.getUserPoolId())
+                                                                   .username(event.getUserName())
+                                                                   .build());
+            throw e;
+        }
 
         return CognitoUserPoolPostConfirmationEvent.builder()
                                                    .withVersion(event.getVersion())
