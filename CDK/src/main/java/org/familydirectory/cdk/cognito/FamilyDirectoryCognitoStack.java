@@ -1,5 +1,9 @@
 package org.familydirectory.cdk.cognito;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import software.amazon.awscdk.CfnOutput;
@@ -35,7 +39,10 @@ import software.amazon.awscdk.services.cognito.UserPoolDomainOptions;
 import software.amazon.awscdk.services.cognito.UserPoolEmail;
 import software.amazon.awscdk.services.cognito.UserPoolProps;
 import software.amazon.awscdk.services.cognito.UserPoolSESOptions;
+import software.amazon.awscdk.services.cognito.UserPoolTriggers;
 import software.amazon.awscdk.services.cognito.UserVerificationConfig;
+import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
 import software.amazon.awscdk.services.route53.HostedZone;
@@ -81,6 +88,10 @@ class FamilyDirectoryCognitoStack extends Stack {
 
         final IHostedZone hostedZone = HostedZone.fromHostedZoneId(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, importValue(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME));
 
+        final Map<TriggerFunction, IFunction> cognitoTriggerLambdaFunctions = new HashMap<>();
+        Arrays.stream(TriggerFunction.values())
+              .forEach(func -> cognitoTriggerLambdaFunctions.put(func, Function.fromFunctionArn(this, func.functionName(), importValue(func.arnExportName()))));
+
         final UserPoolProps userPoolProps = UserPoolProps.builder()
                                                          .accountRecovery(AccountRecovery.EMAIL_ONLY)
                                                          .advancedSecurityMode(AdvancedSecurityMode.OFF)
@@ -100,12 +111,11 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                         .email(TRUE)
                                                                                         .phone(FALSE)
                                                                                         .build())
-                                                         // TODO: CREATE PRE-SIGNUP LAMBDA (TURN ON SELF-SIGN-UP)
-                                                         /*
                                                          .lambdaTriggers(UserPoolTriggers.builder()
-                                                                                         .preSignUp(null)
+                                                                                         .preSignUp(cognitoTriggerLambdaFunctions.get(TriggerFunction.PRE_SIGN_UP))
+                                                                                         .postConfirmation(cognitoTriggerLambdaFunctions.get(TriggerFunction.POST_CONFIRMATION))
                                                                                          .build())
-                                                          */.mfa(Mfa.OFF)
+                                                         .mfa(Mfa.OFF)
                                                          .passwordPolicy(PasswordPolicy.builder()
                                                                                        .minLength(MIN_PASSWORD_LENGTH)
                                                                                        .requireLowercase(TRUE)
@@ -115,8 +125,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                        .tempPasswordValidity(TEMPORARY_PASSWORD_VALIDITY)
                                                                                        .build())
                                                          .removalPolicy(RemovalPolicy.DESTROY)
-                                                         // FIXME: Implement some self-signup logic
-                                                         .selfSignUpEnabled(FALSE)
+                                                         .selfSignUpEnabled(TRUE)
                                                          .signInAliases(SignInAliases.builder()
                                                                                      .username(FALSE)
                                                                                      .preferredUsername(FALSE)

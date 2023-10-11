@@ -2,6 +2,7 @@ package org.familydirectory.assets.ddb.enums.member;
 
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.DdbType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awscdk.services.dynamodb.Attribute;
 import software.amazon.awscdk.services.dynamodb.GlobalSecondaryIndexProps;
@@ -36,22 +37,27 @@ enum MemberTableParameter {
     PHONES(DdbType.MAP, "phones", null),
     ADDRESS(DdbType.STR_SET, "address", null),
     FAMILY_ID(DdbType.STR, "familyId", null);
+
+    @NotNull
     private final DdbType ddbType;
+    @NotNull
     private final String jsonFieldName;
     @Nullable
     private final GlobalSecondaryIndexProps gsiProps;
 
-    MemberTableParameter (final DdbType ddbType, final String jsonFieldName, final @Nullable GlobalSecondaryIndexProps gsiProps) {
+    MemberTableParameter (final @NotNull DdbType ddbType, final @NotNull String jsonFieldName, final @Nullable GlobalSecondaryIndexProps gsiProps) {
         this.ddbType = ddbType;
         this.jsonFieldName = jsonFieldName;
         this.gsiProps = gsiProps;
     }
 
+    @NotNull
     public final
     DdbType ddbType () {
         return this.ddbType;
     }
 
+    @NotNull
     public final
     String jsonFieldName () {
         return this.jsonFieldName;

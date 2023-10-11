@@ -2,14 +2,22 @@ package org.familydirectory.assets.ddb.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.jetbrains.annotations.NotNull;
 
-public enum PhoneType {
-    MOBILE, LANDLINE, WORK;
+public
+enum PhoneType {
+    MOBILE,
+    LANDLINE,
+    WORK;
 
     @JsonCreator
-    public static PhoneType forValue(final String value) {
+    @NotNull
+    public static
+    PhoneType forValue (final @NotNull String value) {
         for (final PhoneType phoneType : values()) {
-            if (phoneType.getJson().equalsIgnoreCase(value)) {
+            if (phoneType.getJson()
+                         .equalsIgnoreCase(value))
+            {
                 return phoneType;
             }
         }
@@ -17,7 +25,9 @@ public enum PhoneType {
     }
 
     @JsonValue
-    public String getJson() {
+    @NotNull
+    public
+    String getJson () {
         return this.name();
     }
 }

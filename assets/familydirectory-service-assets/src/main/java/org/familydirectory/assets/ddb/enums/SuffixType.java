@@ -2,20 +2,28 @@ package org.familydirectory.assets.ddb.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.jetbrains.annotations.NotNull;
 
-public enum SuffixType {
-    JR("Jr"), SR("Sr");
+public
+enum SuffixType {
+    JR("Jr"),
+    SR("Sr");
 
+    @NotNull
     private final String value;
 
-    SuffixType(final String value) {
+    SuffixType (final @NotNull String value) {
         this.value = value;
     }
 
     @JsonCreator
-    public static SuffixType forValue(final String value) {
+    @NotNull
+    public static
+    SuffixType forValue (final @NotNull String value) {
         for (final SuffixType suffixType : values()) {
-            if (suffixType.value().equalsIgnoreCase(value)) {
+            if (suffixType.value()
+                          .equalsIgnoreCase(value))
+            {
                 return suffixType;
             }
         }
@@ -23,7 +31,9 @@ public enum SuffixType {
     }
 
     @JsonValue
-    public final String value() {
+    @NotNull
+    public final
+    String value () {
         return this.value;
     }
 }

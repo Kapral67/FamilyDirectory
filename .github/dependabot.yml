@@ -29,3 +29,9 @@ updates:
     schedule:
       interval: "daily"
     target-branch: "main"
+
+  - package-ecosystem: "maven"
+    directory: "/assets/FamilyDirectoryCognitoPostConfirmationTrigger"
+    schedule:
+      interval: "daily"
+    target-branch: "main"

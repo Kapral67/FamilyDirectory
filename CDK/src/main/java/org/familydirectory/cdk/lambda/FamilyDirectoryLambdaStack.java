@@ -3,8 +3,11 @@ package org.familydirectory.cdk.lambda;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
+import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
+import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Stack;
@@ -28,6 +31,8 @@ import static software.amazon.awscdk.services.lambda.Runtime.JAVA_17;
 public
 class FamilyDirectoryLambdaStack extends Stack {
     private static final Number ONE_GiB_IN_MiB = 1024;
+    private static final Map<DdbTable, String> DDB_TABLE_ARN_IMPORT_MAP = Map.of(DdbTable.COGNITO, importValue(DdbTable.COGNITO.arnExportName()), DdbTable.MEMBER,
+                                                                                 importValue(DdbTable.MEMBER.arnExportName()), DdbTable.FAMILY, importValue(DdbTable.FAMILY.arnExportName()));
 
     public
     FamilyDirectoryLambdaStack (final Construct scope, final String id, final StackProps stackProps) throws IOException
@@ -49,14 +54,34 @@ class FamilyDirectoryLambdaStack extends Stack {
             {
                 final PolicyStatement statement = create().effect(ALLOW)
                                                           .actions(func.actions())
-                                                          .resources(List.of(importValue(DdbTable.MEMBER.arnExportName()), importValue(DdbTable.FAMILY.arnExportName())))
+                                                          .resources(List.of(DDB_TABLE_ARN_IMPORT_MAP.get(DdbTable.MEMBER), DDB_TABLE_ARN_IMPORT_MAP.get(DdbTable.FAMILY)))
                                                           .build();
                 requireNonNull(function.getRole()).addToPrincipalPolicy(statement);
             }
 //      Allow GetItem from Cognito Table
             requireNonNull(function.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
                                                                             .actions(singletonList("dynamodb:GetItem"))
-                                                                            .resources(singletonList(importValue(DdbTable.COGNITO.arnExportName())))
+                                                                            .resources(singletonList(DDB_TABLE_ARN_IMPORT_MAP.get(DdbTable.COGNITO)))
+                                                                            .build());
+            new CfnOutput(this, func.arnExportName(), CfnOutputProps.builder()
+                                                                    .value(function.getFunctionArn())
+                                                                    .exportName(func.arnExportName())
+                                                                    .build());
+        }
+
+        for (final TriggerFunction func : TriggerFunction.values()) {
+            final Function function = new Function(this, func.functionName(), FunctionProps.builder()
+                                                                                           .runtime(JAVA_17)
+                                                                                           .code(fromAsset(getLambdaJar(func.functionName())))
+                                                                                           .handler(func.handler())
+                                                                                           .timeout(seconds(60))
+                                                                                           .architecture(ARM_64)
+                                                                                           .memorySize(ONE_GiB_IN_MiB)
+                                                                                           .reservedConcurrentExecutions(1)
+                                                                                           .build());
+            requireNonNull(function.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
+                                                                            .actions(func.actions())
+                                                                            .resources(List.of(DDB_TABLE_ARN_IMPORT_MAP.get(DdbTable.COGNITO), DDB_TABLE_ARN_IMPORT_MAP.get(DdbTable.MEMBER)))
                                                                             .build());
             new CfnOutput(this, func.arnExportName(), CfnOutputProps.builder()
                                                                     .value(function.getFunctionArn())
@@ -65,6 +90,7 @@ class FamilyDirectoryLambdaStack extends Stack {
         }
     }
 
+    @NotNull
     private static
     String getLambdaJar (final String lambdaName) throws IOException {
         final File jarDir = new File(get(getProperty("user.dir"), "..", "assets", lambdaName, "target").toUri());

@@ -64,20 +64,19 @@ cd "$STAGE_DIR/assets/familydirectory-service-assets" || script_error
 ./gradlew publish
 clean_maven_local
 
-# Lambda Function Handler Shaded Jars
+# LAMBDA FUNCTIONS
+## API
 cd "$STAGE_DIR/assets/FamilyDirectoryCreateMemberLambda" || script_error
 mvn package
 
 cd "$STAGE_DIR/assets/FamilyDirectoryUpdateMemberLambda" || script_error
 mvn package
 
-#cd "$STAGE_DIR/assets/FamilyDirectoryDeleteMemberLambda" || script_error
-#mvn package
-
-##cd "$STAGE_DIR/assets/FamilyDirectoryGetMemberLambda" || script_error
-##mvn package
-
+## COGNITO
 cd "$STAGE_DIR/assets/FamilyDirectoryCognitoPreSignUpTrigger" || script_error
+mvn package
+
+cd "$STAGE_DIR/assets/FamilyDirectoryCognitoPostConfirmationTrigger" || script_error
 mvn package
 
 # CDK

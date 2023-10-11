@@ -28,36 +28,43 @@ enum ApiFunction {
         this.endpoint = endpoint;
     }
 
+    @NotNull
     public final
     String functionName () {
         return this.functionName;
     }
 
+    @NotNull
     public final
     String handler () {
         return "org.familydirectory.assets.lambda.function.api.%s::handleRequest".formatted(this.functionName);
     }
 
+    @NotNull
     public final
     List<String> actions () {
         return this.actions;
     }
 
+    @NotNull
     public final
     List<HttpMethod> methods () {
         return this.methods;
     }
 
+    @NotNull
     public final
     String endpoint () {
         return "/%s".formatted(this.endpoint);
     }
 
+    @NotNull
     public final
     String arnExportName () {
         return "%sArn".formatted(this.functionName);
     }
 
+    @NotNull
     public final
     String httpIntegrationId () {
         return "%sHttpIntegration".formatted(this.functionName);

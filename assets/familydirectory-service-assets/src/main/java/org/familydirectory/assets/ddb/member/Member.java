@@ -27,47 +27,60 @@ import static org.apache.commons.text.WordUtils.capitalizeFully;
 public final
 class Member extends MemberModel {
     @JsonProperty("firstName")
-    private final @NotNull String firstName;
+    @NotNull
+    private final String firstName;
 
     @JsonProperty("middleName")
-    private final @Nullable String middleName;
+    @Nullable
+    private final String middleName;
 
     @JsonProperty("lastName")
-    private final @NotNull String lastName;
+    @NotNull
+    private final String lastName;
 
     @JsonProperty("birthday")
     @JsonFormat(shape = STRING, pattern = DdbUtils.DATE_FORMAT_STRING)
     @JsonDeserialize(using = LocalDateDeserializer.class)
-    private final @NotNull LocalDate birthday;
+    @NotNull
+    private final LocalDate birthday;
 
     @JsonProperty("email")
-    private final @Nullable String email;
+    @Nullable
+    private final String email;
 
     @JsonProperty("deathday")
     @JsonFormat(shape = STRING, pattern = DdbUtils.DATE_FORMAT_STRING)
     @JsonDeserialize(using = LocalDateDeserializer.class)
-    private final @Nullable LocalDate deathday;
+    @Nullable
+    private final LocalDate deathday;
 
     @JsonProperty("phones")
-    private final @Nullable Map<PhoneType, String> phones;
+    @Nullable
+    private final Map<PhoneType, String> phones;
 
     @JsonProperty("address")
-    private final @Nullable List<String> address;
+    @Nullable
+    private final List<String> address;
 
     @JsonProperty("suffix")
-    private final @Nullable SuffixType suffix;
+    @Nullable
+    private final SuffixType suffix;
 
     @JsonIgnore
-    private final @NotNull String fullName;
+    @NotNull
+    private final String fullName;
 
     @JsonIgnore
-    private final @NotNull String birthdayString;
+    @NotNull
+    private final String birthdayString;
 
     @JsonIgnore
-    private final @Nullable Map<String, AttributeValue> phonesDdbMap;
+    @Nullable
+    private final Map<String, AttributeValue> phonesDdbMap;
 
     @JsonIgnore
-    private final @Nullable String deathdayString;
+    @Nullable
+    private final String deathdayString;
 
     private
     Member (final @NotNull String firstName, final @Nullable String middleName, final @NotNull String lastName, final @NotNull LocalDate birthday, final @Nullable String email,
@@ -90,85 +103,99 @@ class Member extends MemberModel {
     }
 
     @Contract(" -> new")
-    public static @NotNull
+    @NotNull
+    public static
     Builder builder () {
         return new Builder();
     }
 
     @Override
-    public @Nullable
+    @Nullable
+    public
     String getEmail () {
         return this.email;
     }
 
     @Override
-    public @Nullable
+    @Nullable
+    public
     List<String> getAddress () {
         return this.address;
     }
 
     @Override
-    public @Nullable
+    @Nullable
+    public
     Map<String, AttributeValue> getPhonesDdbMap () {
         return this.phonesDdbMap;
     }
 
     @Override
-    public @Nullable
+    @Nullable
+    public
     Map<PhoneType, String> getPhones () {
         return this.phones;
     }
 
     @Override
-    public @NotNull
+    @NotNull
+    public
     LocalDate getBirthday () {
         return this.birthday;
     }
 
     @Override
-    public @Nullable
+    @Nullable
+    public
     String getDeathdayString () {
         return this.deathdayString;
     }
 
     @Override
-    public @Nullable
+    @Nullable
+    public
     LocalDate getDeathday () {
         return this.deathday;
     }
 
     @Override
-    public @NotNull
+    @NotNull
+    public
     String getBirthdayString () {
         return this.birthdayString;
     }
 
     @Override
-    public @NotNull
+    @NotNull
+    public
     String getFullName () {
         return this.fullName;
     }
 
     @Override
-    public @NotNull
+    @NotNull
+    public
     String getFirstName () {
         return this.firstName;
     }
 
     @Override
-    public @Nullable
+    @Nullable
+    public
     String getMiddleName () {
         return this.middleName;
     }
 
     @Override
-    public @NotNull
+    @NotNull
+    public
     String getLastName () {
         return this.lastName;
     }
 
     @Override
-    public @Nullable
+    @Nullable
+    public
     SuffixType getSuffix () {
         return this.suffix;
     }
@@ -351,6 +378,8 @@ class Member extends MemberModel {
             return this;
         }
 
+        @Contract(" -> new")
+        @NotNull
         public
         Member build () {
             this.checkBuildStatus();

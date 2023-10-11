@@ -1,6 +1,7 @@
 package org.familydirectory.cdk.ddb;
 
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
@@ -29,10 +30,19 @@ class FamilyDirectoryDynamoDbStack extends Stack {
                                                     .pointInTimeRecovery(TRUE)
                                                     .deletionProtection(TRUE)
                                                     .build();
-            Table table = new Table(this, ddbtable.name(), tableProps);
-            if (ddbtable == DdbTable.MEMBER) {
-                for (final MemberTableParameter param : MemberTableParameter.values()) {
-                    ofNullable(param.gsiProps()).ifPresent(table::addGlobalSecondaryIndex);
+            final Table table = new Table(this, ddbtable.name(), tableProps);
+            switch (ddbtable) {
+                case COGNITO -> {
+                    for (final CognitoTableParameter param : CognitoTableParameter.values()) {
+                        ofNullable(param.gsiProps()).ifPresent(table::addGlobalSecondaryIndex);
+                    }
+                }
+                case MEMBER -> {
+                    for (final MemberTableParameter param : MemberTableParameter.values()) {
+                        ofNullable(param.gsiProps()).ifPresent(table::addGlobalSecondaryIndex);
+                    }
+                }
+                default -> {
                 }
             }
             new CfnOutput(this, ddbtable.arnExportName(), CfnOutputProps.builder()
