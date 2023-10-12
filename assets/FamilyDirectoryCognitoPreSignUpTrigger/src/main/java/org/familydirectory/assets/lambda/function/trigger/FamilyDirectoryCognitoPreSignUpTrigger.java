@@ -50,13 +50,13 @@ class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUs
         final QueryResponse memberEmailQueryResponse = DDB_CLIENT.query(memberEmailQueryRequest);
         if (!memberEmailQueryResponse.hasItems()) {
             logger.log("REJECT: PreSignUp Event for <EMAIL,`%s`> - No Member Found".formatted(email), WARN);
-            throw new NoSuchElementException("No Member Found for Email: %s".formatted(email));
+            throw new NoSuchElementException();
         } else if (memberEmailQueryResponse.items()
                                            .size() > 1)
 
         {
             logger.log("REJECT: PreSignUp Event for <EMAIL,`%s`> - Multiple Members Found".formatted(email), ERROR);
-            throw new IllegalStateException("Multiple Members Found for Email: %s".formatted(email));
+            throw new IllegalStateException();
         }
         final String memberId = ofNullable(memberEmailQueryResponse.items()
                                                                    .get(0)
