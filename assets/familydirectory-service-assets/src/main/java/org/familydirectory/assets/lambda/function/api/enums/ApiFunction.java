@@ -9,8 +9,8 @@ public
 enum ApiFunction {
     //    GET_MEMBER("FamilyDirectoryGetMemberLambda", "%s.%s::handleRequest", of("dynamodb:Query", "dynamodb:GetItem"), "get"),
     CREATE_MEMBER("CreateMember", of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"), of(HttpMethod.POST), "create"),
-    UPDATE_MEMBER("UpdateMember", of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"), of(HttpMethod.PUT), "update");
-//    DELETE_MEMBER("DeleteMember", of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:DeleteItem"), of(HttpMethod.DELETE), "delete");
+    UPDATE_MEMBER("UpdateMember", of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"), of(HttpMethod.PUT), "update"),
+    DELETE_MEMBER("DeleteMember", of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:DeleteItem"), of(HttpMethod.DELETE), "delete");
 
     @NotNull
     private final String functionName;

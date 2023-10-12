@@ -87,15 +87,15 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                          .build();
         new ARecord(this, "ApiARecord", apiARecordProps);
 
-        /** TODO: Research what CORS options I need */
 //  Configure CORS options for httpApi
         final CorsPreflightOptions httpApiPropsCorsOptions = CorsPreflightOptions.builder()
                                                                                  .allowCredentials(FALSE)
                                                                                  .allowMethods(List.of(CorsHttpMethod.POST))
-                                                                                 .allowOrigins(singletonList(SECURE_URL_PREFIX + '*'))
+                                                                                 .allowOrigins(singletonList("%s*.%s".formatted(SECURE_URL_PREFIX, hostedZone.getZoneName())))
                                                                                  .maxAge(CORS_MAX_AGE)
+//      TODO:                                                                    .allowHeaders()
+//      TODO:                                                                    .exposeHeaders()
                                                                                  .build();
-        /** TODO: Research potential {@link HttpApiProps} */
 //  Configure HttpApi Options
         final HttpApiProps httpApiProps = HttpApiProps.builder()
                                                       .corsPreflight(httpApiPropsCorsOptions)
@@ -121,7 +121,7 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                                                           Function.fromFunctionArn(this, func.functionName(), importValue(func.arnExportName())));
 //      Add Lambda as HttpIntegration to HttpApi
             httpApi.addRoutes(AddRoutesOptions.builder()
-//          TODO:                             .authorizationScopes(List.of(""))
+                                              .authorizationScopes(List.of("openid", "email"))
                                               .authorizer(userPoolAuthorizer)
                                               .path(func.endpoint())
                                               .methods(func.methods())
