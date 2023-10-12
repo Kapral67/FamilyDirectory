@@ -25,6 +25,12 @@ updates:
     target-branch: "main"
 
   - package-ecosystem: "maven"
+    directory: "/assets/FamilyDirectoryDeleteMemberLambda"
+    schedule:
+      interval: "daily"
+    target-branch: "main"
+
+  - package-ecosystem: "maven"
     directory: "/assets/FamilyDirectoryCognitoPreSignUpTrigger"
     schedule:
       interval: "daily"
