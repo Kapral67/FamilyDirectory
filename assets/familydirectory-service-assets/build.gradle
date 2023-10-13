@@ -40,6 +40,6 @@ dependencies {
     implementation 'software.amazon.awscdk:apigatewayv2-integrations-alpha:2.100.0-alpha.0'
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
     implementation 'com.amazonaws:aws-lambda-java-events:3.11.3'
-    implementation platform('software.amazon.awssdk:bom:2.20.162')
+    implementation platform('software.amazon.awssdk:bom:2.21.0')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
 }
