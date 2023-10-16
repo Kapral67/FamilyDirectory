@@ -13,6 +13,7 @@ import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.lambda.function.LambdaUtils;
 import org.familydirectory.assets.lambda.function.api.models.CreateEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -59,12 +60,12 @@ class CreateHelper extends ApiHelper {
             createEvent = this.objectMapper.convertValue(this.requestEvent.getBody(), CreateEvent.class);
         } catch (final IllegalArgumentException e) {
             this.logger.log("<MEMBER,`%s`> submitted invalid Create request".formatted(caller.memberId()), WARN);
-            this.logTrace(e, WARN);
+            LambdaUtils.logTrace(this.logger, e, WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
         }
 
-        this.validateMemberIsUnique(createEvent.getMember()
-                                               .getKey(), caller.memberId(), createEvent.getMember()
+        this.validateMemberIsUnique(createEvent.member()
+                                               .getKey(), caller.memberId(), createEvent.member()
                                                                                         .getEmail());
 
         return createEvent;
@@ -136,7 +137,7 @@ class CreateHelper extends ApiHelper {
         final Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), DdbTable.FAMILY)).orElseThrow();
         final String inputFamilyId;
         if (caller.memberId()
-                  .equals(caller.familyId()) && createEvent.getIsSpouse())
+                  .equals(caller.familyId()) && createEvent.isSpouse())
         {
             if (ofNullable(callerFamily.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
                                                                                          .filter(Predicate.not(String::isBlank))
@@ -156,7 +157,7 @@ class CreateHelper extends ApiHelper {
                 this.logger.log("<MEMBER,`%s`> Spouse already exists".formatted(caller.memberId()), WARN);
                 throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT));
             }
-        } else if (!createEvent.getIsSpouse()) {
+        } else if (!createEvent.isSpouse()) {
             this.logger.log("<MEMBER,`%s`> Creating Descendant".formatted(caller.memberId()), INFO);
             inputFamilyId = this.inputMemberId.toString();
             final String descendantsUpdateExpression = (ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(Predicate.not(AttributeValue::hasSs))
@@ -202,25 +203,25 @@ class CreateHelper extends ApiHelper {
         for (final MemberTableParameter field : MemberTableParameter.values()) {
             switch (field) {
                 case ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(this.inputMemberId.toString()));
-                case KEY -> member.put(field.jsonFieldName(), AttributeValue.fromS(createEvent.getMember()
+                case KEY -> member.put(field.jsonFieldName(), AttributeValue.fromS(createEvent.member()
                                                                                               .getKey()));
-                case FIRST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(createEvent.getMember()
+                case FIRST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(createEvent.member()
                                                                                                      .getFirstName()));
-                case MIDDLE_NAME -> ofNullable(createEvent.getMember()
+                case MIDDLE_NAME -> ofNullable(createEvent.member()
                                                           .getMiddleName()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
-                case LAST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(createEvent.getMember()
+                case LAST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(createEvent.member()
                                                                                                     .getLastName()));
-                case SUFFIX -> ofNullable(createEvent.getMember()
+                case SUFFIX -> ofNullable(createEvent.member()
                                                      .getSuffix()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s.value())));
-                case BIRTHDAY -> member.put(field.jsonFieldName(), AttributeValue.fromS(createEvent.getMember()
+                case BIRTHDAY -> member.put(field.jsonFieldName(), AttributeValue.fromS(createEvent.member()
                                                                                                    .getBirthdayString()));
-                case DEATHDAY -> ofNullable(createEvent.getMember()
+                case DEATHDAY -> ofNullable(createEvent.member()
                                                        .getDeathdayString()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
-                case EMAIL -> ofNullable(createEvent.getMember()
+                case EMAIL -> ofNullable(createEvent.member()
                                                     .getEmail()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
-                case PHONES -> ofNullable(createEvent.getMember()
+                case PHONES -> ofNullable(createEvent.member()
                                                      .getPhonesDdbMap()).ifPresent(m -> member.put(field.jsonFieldName(), AttributeValue.fromM(m)));
-                case ADDRESS -> ofNullable(createEvent.getMember()
+                case ADDRESS -> ofNullable(createEvent.member()
                                                       .getAddress()).ifPresent(ss -> member.put(field.jsonFieldName(), AttributeValue.fromSs(ss)));
                 case FAMILY_ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(inputFamilyId));
                 default -> throw new IllegalStateException("Unhandled Member Parameter: `%s`".formatted(field.jsonFieldName()));

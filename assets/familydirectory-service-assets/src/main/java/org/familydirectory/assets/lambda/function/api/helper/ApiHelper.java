@@ -3,24 +3,21 @@ package org.familydirectory.assets.lambda.function.api.helper;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.amazonaws.services.lambda.runtime.logging.LogLevel;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.lambda.function.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
-import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
-import static com.amazonaws.services.lambda.runtime.logging.LogLevel.TRACE;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
@@ -58,7 +55,7 @@ class ApiHelper {
                                                                                                    .orElseThrow(NullPointerException::new);
 
         } catch (final NullPointerException | ClassCastException e) {
-            this.logTrace(e, ERROR);
+            LambdaUtils.logTrace(this.getLogger(), e, ERROR);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_UNAUTHORIZED));
         }
 
@@ -88,16 +85,6 @@ class ApiHelper {
 
     public abstract @NotNull
     DynamoDbClient getDynamoDbClient ();
-
-    public
-    void logTrace (final @NotNull Throwable e, final @NotNull LogLevel logLevel) {
-        this.getLogger()
-            .log(e.getMessage(), logLevel);
-        ofNullable(e.getCause()).ifPresent(throwable -> this.getLogger()
-                                                            .log(throwable.toString(), DEBUG));
-        this.getLogger()
-            .log(Arrays.toString(e.getStackTrace()), TRACE);
-    }
 
     public
     record Caller(@NotNull String memberId, @NotNull Map<String, AttributeValue> attributeMap, @NotNull String familyId) {
