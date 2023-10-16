@@ -4,13 +4,12 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.CognitoUserPoolPostConfirmationEvent;
-import com.amazonaws.services.lambda.runtime.logging.LogLevel;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.lambda.function.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDisableUserRequest;
@@ -20,10 +19,8 @@ import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
-import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
-import static com.amazonaws.services.lambda.runtime.logging.LogLevel.TRACE;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
@@ -69,7 +66,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                 return getValidEvent(event, email);
             }
         } catch (final Exception e) {
-            logTrace(logger, e, ERROR);
+            LambdaUtils.logTrace(logger, e, ERROR);
             adminDisableUser(logger, event.getUserPoolId(), event.getUserName());
             throw e;
         }
@@ -108,7 +105,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                                           AttributeValue.fromS(memberId)))
                                              .build());
         } catch (final Exception e) {
-            logTrace(logger, e, ERROR);
+            LambdaUtils.logTrace(logger, e, ERROR);
             adminDisableUser(logger, event.getUserPoolId(), event.getUserName());
             throw e;
         }
@@ -140,16 +137,9 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                                                    .userPoolId(userPoolId)
                                                                    .username(userName)
                                                                    .build());
-        } catch (final Exception x) {
+        } catch (final Exception e) {
             logger.log("FATAL: Failed to Disable User <USERNAME,`%s`>".formatted(userName), FATAL);
-            logTrace(logger, x, FATAL);
+            LambdaUtils.logTrace(logger, e, FATAL);
         }
-    }
-
-    private static
-    void logTrace (final @NotNull LambdaLogger logger, final @NotNull Throwable e, final @NotNull LogLevel logLevel) {
-        logger.log(e.getMessage(), logLevel);
-        ofNullable(e.getCause()).ifPresent(throwable -> logger.log(throwable.getMessage(), DEBUG));
-        logger.log(Arrays.toString(e.getStackTrace()), TRACE);
     }
 }
