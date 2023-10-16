@@ -11,6 +11,7 @@ import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.lambda.function.LambdaUtils;
 import org.familydirectory.assets.lambda.function.api.models.UpdateEvent;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -51,7 +52,7 @@ class UpdateHelper extends ApiHelper {
             updateEvent = this.objectMapper.convertValue(this.requestEvent.getBody(), UpdateEvent.class);
         } catch (final IllegalArgumentException e) {
             this.logger.log("<MEMBER,`%s`> submitted invalid Update request".formatted(caller.memberId()), WARN);
-            this.logTrace(e, WARN);
+            LambdaUtils.logTrace(this.logger, e, WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
         }
 
@@ -61,19 +62,19 @@ class UpdateHelper extends ApiHelper {
                                                                              .keyConditionExpression("%s = :key".formatted(MemberTableParameter.KEY.gsiProps()
                                                                                                                                                    .getPartitionKey()
                                                                                                                                                    .getName()))
-                                                                             .expressionAttributeValues(singletonMap(":key", AttributeValue.fromS(updateEvent.getMember()
+                                                                             .expressionAttributeValues(singletonMap(":key", AttributeValue.fromS(updateEvent.member()
                                                                                                                                                              .getKey())))
                                                                              .limit(2)
                                                                              .build());
 
         if (!response.hasItems()) {
-            this.logger.log("<MEMBER,`%s`> Requested Update to Non-Existent Member <KEY,`%s`>".formatted(caller.memberId(), updateEvent.getMember()
+            this.logger.log("<MEMBER,`%s`> Requested Update to Non-Existent Member <KEY,`%s`>".formatted(caller.memberId(), updateEvent.member()
                                                                                                                                        .getKey()), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_NOT_FOUND));
         } else if (response.items()
                            .size() > 1)
         {
-            this.logger.log("<MEMBER,`%s`> Requested Update to Ambiguous <KEY,`%s`> Referencing Multiple Members".formatted(caller.memberId(), updateEvent.getMember()
+            this.logger.log("<MEMBER,`%s`> Requested Update to Ambiguous <KEY,`%s`> Referencing Multiple Members".formatted(caller.memberId(), updateEvent.member()
                                                                                                                                                           .getKey()), ERROR);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_INTERNAL_SERVER_ERROR));
         }
@@ -87,7 +88,7 @@ class UpdateHelper extends ApiHelper {
         final String ddbMemberEmail = ofNullable(ddbMemberMap.get(MemberTableParameter.EMAIL.jsonFieldName())).map(AttributeValue::s)
                                                                                                               .filter(Predicate.not(String::isBlank))
                                                                                                               .orElse(null);
-        final String updateMemberEmail = ofNullable(updateEvent.getMember()
+        final String updateMemberEmail = ofNullable(updateEvent.member()
                                                                .getEmail()).filter(Predicate.not(String::isBlank))
                                                                            .orElse(null);
 
@@ -155,34 +156,34 @@ class UpdateHelper extends ApiHelper {
             switch (field) {
                 case ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbMemberId()));
                 case KEY -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
-                                                                                               .getMember()
+                                                                                               .member()
                                                                                                .getKey()));
                 case FIRST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
-                                                                                                      .getMember()
+                                                                                                      .member()
                                                                                                       .getFirstName()));
                 case MIDDLE_NAME -> ofNullable(eventWrapper.updateEvent()
-                                                           .getMember()
+                                                           .member()
                                                            .getMiddleName()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
                 case LAST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
-                                                                                                     .getMember()
+                                                                                                     .member()
                                                                                                      .getLastName()));
                 case SUFFIX -> ofNullable(eventWrapper.updateEvent()
-                                                      .getMember()
+                                                      .member()
                                                       .getSuffix()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s.value())));
                 case BIRTHDAY -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
-                                                                                                    .getMember()
+                                                                                                    .member()
                                                                                                     .getBirthdayString()));
                 case DEATHDAY -> ofNullable(eventWrapper.updateEvent()
-                                                        .getMember()
+                                                        .member()
                                                         .getDeathdayString()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
                 case EMAIL -> ofNullable(eventWrapper.updateEvent()
-                                                     .getMember()
+                                                     .member()
                                                      .getEmail()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
                 case PHONES -> ofNullable(eventWrapper.updateEvent()
-                                                      .getMember()
+                                                      .member()
                                                       .getPhonesDdbMap()).ifPresent(m -> member.put(field.jsonFieldName(), AttributeValue.fromM(m)));
                 case ADDRESS -> ofNullable(eventWrapper.updateEvent()
-                                                       .getMember()
+                                                       .member()
                                                        .getAddress()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromSs(s)));
                 case FAMILY_ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbFamilyId()));
                 default -> throw new IllegalStateException("Unhandled Member Parameter: `%s`".formatted(field.jsonFieldName()));

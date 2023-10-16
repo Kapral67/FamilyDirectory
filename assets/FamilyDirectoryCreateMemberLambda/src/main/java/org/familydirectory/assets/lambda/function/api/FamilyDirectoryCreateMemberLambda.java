@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import org.familydirectory.assets.lambda.function.LambdaUtils;
 import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.familydirectory.assets.lambda.function.api.helper.CreateHelper;
 import org.familydirectory.assets.lambda.function.api.models.CreateEvent;
@@ -20,8 +21,9 @@ class FamilyDirectoryCreateMemberLambda implements RequestHandler<APIGatewayProx
     public final @NotNull
     APIGatewayProxyResponseEvent handleRequest (final @NotNull APIGatewayProxyRequestEvent event, final @NotNull Context context)
     {
-        final CreateHelper createHelper = new CreateHelper(context.getLogger(), event);
         try {
+            final CreateHelper createHelper = new CreateHelper(context.getLogger(), event);
+
 //      Get Caller
             final ApiHelper.Caller caller = createHelper.getCaller();
 
@@ -38,7 +40,7 @@ class FamilyDirectoryCreateMemberLambda implements RequestHandler<APIGatewayProx
         } catch (final ApiHelper.ResponseException e) {
             return e.getResponseEvent();
         } catch (final Exception e) {
-            createHelper.logTrace(e, FATAL);
+            LambdaUtils.logTrace(context.getLogger(), e, FATAL);
             return new APIGatewayProxyResponseEvent().withStatusCode(SC_INTERNAL_SERVER_ERROR);
         }
 
