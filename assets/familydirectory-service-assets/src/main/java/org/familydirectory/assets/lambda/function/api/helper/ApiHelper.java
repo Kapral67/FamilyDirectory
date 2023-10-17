@@ -96,6 +96,7 @@ class ApiHelper {
 
         public
         ResponseException (final @NotNull APIGatewayProxyResponseEvent responseEvent) {
+            super();
             this.responseEvent = responseEvent;
         }
 

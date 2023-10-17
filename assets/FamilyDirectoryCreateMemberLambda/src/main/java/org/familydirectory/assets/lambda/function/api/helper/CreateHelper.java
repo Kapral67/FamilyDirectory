@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_CONFLICT;
-import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
+import static org.apache.http.HttpStatus.SC_FORBIDDEN;
 
 public final
 class CreateHelper extends ApiHelper {
@@ -49,6 +49,7 @@ class CreateHelper extends ApiHelper {
 
     public
     CreateHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) {
+        super();
         this.logger = requireNonNull(logger);
         this.requestEvent = requireNonNull(requestEvent);
     }
@@ -182,8 +183,8 @@ class CreateHelper extends ApiHelper {
                                                           .build())
                                                   .build());
         } else {
-            this.logger.log("Naturalized <MEMBER,`%s`> Attempted to Create New Spouse".formatted(caller.memberId()), WARN);
-            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_UNAUTHORIZED));
+            this.logger.log("<MEMBER,`%s`> Denied Request to Create New Member".formatted(caller.memberId()), WARN);
+            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
         }
         transactionItems.add(TransactWriteItem.builder()
                                               .put(Put.builder()

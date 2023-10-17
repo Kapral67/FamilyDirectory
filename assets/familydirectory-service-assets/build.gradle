@@ -42,4 +42,6 @@ dependencies {
     implementation 'com.amazonaws:aws-lambda-java-events:3.11.3'
     implementation platform('software.amazon.awssdk:bom:2.21.0')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
+    implementation 'software.amazon.awssdk:sesv2'
+    implementation 'software.amazon.awssdk:route53'
 }

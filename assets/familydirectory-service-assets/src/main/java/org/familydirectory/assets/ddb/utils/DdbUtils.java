@@ -12,22 +12,19 @@ import static java.time.LocalDate.now;
 import static java.time.Period.between;
 import static java.time.format.DateTimeFormatter.ofPattern;
 
-public final
-class DdbUtils {
+public
+enum DdbUtils {
+    ;
     public static final String DATE_FORMAT_STRING = "yyyy-MM-dd";
     public static final DateTimeFormatter DATE_FORMATTER = ofPattern(DATE_FORMAT_STRING);
     public static final PhoneNumberUtil PHONE_NUMBER_UTIL = PhoneNumberUtil.getInstance();
     public static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     public static final int AGE_OF_MAJORITY = 18;
 
-    private
-    DdbUtils () {
-    }
-
     public static @NotNull
     String normalizePhoneNumber (final @NotNull String uncheckedPhoneNumber) {
         final String errorMessage = "Invalid Phone Number: '%s'".formatted(uncheckedPhoneNumber);
-        String region = (uncheckedPhoneNumber.contains("+"))
+        final String region = (uncheckedPhoneNumber.contains("+"))
                 ? null
                 : "US";
         final Phonenumber.PhoneNumber phoneNumber;

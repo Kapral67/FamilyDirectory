@@ -100,7 +100,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                       .build())
                                                          .deletionProtection(TRUE)
                                                          .email(UserPoolEmail.withSES(UserPoolSESOptions.builder()
-                                                                                                        .configurationSetName(FamilyDirectorySesStack.CONFIGURATION_SET_NAME)
+                                                                                                        .configurationSetName(FamilyDirectorySesStack.SES_CONFIGURATION_SET_NAME)
                                                                                                         .fromEmail("noreply@%s".formatted(hostedZone.getZoneName()))
                                                                                                         .replyTo(COGNITO_REPLY_TO_EMAIL_ADDRESS)
                                                                                                         .sesVerifiedDomain(hostedZone.getZoneName())

@@ -116,7 +116,7 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                                                                              importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)),
                                                                                      httpUserPoolAuthorizerProps);
 
-        for (ApiFunction func : ApiFunction.values()) {
+        for (final ApiFunction func : ApiFunction.values()) {
             final HttpLambdaIntegration httpLambdaIntegration = new HttpLambdaIntegration(func.httpIntegrationId(),
                                                                                           Function.fromFunctionArn(this, func.functionName(), importValue(func.arnExportName())));
 //      Add Lambda as HttpIntegration to HttpApi

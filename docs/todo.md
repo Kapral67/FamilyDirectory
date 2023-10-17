@@ -2,18 +2,11 @@
 
 ### Finish ApiGatewayStack
 
-- Needs Review
+- Needs Review (e.g. CORS ALLOW/EXPOSE Headers)
 
 ### Finish CognitoStack
 
 - Callback URLs, Logout URLs, etc.
-
-### Basic DELETE
-
-- For now, only worry about the case where a NATIVE CALLER wants to DELETE NATURALIZED SPOUSE (i.e. DIVORCE)
-    - All other cases of DELETE should be UNAUTHORIZED/FORBIDDEN
-    - DELETED MEMBER should be notified via email that their account was deleted (only if they are registered in the
-      UserPool)
 
 ### PDF vCard & S3
 

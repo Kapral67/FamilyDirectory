@@ -8,6 +8,7 @@ import org.familydirectory.assets.lambda.function.LambdaUtils;
 import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.familydirectory.assets.lambda.function.api.helper.DeleteHelper;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
@@ -22,6 +23,19 @@ class FamilyDirectoryDeleteMemberLambda implements RequestHandler<APIGatewayProx
 
 //      Get Caller
             final ApiHelper.Caller caller = deleteHelper.getCaller();
+
+//      Get Event
+            final DeleteHelper.EventWrapper deleteEvent = deleteHelper.getDeleteEvent(caller);
+
+//      Build Transaction
+            final TransactWriteItemsRequest transaction = deleteHelper.buildDeleteTransaction(caller, deleteEvent);
+
+//      Execute Transaction
+            deleteHelper.getDynamoDbClient()
+                        .transactWriteItems(transaction);
+
+//      Delete Cognito Account & Notify User of Account Deletion
+            deleteHelper.deleteCognitoAccountAndNotify(deleteEvent.ddbMemberId());
 
         } catch (final ApiHelper.ResponseException e) {
             return e.getResponseEvent();

@@ -86,6 +86,7 @@ class Member extends MemberModel {
     Member (final @NotNull String firstName, final @Nullable String middleName, final @NotNull String lastName, final @NotNull LocalDate birthday, final @Nullable String email,
             final @Nullable LocalDate deathday, final @Nullable Map<PhoneType, String> phones, final @Nullable List<String> address, final @Nullable SuffixType suffix)
     {
+        super();
         this.firstName = requireNonNull(firstName);
         this.middleName = middleName;
         this.lastName = requireNonNull(lastName);
@@ -225,6 +226,7 @@ class Member extends MemberModel {
 
         public
         Builder () {
+            super();
             this.builderBegan = now();
         }
 

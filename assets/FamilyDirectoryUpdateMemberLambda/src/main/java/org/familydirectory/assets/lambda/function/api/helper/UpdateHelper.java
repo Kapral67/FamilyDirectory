@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -11,6 +12,7 @@ import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.LambdaUtils;
 import org.familydirectory.assets.lambda.function.api.models.UpdateEvent;
 import org.jetbrains.annotations.NotNull;
@@ -28,9 +30,9 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_CONFLICT;
+import static org.apache.http.HttpStatus.SC_FORBIDDEN;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
-import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 
 public final
 class UpdateHelper extends ApiHelper {
@@ -41,6 +43,7 @@ class UpdateHelper extends ApiHelper {
 
     public
     UpdateHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) {
+        super();
         this.logger = requireNonNull(logger);
         this.requestEvent = requireNonNull(requestEvent);
     }
@@ -115,7 +118,9 @@ class UpdateHelper extends ApiHelper {
             }
         }
 
-        return new EventWrapper(updateEvent, ddbMemberId, ddbFamilyId);
+        final boolean ddbMemberIsAdult = DdbUtils.isPersonAdult(LocalDate.parse(ddbMemberMap.get(MemberTableParameter.BIRTHDAY.jsonFieldName())
+                                                                                            .s(), DdbUtils.DATE_FORMATTER));
+        return new EventWrapper(updateEvent, ddbMemberId, ddbFamilyId, ddbMemberIsAdult);
     }
 
     public @NotNull
@@ -131,15 +136,15 @@ class UpdateHelper extends ApiHelper {
                                                                       .equals(eventWrapper.ddbMemberId()))
         {
             this.logger.log("<MEMBER,`%s`> update <SPOUSE,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
-        } else if (ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
-                                                                                                 .map(AttributeValue::ss)
-                                                                                                 .filter(ss -> ss.contains(eventWrapper.ddbMemberId()))
-                                                                                                 .isPresent())
+        } else if (!eventWrapper.ddbMemberIsAdult() && ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
+                                                                                                                                     .map(AttributeValue::ss)
+                                                                                                                                     .filter(ss -> ss.contains(eventWrapper.ddbMemberId()))
+                                                                                                                                     .isPresent())
         {
             this.logger.log("<MEMBER,`%s`> update <DESCENDANT,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
         } else {
             this.logger.log("<MEMBER,`%s`> attempted to update <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), WARN);
-            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_UNAUTHORIZED));
+            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
         }
 
         return PutItemRequest.builder()
@@ -212,6 +217,6 @@ class UpdateHelper extends ApiHelper {
     }
 
     public
-    record EventWrapper(@NotNull UpdateEvent updateEvent, @NotNull String ddbMemberId, @NotNull String ddbFamilyId) {
+    record EventWrapper(@NotNull UpdateEvent updateEvent, @NotNull String ddbMemberId, @NotNull String ddbFamilyId, boolean ddbMemberIsAdult) {
     }
 }

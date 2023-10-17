@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
+import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
@@ -63,6 +64,17 @@ class FamilyDirectoryLambdaStack extends Stack {
                                                                                                                                    .actions(actions)
                                                                                                                                    .resources(singletonList(userPool.getUserPoolArn()))
                                                                                                                                    .build()));
+//      Assign Ses Permissions
+            ofNullable(func.sesActions()).ifPresent(actions -> requireNonNull(function.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
+                                                                                                                               .actions(actions)
+                                                                                                                               .resources(singletonList(importValue(
+                                                                                                                                       FamilyDirectorySesStack.SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)))
+                                                                                                                               .build()));
+//      Assign Route53 Permissions
+            ofNullable(func.route53Actions()).ifPresent(actions -> requireNonNull(function.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
+                                                                                                                                   .actions(actions)
+                                                                                                                                   .resources(singletonList("*"))
+                                                                                                                                   .build()));
 
             new CfnOutput(this, func.arnExportName(), CfnOutputProps.builder()
                                                                     .value(function.getFunctionArn())
@@ -92,6 +104,17 @@ class FamilyDirectoryLambdaStack extends Stack {
             ofNullable(func.cognitoActions()).ifPresent(actions -> requireNonNull(function.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
                                                                                                                                    .actions(actions)
                                                                                                                                    .resources(singletonList(userPool.getUserPoolArn()))
+                                                                                                                                   .build()));
+//      Assign Ses Permissions
+            ofNullable(func.sesActions()).ifPresent(actions -> requireNonNull(function.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
+                                                                                                                               .actions(actions)
+                                                                                                                               .resources(singletonList(importValue(
+                                                                                                                                       FamilyDirectorySesStack.SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)))
+                                                                                                                               .build()));
+//      Assign Route53 Permissions
+            ofNullable(func.route53Actions()).ifPresent(actions -> requireNonNull(function.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
+                                                                                                                                   .actions(actions)
+                                                                                                                                   .resources(singletonList("*"))
                                                                                                                                    .build()));
 
             new CfnOutput(this, func.arnExportName(), CfnOutputProps.builder()
