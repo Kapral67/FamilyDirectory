@@ -11,11 +11,16 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
 
-public
+public final
 class FamilyDirectoryCdkApp {
+    private
+    FamilyDirectoryCdkApp () {
+        super();
+    }
+
     public static
     void main (final String[] args) throws IOException {
-        App app = new App();
+        final App app = new App();
         final Environment env = Environment.builder()
                                            .account(app.getAccount())
                                            .region(app.getRegion())
