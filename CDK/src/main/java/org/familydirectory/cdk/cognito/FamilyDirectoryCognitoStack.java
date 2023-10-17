@@ -147,9 +147,9 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                             .build());
         final OAuthSettings userPoolClientOAuthSettings = OAuthSettings.builder()
                                                                        // TODO: ADD CALLBACK URLS
-                                                                       .callbackUrls(singletonList(""))
+//                                                                       .callbackUrls(singletonList(""))
                                                                        // TODO: ADD LOGOUT URLS
-                                                                       .logoutUrls(singletonList(""))
+//                                                                       .logoutUrls(singletonList(""))
                                                                        .flows(OAuthFlows.builder()
                                                                                         .authorizationCodeGrant(TRUE)
                                                                                         .build())
@@ -203,7 +203,8 @@ class FamilyDirectoryCognitoStack extends Stack {
         new ARecord(this, COGNITO_A_RECORD_RESOURCE_ID, cognitoARecordProps);
         final String userPoolSignInUrl = userPoolDomain.signInUrl(userPoolClient, SignInUrlOptions.builder()
                                                                                                   // TODO: CHANGE TO VIEW URL WHEN FRONTEND EXISTS
-                                                                                                  .redirectUri(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
+//                                                                                                  .redirectUri(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
+                                                                                                  .redirectUri("https://example.com")
                                                                                                   .build());
         new CfnOutput(this, COGNITO_SIGN_IN_URL_EXPORT_NAME, CfnOutputProps.builder()
                                                                            .value(userPoolSignInUrl)

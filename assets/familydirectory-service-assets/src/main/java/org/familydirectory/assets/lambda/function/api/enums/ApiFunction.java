@@ -1,10 +1,13 @@
 package org.familydirectory.assets.lambda.function.api.enums;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awscdk.services.apigatewayv2.alpha.CorsHttpMethod;
 import software.amazon.awscdk.services.apigatewayv2.alpha.HttpMethod;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -50,6 +53,23 @@ enum ApiFunction {
     }
 
     @NotNull
+    public static
+    List<CorsHttpMethod> getAllowedMethods () {
+        return Arrays.stream(values())
+                     .flatMap(f -> f.methods.stream())
+                     .distinct()
+                     .map(m -> CorsHttpMethod.valueOf(m.name()))
+                     .flatMap(m -> Stream.concat(Stream.of(m), Stream.of(CorsHttpMethod.OPTIONS)))
+                     .toList();
+    }
+
+    @NotNull
+    public final
+    List<HttpMethod> methods () {
+        return this.methods;
+    }
+
+    @NotNull
     public final
     String functionName () {
         return this.functionName;
@@ -83,12 +103,6 @@ enum ApiFunction {
     public final
     List<String> route53Actions () {
         return this.route53Actions;
-    }
-
-    @NotNull
-    public final
-    List<HttpMethod> methods () {
-        return this.methods;
     }
 
     @NotNull

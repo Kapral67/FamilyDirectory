@@ -10,7 +10,6 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.apigatewayv2.alpha.AddRoutesOptions;
-import software.amazon.awscdk.services.apigatewayv2.alpha.CorsHttpMethod;
 import software.amazon.awscdk.services.apigatewayv2.alpha.CorsPreflightOptions;
 import software.amazon.awscdk.services.apigatewayv2.alpha.DomainName;
 import software.amazon.awscdk.services.apigatewayv2.alpha.DomainNameProps;
@@ -90,11 +89,10 @@ class FamilyDirectoryApiGatewayStack extends Stack {
 //  Configure CORS options for httpApi
         final CorsPreflightOptions httpApiPropsCorsOptions = CorsPreflightOptions.builder()
                                                                                  .allowCredentials(FALSE)
-                                                                                 .allowMethods(List.of(CorsHttpMethod.POST))
+                                                                                 .allowMethods(ApiFunction.getAllowedMethods())
                                                                                  .allowOrigins(singletonList("%s*.%s".formatted(SECURE_URL_PREFIX, hostedZone.getZoneName())))
                                                                                  .maxAge(CORS_MAX_AGE)
-//      TODO:                                                                    .allowHeaders()
-//      TODO:                                                                    .exposeHeaders()
+                                                                                 .allowHeaders(List.of("X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token"))
                                                                                  .build();
 //  Configure HttpApi Options
         final HttpApiProps httpApiProps = HttpApiProps.builder()
