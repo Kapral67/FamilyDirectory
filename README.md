@@ -30,6 +30,14 @@
         - Should be an externally-managed email address that captures responses to cognito *noreply* emails (
           e.g. `familydirectory@gmail.com`)
 
+    5. `CDK_DEFAULT_ACCOUNT`
+
+        - The AWS Account Id
+
+    6. `CDK_DEFAULT_REGION`
+
+        - The AWS Region
+
 3. Now is a good time to bootstrap you're aws account for cdk if you haven't already
 
     - This only needs to be done once before the first deployment

@@ -30,6 +30,8 @@ function verify_project_env_vars {
   local domain
   local sub
   local auth
+  local account
+  local region
 
   domain="ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME"
   if [ -z "${!domain}" ]; then
@@ -49,6 +51,16 @@ function verify_project_env_vars {
   reply="ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS"
   if [ -z "${!reply}" ]; then
     empty_env_var $reply
+  fi
+
+  account="CDK_DEFAULT_ACCOUNT"
+  if [ -z "${!account}" ]; then
+    empty_env_var $account
+  fi
+
+  region="CDK_DEFAULT_REGION"
+  if [ -z "${!region}" ]; then
+    empty_env_var $region
   fi
 }
 

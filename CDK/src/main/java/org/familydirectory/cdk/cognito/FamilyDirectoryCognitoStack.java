@@ -1,8 +1,8 @@
 package org.familydirectory.cdk.cognito;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
@@ -46,6 +46,7 @@ import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
 import software.amazon.awscdk.services.route53.HostedZone;
+import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.UserPoolDomainTarget;
@@ -85,11 +86,15 @@ class FamilyDirectoryCognitoStack extends Stack {
     FamilyDirectoryCognitoStack (final Construct scope, final String id, final StackProps stackProps) {
         super(scope, id, stackProps);
 
-        final IHostedZone hostedZone = HostedZone.fromHostedZoneId(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, importValue(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME));
+        final HostedZoneAttributes hostedZoneAttrs = HostedZoneAttributes.builder()
+                                                                         .hostedZoneId(importValue(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME))
+                                                                         .zoneName(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
+                                                                         .build();
+        final IHostedZone hostedZone = HostedZone.fromHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
 
-        final Map<TriggerFunction, IFunction> cognitoTriggerLambdaFunctions = new HashMap<>();
-        Arrays.stream(TriggerFunction.values())
-              .forEach(func -> cognitoTriggerLambdaFunctions.put(func, Function.fromFunctionArn(this, func.functionName(), importValue(func.arnExportName()))));
+        final Map<TriggerFunction, IFunction> cognitoTriggerLambdaFunctions = Arrays.stream(TriggerFunction.values())
+                                                                                    .collect(Collectors.toUnmodifiableMap(f -> f, f -> Function.fromFunctionArn(this, f.functionName(),
+                                                                                                                                                                importValue(f.arnExportName()))));
 
         final UserPoolProps userPoolProps = UserPoolProps.builder()
                                                          .accountRecovery(AccountRecovery.EMAIL_ONLY)

@@ -10,6 +10,7 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.route53.IPublicHostedZone;
 import software.amazon.awscdk.services.route53.PublicHostedZone;
+import software.amazon.awscdk.services.route53.PublicHostedZoneAttributes;
 import software.amazon.awscdk.services.ses.ConfigurationSet;
 import software.amazon.awscdk.services.ses.ConfigurationSetProps;
 import software.amazon.awscdk.services.ses.ConfigurationSetTlsPolicy;
@@ -45,8 +46,11 @@ class FamilyDirectorySesStack extends Stack {
                                        .orElseThrow();
 
 //  PUBLIC HOSTED ZONE
-        final IPublicHostedZone hostedZone = PublicHostedZone.fromPublicHostedZoneId(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID,
-                                                                                     importValue(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME));
+        final PublicHostedZoneAttributes hostedZoneAttrs = PublicHostedZoneAttributes.builder()
+                                                                                     .hostedZoneId(importValue(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME))
+                                                                                     .zoneName(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
+                                                                                     .build();
+        final IPublicHostedZone hostedZone = PublicHostedZone.fromPublicHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
 
 //  CONFIGURATION SET
         final ConfigurationSetProps configurationSetProps = ConfigurationSetProps.builder()

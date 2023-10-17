@@ -30,6 +30,7 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
 import software.amazon.awscdk.services.route53.HostedZone;
+import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.ApiGatewayv2DomainProperties;
@@ -56,7 +57,11 @@ class FamilyDirectoryApiGatewayStack extends Stack {
     FamilyDirectoryApiGatewayStack (final Construct scope, final String id, final StackProps stackProps) {
         super(scope, id, stackProps);
 
-        final IHostedZone hostedZone = HostedZone.fromHostedZoneId(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, importValue(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME));
+        final HostedZoneAttributes hostedZoneAttrs = HostedZoneAttributes.builder()
+                                                                         .hostedZoneId(importValue(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME))
+                                                                         .zoneName(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
+                                                                         .build();
+        final IHostedZone hostedZone = HostedZone.fromHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
 
 //  Api Certificate
         final CertificateProps apiCertificateProps = CertificateProps.builder()

@@ -10,6 +10,7 @@ import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
+import static java.lang.System.getenv;
 
 public final
 class FamilyDirectoryCdkApp {
@@ -22,8 +23,8 @@ class FamilyDirectoryCdkApp {
     void main (final String[] args) throws IOException {
         final App app = new App();
         final Environment env = Environment.builder()
-                                           .account(app.getAccount())
-                                           .region(app.getRegion())
+                                           .account(getenv("CDK_DEFAULT_ACCOUNT"))
+                                           .region(getenv("CDK_DEFAULT_REGION"))
                                            .build();
 
         final String domainStackName = "FamilyDirectoryDomainStack";
