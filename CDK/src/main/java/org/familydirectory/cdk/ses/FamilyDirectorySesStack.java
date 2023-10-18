@@ -21,6 +21,7 @@ import software.amazon.awscdk.services.ses.MailFromBehaviorOnMxFailure;
 import software.amazon.awscdk.services.ses.SuppressionReasons;
 import software.constructs.Construct;
 import static java.lang.Boolean.TRUE;
+import static java.lang.System.getenv;
 import static java.util.Objects.requireNonNull;
 import static software.amazon.awscdk.Fn.importValue;
 
@@ -31,6 +32,7 @@ class FamilyDirectorySesStack extends Stack {
     public static final String SES_CONFIGURATION_SET_NAME = "DefaultSES%s".formatted(SES_CONFIGURATION_SET_RESOURCE_ID);
     public static final String SES_EMAIL_IDENTITY_RESOURCE_ID = "EmailIdentity";
     public static final String SES_EMAIL_IDENTITY_ARN_EXPORT_NAME = "%sArn".formatted(SES_EMAIL_IDENTITY_RESOURCE_ID);
+    public static final String SES_MAIL_FROM_DOMAIN_NAME = "%s.%s".formatted(getenv("ORG_FAMILYDIRECTORY_SES_MAIL_FROM_SUBDOMAIN_NAME"), FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
 
     public
     FamilyDirectorySesStack (final Construct scope, final String id, final StackProps stackProps) {
@@ -66,7 +68,7 @@ class FamilyDirectorySesStack extends Stack {
                                                                         .dkimSigning(TRUE)
                                                                         .identity(Identity.publicHostedZone(hostedZone))
                                                                         .mailFromBehaviorOnMxFailure(MailFromBehaviorOnMxFailure.REJECT_MESSAGE)
-                                                                        .mailFromDomain(hostedZone.getZoneName())
+                                                                        .mailFromDomain(SES_MAIL_FROM_DOMAIN_NAME)
                                                                         .build();
         new EmailIdentity(this, SES_EMAIL_IDENTITY_RESOURCE_ID, emailIdentityProps);
         new CfnOutput(this, SES_EMAIL_IDENTITY_ARN_EXPORT_NAME, CfnOutputProps.builder()

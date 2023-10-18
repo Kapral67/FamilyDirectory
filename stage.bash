@@ -30,6 +30,7 @@ function verify_project_env_vars {
   local domain
   local sub
   local auth
+  local mail
   local account
   local region
 
@@ -51,6 +52,11 @@ function verify_project_env_vars {
   reply="ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS"
   if [ -z "${!reply}" ]; then
     empty_env_var $reply
+  fi
+
+  mail="ORG_FAMILYDIRECTORY_SES_MAIL_FROM_SUBDOMAIN_NAME"
+  if [ -z "${!mail}" ]; then
+    empty_env_var $mail
   fi
 
   account="CDK_DEFAULT_ACCOUNT"

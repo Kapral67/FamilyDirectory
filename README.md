@@ -27,16 +27,18 @@
 
     4. `ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS`
 
-        - Should be an externally-managed email address that captures responses to cognito *noreply* emails (
+        - Should be an externally-managed email address that captures responses to cognito *no-reply* emails (
           e.g. `familydirectory@gmail.com`)
 
-    5. `CDK_DEFAULT_ACCOUNT`
+    5. `ORG_FAMILYDIRECTORY_SES_MAIL_FROM_SUBDOMAIN_NAME`
+
+        - Should be the subdomain of `ORG_FAMILY_DIRECTORY_HOSTED_ZONE_NAME` where emails are sent from (e.g. `support`)
+
+    6. `CDK_DEFAULT_ACCOUNT`
 
         - The AWS Account Id
 
-    6. `CDK_DEFAULT_REGION`
-
-        - The AWS Region
+    7. `CDK_DEFAULT_REGION`
 
 3. Now is a good time to bootstrap you're aws account for cdk if you haven't already
 
@@ -52,4 +54,14 @@
 
 5. Now you can synth and deploy
 
-    - **TODO** Add Deployment Order
+    1. Deploy the `FamilyDirectoryDomainStack` solely (e.g. `cdk deploy FamilyDirectoryDomainStack`)
+
+        - Before moving forward, login to the aws console and navigate to Route53
+
+        - Here, you need to copy the NS records for `${ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME}` and apply them at your
+          registrar
+
+            - Make sure that you are applying these records for the subdomain, not the root domain, and also make sure
+              the TTL values match both at your registrar and on Route53
+
+    2. Continue deploying (e.g. `cdk deploy --all`)

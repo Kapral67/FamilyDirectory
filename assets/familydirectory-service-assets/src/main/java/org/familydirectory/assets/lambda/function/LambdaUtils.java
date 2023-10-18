@@ -51,7 +51,7 @@ enum LambdaUtils {
                                                          .content(EmailContent.builder()
                                                                               .simple(message)
                                                                               .build())
-                                                         .fromEmailAddress("noreply@%s".formatted(hostedZoneName))
+                                                         .fromEmailAddress("no-reply@%s".formatted(hostedZoneName))
                                                          .build())
                               .messageId();
         }
