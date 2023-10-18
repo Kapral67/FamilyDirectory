@@ -64,4 +64,17 @@
             - Make sure that you are applying these records for the subdomain, not the root domain, and also make sure
               the TTL values match both at your registrar and on Route53
 
-        - Wait Until DNS Propagates, Then Continue (e.g. `cdk deploy --all`)
+        - Wait Until DNS Propagates (eta 24 hours), Then Continue
+
+    2. Now, deploy the `FamilyDirectorySesStack` solely (e.g. `cdk deploy FamilyDirectorySesStack`)
+
+        - Since the domain used for SES is attached to the HostedZone defined in `FamilyDirectoryDomainStack`, DNS
+          records are created automatically
+
+        - Still, these records may take up to 72 hours to propagate and its best to wait until these propagate before
+          moving forward
+
+        - This is because Cognito (the next stack) relies on SES to send email, so having a fully operational SES is
+          best before creating the `FamilyDirectoryCognitoStack` resources
+
+***TODO** Finish Deployment Order*
