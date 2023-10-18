@@ -54,7 +54,7 @@
 
 5. Now you can synth and deploy
 
-    1. Deploy the `FamilyDirectoryDomainStack` solely (e.g. `cdk deploy FamilyDirectoryDomainStack`)
+    1. First, deploy the `FamilyDirectoryDomainStack` solely (e.g. `cdk deploy FamilyDirectoryDomainStack`)
 
         - Before moving forward, login to the aws console and navigate to Route53
 
@@ -64,4 +64,4 @@
             - Make sure that you are applying these records for the subdomain, not the root domain, and also make sure
               the TTL values match both at your registrar and on Route53
 
-    2. Continue deploying (e.g. `cdk deploy --all`)
+        - Wait Until DNS Propagates, Then Continue (e.g. `cdk deploy --all`)
