@@ -194,11 +194,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                                                      .resources(singletonList(
                                                                                                                              importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)))
                                                                                                                      .build()));
-//      Assign Route53 Permissions
-            ofNullable(k.route53Actions()).ifPresent(actions -> requireNonNull(v.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
-                                                                                                                         .actions(actions)
-                                                                                                                         .resources(singletonList("*"))
-                                                                                                                         .build()));
+
             new CfnOutput(this, k.arnExportName(), CfnOutputProps.builder()
                                                                  .value(v.getFunctionArn())
                                                                  .exportName(k.arnExportName())

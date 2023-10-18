@@ -69,11 +69,6 @@ class FamilyDirectoryLambdaStack extends Stack {
                                                                                                                                .resources(singletonList(importValue(
                                                                                                                                        FamilyDirectorySesStack.SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)))
                                                                                                                                .build()));
-//      Assign Route53 Permissions
-            ofNullable(func.route53Actions()).ifPresent(actions -> requireNonNull(function.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
-                                                                                                                                   .actions(actions)
-                                                                                                                                   .resources(singletonList("*"))
-                                                                                                                                   .build()));
 
             new CfnOutput(this, func.arnExportName(), CfnOutputProps.builder()
                                                                     .value(function.getFunctionArn())

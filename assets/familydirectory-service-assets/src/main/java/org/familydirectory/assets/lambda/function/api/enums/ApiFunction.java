@@ -17,13 +17,13 @@ enum ApiFunction {
     //    GET_MEMBER("FamilyDirectoryGetMemberLambda", "%s.%s::handleRequest", of("dynamodb:Query", "dynamodb:GetItem"), "get"),
     CREATE_MEMBER("CreateMember",
                   Map.of(DdbTable.MEMBER, List.of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:PutItem"),
-                         DdbTable.COGNITO, singletonList("dynamodb:GetItem")), null, null, null, singletonList(HttpMethod.POST), "create"),
+                         DdbTable.COGNITO, singletonList("dynamodb:GetItem")), null, null, singletonList(HttpMethod.POST), "create"),
     UPDATE_MEMBER("UpdateMember", Map.of(DdbTable.MEMBER, List.of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.COGNITO,
-                                         singletonList("dynamodb:GetItem")), null, null, null, singletonList(HttpMethod.PUT), "update"),
+                                         singletonList("dynamodb:GetItem")), null, null, singletonList(HttpMethod.PUT), "update"),
     DELETE_MEMBER("DeleteMember",
                   Map.of(DdbTable.MEMBER, List.of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:DeleteItem"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:UpdateItem"), DdbTable.COGNITO,
                          List.of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:DeleteItem")), List.of("cognito-idp:ListUsers", "cognito-idp:ListUserPools", "cognito-idp:AdminDeleteUser"),
-                  singletonList("ses:SendEmail"), singletonList("route53:ListHostedZones"), singletonList(HttpMethod.DELETE), "delete");
+                  List.of("ses:SendEmail", "ses:GetEmailIdentity", "ses:ListEmailIdentities"), singletonList(HttpMethod.DELETE), "delete");
 
     @NotNull
     private final String functionName;
@@ -33,21 +33,18 @@ enum ApiFunction {
     private final List<String> cognitoActions;
     @Nullable
     private final List<String> sesActions;
-    @Nullable
-    private final List<String> route53Actions;
     @NotNull
     private final String endpoint;
     @NotNull
     private final List<HttpMethod> methods;
 
     ApiFunction (final @NotNull String functionName, final @Nullable Map<DdbTable, List<String>> ddbActions, final @Nullable List<String> cognitoActions, final @Nullable List<String> sesActions,
-                 final @Nullable List<String> route53Actions, final @NotNull List<HttpMethod> methods, final @NotNull String endpoint)
+                 final @NotNull List<HttpMethod> methods, final @NotNull String endpoint)
     {
         this.functionName = "FamilyDirectory%sLambda".formatted(requireNonNull(functionName));
         this.ddbActions = ddbActions;
         this.cognitoActions = cognitoActions;
         this.sesActions = sesActions;
-        this.route53Actions = route53Actions;
         this.methods = requireNonNull(methods);
         this.endpoint = requireNonNull(endpoint);
     }
@@ -97,12 +94,6 @@ enum ApiFunction {
     public final
     List<String> sesActions () {
         return this.sesActions;
-    }
-
-    @Nullable
-    public final
-    List<String> route53Actions () {
-        return this.route53Actions;
     }
 
     @NotNull

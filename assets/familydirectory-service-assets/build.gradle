@@ -43,5 +43,4 @@ dependencies {
     implementation platform('software.amazon.awssdk:bom:2.21.1')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:sesv2'
-    implementation 'software.amazon.awssdk:route53'
 }

@@ -10,9 +10,9 @@ import static java.util.Objects.requireNonNull;
 
 public
 enum TriggerFunction {
-    PRE_SIGN_UP("PreSignUp", Map.of(DdbTable.MEMBER, singletonList("dynamodb:Query"), DdbTable.COGNITO, singletonList("dynamodb:Query")), null, null, null),
+    PRE_SIGN_UP("PreSignUp", Map.of(DdbTable.MEMBER, singletonList("dynamodb:Query"), DdbTable.COGNITO, singletonList("dynamodb:Query")), null, null),
     POST_CONFIRMATION("PostConfirmation", Map.of(DdbTable.MEMBER, singletonList("dynamodb:Query"), DdbTable.COGNITO, List.of("dynamodb:GetItem", "dynamodb:PutItem")),
-                      singletonList("cognito-idp:AdminDisableUser"), singletonList("ses:SendEmail"), singletonList("route53:ListHostedZones"));
+                      singletonList("cognito-idp:AdminDisableUser"), List.of("ses:SendEmail", "ses:GetEmailIdentity", "ses:ListEmailIdentities"));
 
     @NotNull
     private final String functionName;
@@ -22,17 +22,13 @@ enum TriggerFunction {
     private final List<String> cognitoActions;
     @Nullable
     private final List<String> sesActions;
-    @Nullable
-    private final List<String> route53Actions;
 
-    TriggerFunction (final @NotNull String functionName, final @Nullable Map<DdbTable, List<String>> ddbActions, final @Nullable List<String> cognitoActions, final @Nullable List<String> sesActions,
-                     final @Nullable List<String> route53Actions)
+    TriggerFunction (final @NotNull String functionName, final @Nullable Map<DdbTable, List<String>> ddbActions, final @Nullable List<String> cognitoActions, final @Nullable List<String> sesActions)
     {
         this.functionName = "FamilyDirectoryCognito%sTrigger".formatted(requireNonNull(functionName));
         this.ddbActions = ddbActions;
         this.cognitoActions = cognitoActions;
         this.sesActions = sesActions;
-        this.route53Actions = route53Actions;
     }
 
     @NotNull
@@ -57,12 +53,6 @@ enum TriggerFunction {
     public final
     List<String> sesActions () {
         return this.sesActions;
-    }
-
-    @Nullable
-    public final
-    List<String> route53Actions () {
-        return this.route53Actions;
     }
 
     @NotNull
