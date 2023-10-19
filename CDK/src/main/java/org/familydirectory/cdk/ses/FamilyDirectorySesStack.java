@@ -33,6 +33,7 @@ class FamilyDirectorySesStack extends Stack {
     public static final String SES_EMAIL_IDENTITY_RESOURCE_ID = "EmailIdentity";
     public static final String SES_EMAIL_IDENTITY_ARN_EXPORT_NAME = "%sArn".formatted(SES_EMAIL_IDENTITY_RESOURCE_ID);
     public static final String SES_MAIL_FROM_DOMAIN_NAME = "%s.%s".formatted(getenv("ORG_FAMILYDIRECTORY_SES_MAIL_FROM_SUBDOMAIN_NAME"), FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
+    public static final String SES_EMAIL_IDENTITY_NAME_EXPORT_NAME = "%sName".formatted(SES_EMAIL_IDENTITY_RESOURCE_ID);
 
     public
     FamilyDirectorySesStack (final Construct scope, final String id, final StackProps stackProps) {
@@ -70,11 +71,15 @@ class FamilyDirectorySesStack extends Stack {
                                                                         .mailFromBehaviorOnMxFailure(MailFromBehaviorOnMxFailure.REJECT_MESSAGE)
                                                                         .mailFromDomain(SES_MAIL_FROM_DOMAIN_NAME)
                                                                         .build();
-        new EmailIdentity(this, SES_EMAIL_IDENTITY_RESOURCE_ID, emailIdentityProps);
+        final EmailIdentity emailIdentity = new EmailIdentity(this, SES_EMAIL_IDENTITY_RESOURCE_ID, emailIdentityProps);
         new CfnOutput(this, SES_EMAIL_IDENTITY_ARN_EXPORT_NAME, CfnOutputProps.builder()
                                                                               .value("arn:aws:ses:%s:%s:identity/%s".formatted(region, account, hostedZone.getZoneName()))
                                                                               .exportName(SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)
                                                                               .build());
+        new CfnOutput(this, SES_EMAIL_IDENTITY_NAME_EXPORT_NAME, CfnOutputProps.builder()
+                                                                               .value(emailIdentity.getEmailIdentityName())
+                                                                               .exportName(SES_EMAIL_IDENTITY_NAME_EXPORT_NAME)
+                                                                               .build());
 
 //      TODO: <a href="https://docs.aws.amazon.com/cdk/api/v2/java/software/amazon/awscdk/services/ses/package-summary.html#email-receiving-heading"> EMAIL RECEIVING </a>
     }

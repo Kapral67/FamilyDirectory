@@ -12,14 +12,12 @@ import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
-import org.familydirectory.assets.lambda.function.LambdaUtils;
 import org.familydirectory.assets.lambda.function.api.models.DeleteEvent;
+import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUserPoolsRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUserPoolsResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
@@ -34,6 +32,7 @@ import software.amazon.awssdk.services.dynamodb.model.Update;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN;
+import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
@@ -48,7 +47,7 @@ class DeleteHelper extends ApiHelper {
     private final @NotNull ObjectMapper objectMapper = new ObjectMapper();
     private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
     private final @NotNull CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create();
-    private final @NotNull String userPoolId;
+    private final @NotNull String userPoolId = getenv(LambdaUtils.EnvVar.COGNITO_USER_POOL_ID.name());
     private final @NotNull LambdaLogger logger;
     private final @NotNull APIGatewayProxyRequestEvent requestEvent;
 
@@ -57,20 +56,6 @@ class DeleteHelper extends ApiHelper {
         super();
         this.logger = requireNonNull(logger);
         this.requestEvent = requireNonNull(requestEvent);
-        this.userPoolId = this.retrieveUserPoolId();
-    }
-
-    private @NotNull
-    String retrieveUserPoolId () {
-        final ListUserPoolsResponse response = this.cognitoClient.listUserPools(ListUserPoolsRequest.builder()
-                                                                                                    .maxResults(1)
-                                                                                                    .build());
-        if (!response.hasUserPools()) {
-            throw new IllegalStateException("No User Pools Found");
-        }
-        return response.userPools()
-                       .get(0)
-                       .id();
     }
 
     public @NotNull
@@ -193,10 +178,10 @@ class DeleteHelper extends ApiHelper {
                                                          .orElseThrow()
                                                          .stream()
                                                          .filter(attr -> attr.name()
-                                                                             .equals("email"))
+                                                                             .equalsIgnoreCase("email"))
                                                          .findFirst()
                                                          .map(AttributeType::value)
-                                                         .filter(Predicate.not(String::isBlank))
+                                                         .filter(s -> s.contains("@"))
                                                          .orElseThrow();
             final String emailId = LambdaUtils.sendEmail(singletonList(ddbMemberCognitoEmail), "Notice of Account Deletion", "Your account has been irreversibly deleted.");
             this.logger.log("Sent Account Deletion Notice To <EMAIL,`%s`>: <MESSAGE_ID,`%s`>".formatted(ddbMemberCognitoEmail, emailId), INFO);

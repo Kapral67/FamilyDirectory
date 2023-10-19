@@ -34,7 +34,7 @@ class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUs
 
         final String email = ofNullable(event.getRequest()
                                              .getUserAttributes()
-                                             .get("email")).filter(Predicate.not(String::isBlank))
+                                             .get("email")).filter(s -> s.contains("@"))
                                                            .orElseThrow();
 
         logger.log("PROCESS: PreSignUp Event for <EMAIL,`%s`>".formatted(email), INFO);

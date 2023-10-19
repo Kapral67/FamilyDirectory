@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awscdk.services.apigatewayv2.alpha.CorsHttpMethod;
@@ -13,7 +14,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
 public
-enum ApiFunction {
+enum ApiFunction implements LambdaFunctionModel {
     //    GET_MEMBER("FamilyDirectoryGetMemberLambda", "%s.%s::handleRequest", of("dynamodb:Query", "dynamodb:GetItem"), "get"),
     CREATE_MEMBER("CreateMember",
                   Map.of(DdbTable.MEMBER, List.of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:PutItem"),
@@ -22,8 +23,8 @@ enum ApiFunction {
                                          singletonList("dynamodb:GetItem")), null, null, singletonList(HttpMethod.PUT), "update"),
     DELETE_MEMBER("DeleteMember",
                   Map.of(DdbTable.MEMBER, List.of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:DeleteItem"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:UpdateItem"), DdbTable.COGNITO,
-                         List.of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:DeleteItem")), List.of("cognito-idp:ListUsers", "cognito-idp:ListUserPools", "cognito-idp:AdminDeleteUser"),
-                  List.of("ses:SendEmail", "ses:GetEmailIdentity", "ses:ListEmailIdentities"), singletonList(HttpMethod.DELETE), "delete");
+                         List.of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:DeleteItem")), List.of("cognito-idp:ListUsers", "cognito-idp:AdminDeleteUser"), singletonList("ses:SendEmail"),
+                  singletonList(HttpMethod.DELETE), "delete");
 
     @NotNull
     private final String functionName;
@@ -66,6 +67,35 @@ enum ApiFunction {
         return this.methods;
     }
 
+    @Override
+    @NotNull
+    public final
+    String handler () {
+        return "org.familydirectory.assets.lambda.function.api.%s::handleRequest".formatted(this.functionName);
+    }
+
+    @Override
+    @Nullable
+    public final
+    Map<DdbTable, List<String>> ddbActions () {
+        return this.ddbActions;
+    }
+
+    @Override
+    @Nullable
+    public final
+    List<String> cognitoActions () {
+        return this.cognitoActions;
+    }
+
+    @Override
+    @Nullable
+    public final
+    List<String> sesActions () {
+        return this.sesActions;
+    }
+
+    @Override
     @NotNull
     public final
     String functionName () {
@@ -74,38 +104,8 @@ enum ApiFunction {
 
     @NotNull
     public final
-    String handler () {
-        return "org.familydirectory.assets.lambda.function.api.%s::handleRequest".formatted(this.functionName);
-    }
-
-    @Nullable
-    public final
-    Map<DdbTable, List<String>> ddbActions () {
-        return this.ddbActions;
-    }
-
-    @Nullable
-    public final
-    List<String> cognitoActions () {
-        return this.cognitoActions;
-    }
-
-    @Nullable
-    public final
-    List<String> sesActions () {
-        return this.sesActions;
-    }
-
-    @NotNull
-    public final
     String endpoint () {
         return "/%s".formatted(this.endpoint);
-    }
-
-    @NotNull
-    public final
-    String arnExportName () {
-        return "%sArn".formatted(this.functionName);
     }
 
     @NotNull

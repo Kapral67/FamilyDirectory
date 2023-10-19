@@ -9,7 +9,7 @@ import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
-import org.familydirectory.assets.lambda.function.LambdaUtils;
+import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
@@ -43,7 +43,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
         final String sub;
         email = ofNullable(event.getRequest()
                                 .getUserAttributes()
-                                .get("email")).filter(Predicate.not(String::isBlank))
+                                .get("email")).filter(s -> s.contains("@"))
                                               .orElseThrow(() -> {
                                                   logger.log("ERROR: Cognito <USER,`%s`> Email Not Found".formatted(event.getUserName()), ERROR);
                                                   final IllegalStateException e = new IllegalStateException();
@@ -68,11 +68,12 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                                  .build())
                           .hasItem())
             {
+//          If There Is a PreExisting Entry, Then The User is Just Changing Their Email For Cognito
                 return getValidEvent(event, email);
             }
         } catch (final Exception e) {
-            LambdaUtils.logTrace(logger, e, ERROR);
             adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
+            LambdaUtils.logTrace(logger, e, ERROR);
             throw e;
         }
 
@@ -112,8 +113,8 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                                           AttributeValue.fromS(memberId)))
                                              .build());
         } catch (final Exception e) {
-            LambdaUtils.logTrace(logger, e, ERROR);
             adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
+            LambdaUtils.logTrace(logger, e, ERROR);
             throw e;
         }
 
@@ -156,7 +157,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
             });
         } catch (final Exception x) {
             ofNullable(e).ifPresent(t -> t.addSuppressed(x));
-            LambdaUtils.logTrace(logger, x, FATAL);
+            LambdaUtils.logTrace(logger, x, ERROR);
         }
     }
 }

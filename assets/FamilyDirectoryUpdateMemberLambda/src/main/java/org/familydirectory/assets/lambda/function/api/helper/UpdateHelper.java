@@ -8,13 +8,12 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
-import org.familydirectory.assets.lambda.function.LambdaUtils;
 import org.familydirectory.assets.lambda.function.api.models.UpdateEvent;
+import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -89,10 +88,10 @@ class UpdateHelper extends ApiHelper {
         final String ddbFamilyId = ddbMemberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
                                                .s();
         final String ddbMemberEmail = ofNullable(ddbMemberMap.get(MemberTableParameter.EMAIL.jsonFieldName())).map(AttributeValue::s)
-                                                                                                              .filter(Predicate.not(String::isBlank))
+                                                                                                              .filter(s -> s.contains("@"))
                                                                                                               .orElse(null);
         final String updateMemberEmail = ofNullable(updateEvent.member()
-                                                               .getEmail()).filter(Predicate.not(String::isBlank))
+                                                               .getEmail()).filter(s -> s.contains("@"))
                                                                            .orElse(null);
 
         if (nonNull(updateMemberEmail) && !Objects.equals(ddbMemberEmail, updateMemberEmail)) {

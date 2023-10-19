@@ -9,7 +9,7 @@ import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
-import org.familydirectory.assets.lambda.function.LambdaUtils;
+import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;

@@ -33,6 +33,7 @@ function verify_project_env_vars {
   local mail
   local account
   local region
+  local root
 
   domain="ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME"
   if [ -z "${!domain}" ]; then
@@ -57,6 +58,11 @@ function verify_project_env_vars {
   mail="ORG_FAMILYDIRECTORY_SES_MAIL_FROM_SUBDOMAIN_NAME"
   if [ -z "${!mail}" ]; then
     empty_env_var $mail
+  fi
+
+  root="ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID"
+  if [ -z "${!root}" ]; then
+    empty_env_var $root
   fi
 
   account="CDK_DEFAULT_ACCOUNT"

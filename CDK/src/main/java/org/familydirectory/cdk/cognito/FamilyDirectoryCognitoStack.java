@@ -2,10 +2,10 @@ package org.familydirectory.cdk.cognito;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.stream.Collectors;
+import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
-import org.familydirectory.cdk.lambda.FamilyDirectoryLambdaStack;
+import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
@@ -43,8 +43,6 @@ import software.amazon.awscdk.services.cognito.UserPoolSESOptions;
 import software.amazon.awscdk.services.cognito.UserPoolTriggers;
 import software.amazon.awscdk.services.cognito.UserVerificationConfig;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.lambda.FunctionProps;
-import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
 import software.amazon.awscdk.services.route53.HostedZone;
@@ -57,19 +55,10 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
-import static java.util.Objects.requireNonNull;
-import static java.util.Optional.ofNullable;
-import static org.familydirectory.cdk.lambda.FamilyDirectoryLambdaStack.ONE_GiB_IN_MiB;
-import static org.familydirectory.cdk.lambda.FamilyDirectoryLambdaStack.RUNTIME;
 import static software.amazon.awscdk.Duration.days;
-import static software.amazon.awscdk.Duration.seconds;
 import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider.COGNITO;
 import static software.amazon.awscdk.services.cognito.VerificationEmailStyle.LINK;
-import static software.amazon.awscdk.services.iam.Effect.ALLOW;
-import static software.amazon.awscdk.services.iam.PolicyStatement.Builder.create;
-import static software.amazon.awscdk.services.lambda.Architecture.ARM_64;
-import static software.amazon.awscdk.services.lambda.Code.fromAsset;
 
 public
 class FamilyDirectoryCognitoStack extends Stack {
@@ -103,24 +92,8 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                          .build();
         final IHostedZone hostedZone = HostedZone.fromHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
 
-        final Map<TriggerFunction, IFunction> cognitoTriggerLambdaFunctions = Arrays.stream(TriggerFunction.values())
-                                                                                    .collect(Collectors.toUnmodifiableMap(f -> f, f -> new Function(this, f.functionName(), FunctionProps.builder()
-                                                                                                                                                                                         .runtime(
-                                                                                                                                                                                                 RUNTIME)
-                                                                                                                                                                                         .code(fromAsset(
-                                                                                                                                                                                                 FamilyDirectoryLambdaStack.getLambdaJar(
-                                                                                                                                                                                                         f.functionName())))
-                                                                                                                                                                                         .handler(
-                                                                                                                                                                                                 f.handler())
-                                                                                                                                                                                         .timeout(
-                                                                                                                                                                                                 seconds(60))
-                                                                                                                                                                                         .architecture(
-                                                                                                                                                                                                 ARM_64)
-                                                                                                                                                                                         .memorySize(
-                                                                                                                                                                                                 ONE_GiB_IN_MiB)
-                                                                                                                                                                                         .reservedConcurrentExecutions(
-                                                                                                                                                                                                 1)
-                                                                                                                                                                                         .build())));
+//  Construct Triggers
+        final Map<LambdaFunctionModel, Function> cognitoTriggerLambdaFunctions = LambdaFunctionConstructUtility.constructFunctionMap(this, Arrays.asList(TriggerFunction.values()));
 
         final UserPoolProps userPoolProps = UserPoolProps.builder()
                                                          .accountRecovery(AccountRecovery.EMAIL_ONLY)
@@ -176,30 +149,9 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                             .value(userPool.getUserPoolId())
                                                                             .exportName(COGNITO_USER_POOL_ID_EXPORT_NAME)
                                                                             .build());
-        cognitoTriggerLambdaFunctions.forEach((k, v) -> {
-//      Assign Ddb Permissions
-            ofNullable(k.ddbActions()).ifPresent(map -> map.forEach((table, actions) -> requireNonNull(v.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
-                                                                                                                                                 .actions(actions)
-                                                                                                                                                 .resources(singletonList(
-                                                                                                                                                         importValue(table.arnExportName())))
-                                                                                                                                                 .build())));
-//      Assign Cognito Permissions
-            ofNullable(k.cognitoActions()).ifPresent(actions -> requireNonNull(v.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
-                                                                                                                         .actions(actions)
-                                                                                                                         .resources(singletonList(userPool.getUserPoolArn()))
-                                                                                                                         .build()));
-//      Assign Ses Permissions
-            ofNullable(k.sesActions()).ifPresent(actions -> requireNonNull(v.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
-                                                                                                                     .actions(actions)
-                                                                                                                     .resources(singletonList(
-                                                                                                                             importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)))
-                                                                                                                     .build()));
 
-            new CfnOutput(this, k.arnExportName(), CfnOutputProps.builder()
-                                                                 .value(v.getFunctionArn())
-                                                                 .exportName(k.arnExportName())
-                                                                 .build());
-        });
+//  Add Permissions to Triggers
+        LambdaFunctionConstructUtility.constructFunctionPermissions(this, userPool, cognitoTriggerLambdaFunctions);
 
         final OAuthSettings userPoolClientOAuthSettings = OAuthSettings.builder()
                                                                        // TODO: ADD CALLBACK URLS

@@ -34,11 +34,18 @@
 
         - Should be the subdomain of `ORG_FAMILY_DIRECTORY_HOSTED_ZONE_NAME` where emails are sent from (e.g. `support`)
 
+    6. `ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID`
+
+        - The `ROOT MEMBER` of this FamilyDirectory must be known and so an Environment Variable is set for it.
+        - A good value for this variable is `"00000000-0000-0000-0000-000000000000"`
+
     6. `CDK_DEFAULT_ACCOUNT`
 
         - The AWS Account Id
 
     7. `CDK_DEFAULT_REGION`
+
+        - The AWS Region
 
 3. Now is a good time to bootstrap you're aws account for cdk if you haven't already
 
@@ -71,7 +78,7 @@
         - Since the domain used for SES is attached to the HostedZone defined in `FamilyDirectoryDomainStack`, DNS
           records are created automatically
 
-        - Still, these records may take up to 72 hours to propagate and its best to wait until these propagate before
+        - Still, these records may take up to 72 hours to propagate, and it's best to wait until these propagate before
           moving forward
 
         - This is because Cognito (the next stack) relies on SES to send email, so having a fully operational SES is

@@ -3,16 +3,17 @@ package org.familydirectory.assets.lambda.function.trigger.enums;
 import java.util.List;
 import java.util.Map;
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
 public
-enum TriggerFunction {
+enum TriggerFunction implements LambdaFunctionModel {
     PRE_SIGN_UP("PreSignUp", Map.of(DdbTable.MEMBER, singletonList("dynamodb:Query"), DdbTable.COGNITO, singletonList("dynamodb:Query")), null, null),
     POST_CONFIRMATION("PostConfirmation", Map.of(DdbTable.MEMBER, singletonList("dynamodb:Query"), DdbTable.COGNITO, List.of("dynamodb:GetItem", "dynamodb:PutItem")),
-                      singletonList("cognito-idp:AdminDisableUser"), List.of("ses:SendEmail", "ses:GetEmailIdentity", "ses:ListEmailIdentities"));
+                      singletonList("cognito-idp:AdminDisableUser"), singletonList("ses:SendEmail"));
 
     @NotNull
     private final String functionName;
@@ -31,39 +32,38 @@ enum TriggerFunction {
         this.sesActions = sesActions;
     }
 
-    @NotNull
-    public final
-    String functionName () {
-        return this.functionName;
-    }
-
-    @Nullable
-    public final
-    Map<DdbTable, List<String>> ddbActions () {
-        return this.ddbActions;
-    }
-
-    @Nullable
-    public final
-    List<String> cognitoActions () {
-        return this.cognitoActions;
-    }
-
-    @Nullable
-    public final
-    List<String> sesActions () {
-        return this.sesActions;
-    }
-
+    @Override
     @NotNull
     public final
     String handler () {
         return "org.familydirectory.assets.lambda.function.trigger.%s::handleRequest".formatted(this.functionName);
     }
 
+    @Override
+    @Nullable
+    public final
+    Map<DdbTable, List<String>> ddbActions () {
+        return this.ddbActions;
+    }
+
+    @Override
+    @Nullable
+    public final
+    List<String> cognitoActions () {
+        return this.cognitoActions;
+    }
+
+    @Override
+    @Nullable
+    public final
+    List<String> sesActions () {
+        return this.sesActions;
+    }
+
+    @Override
     @NotNull
     public final
-    String arnExportName () {
-        return "%sArn".formatted(this.functionName);
+    String functionName () {
+        return this.functionName;
     }
 }
