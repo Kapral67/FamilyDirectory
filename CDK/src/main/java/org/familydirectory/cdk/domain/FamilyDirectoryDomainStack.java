@@ -7,7 +7,6 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.route53.PublicHostedZone;
 import software.amazon.awscdk.services.route53.PublicHostedZoneProps;
 import software.constructs.Construct;
-import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.System.getenv;
 
@@ -24,7 +23,7 @@ class FamilyDirectoryDomainStack extends Stack {
 //  The HostedZone is the domain/subdomain for which the dns is controlled by Route53
         final PublicHostedZoneProps hostedZoneProps = PublicHostedZoneProps.builder()
                                                                            .zoneName(HOSTED_ZONE_NAME)
-                                                                           .addTrailingDot(FALSE)
+                                                                           .addTrailingDot(TRUE)
                                                                            .caaAmazon(TRUE)
                                                                            .build();
         final PublicHostedZone hostedZone = new PublicHostedZone(this, HOSTED_ZONE_RESOURCE_ID, hostedZoneProps);
