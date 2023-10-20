@@ -106,6 +106,10 @@ mvn package
 cd "$STAGE_DIR/assets/FamilyDirectoryCognitoPostConfirmationTrigger" || script_error
 mvn package
 
+## PDF
+cd "$STAGE_DIR/assets/FamilyDirectoryPdfGeneratorLambda" || script_error
+mvn package
+
 # CDK
 cd "$STAGE_DIR/CDK" || script_error
 mvn package

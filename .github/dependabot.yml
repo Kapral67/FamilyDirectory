@@ -41,3 +41,9 @@ updates:
     schedule:
       interval: "daily"
     target-branch: "main"
+
+  - package-ecosystem: "maven"
+    directory: "/assets/FamilyDirectoryPdfGeneratorLambda"
+    schedule:
+      interval: "daily"
+    target-branch: "main"

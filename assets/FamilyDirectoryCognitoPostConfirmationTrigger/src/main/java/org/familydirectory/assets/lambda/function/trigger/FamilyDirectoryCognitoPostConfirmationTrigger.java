@@ -71,7 +71,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
 //          If There Is a PreExisting Entry, Then The User is Just Changing Their Email For Cognito
                 return getValidEvent(event, email);
             }
-        } catch (final Exception e) {
+        } catch (final Throwable e) {
             adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
             LambdaUtils.logTrace(logger, e, ERROR);
             throw e;
@@ -112,7 +112,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                              .item(Map.of(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(sub), CognitoTableParameter.MEMBER.jsonFieldName(),
                                                           AttributeValue.fromS(memberId)))
                                              .build());
-        } catch (final Exception e) {
+        } catch (final Throwable e) {
             adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
             LambdaUtils.logTrace(logger, e, ERROR);
             throw e;
@@ -146,7 +146,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                                                        .userPoolId(userPoolId)
                                                                        .username(userName)
                                                                        .build());
-            } catch (final Exception x) {
+            } catch (final Throwable x) {
                 logger.log("FATAL: Failed to Disable User <USERNAME,`%s`>".formatted(userName), FATAL);
                 throw x;
             }
@@ -155,7 +155,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                 final String emailId = LambdaUtils.sendEmail(singletonList(em), "Notice of Account Suspension", body);
                 logger.log("INFO: Sent Account Suspension Notice To <EMAIL,`%s`>: <MESSAGE_ID,`%s`>".formatted(em, emailId), INFO);
             });
-        } catch (final Exception x) {
+        } catch (final Throwable x) {
             ofNullable(e).ifPresent(t -> t.addSuppressed(x));
             LambdaUtils.logTrace(logger, x, ERROR);
         }

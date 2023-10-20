@@ -39,7 +39,7 @@ class FamilyDirectoryCreateMemberLambda implements RequestHandler<APIGatewayProx
 
         } catch (final ApiHelper.ResponseException e) {
             return e.getResponseEvent();
-        } catch (final Exception e) {
+        } catch (final Throwable e) {
             LambdaUtils.logTrace(context.getLogger(), e, FATAL);
             return new APIGatewayProxyResponseEvent().withStatusCode(SC_INTERNAL_SERVER_ERROR);
         }
