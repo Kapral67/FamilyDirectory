@@ -23,7 +23,6 @@ class FamilyDirectoryDomainStack extends Stack {
 //  The HostedZone is the domain/subdomain for which the dns is controlled by Route53
         final PublicHostedZoneProps hostedZoneProps = PublicHostedZoneProps.builder()
                                                                            .zoneName(HOSTED_ZONE_NAME)
-                                                                           .addTrailingDot(TRUE)
                                                                            .caaAmazon(TRUE)
                                                                            .build();
         final PublicHostedZone hostedZone = new PublicHostedZone(this, HOSTED_ZONE_RESOURCE_ID, hostedZoneProps);
