@@ -1,7 +1,6 @@
 package org.familydirectory.assets.ddb.member;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.LocalDate;
@@ -15,7 +14,6 @@ import org.familydirectory.assets.ddb.utils.LocalDateDeserializer;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
 import static java.time.LocalDate.now;
 import static java.util.Objects.isNull;
@@ -67,22 +65,6 @@ class Member extends MemberModel {
     @Nullable
     private final SuffixType suffix;
 
-    @JsonIgnore
-    @NotNull
-    private final String fullName;
-
-    @JsonIgnore
-    @NotNull
-    private final String birthdayString;
-
-    @JsonIgnore
-    @Nullable
-    private final Map<String, AttributeValue> phonesDdbMap;
-
-    @JsonIgnore
-    @Nullable
-    private final String deathdayString;
-
     private
     Member (final @NotNull String firstName, final @Nullable String middleName, final @NotNull String lastName, final @NotNull LocalDate birthday, final @Nullable String email,
             final @Nullable LocalDate deathday, final @Nullable Map<PhoneType, String> phones, final @Nullable List<String> address, final @Nullable SuffixType suffix)
@@ -97,11 +79,6 @@ class Member extends MemberModel {
         this.phones = phones;
         this.address = address;
         this.suffix = suffix;
-        // Derived
-        this.fullName = super.getFullName();
-        this.birthdayString = super.getBirthdayString();
-        this.deathdayString = super.getDeathdayString();
-        this.phonesDdbMap = super.getPhonesDdbMap();
     }
 
     @Contract(" -> new")
@@ -128,13 +105,6 @@ class Member extends MemberModel {
     @Override
     @Nullable
     public
-    Map<String, AttributeValue> getPhonesDdbMap () {
-        return this.phonesDdbMap;
-    }
-
-    @Override
-    @Nullable
-    public
     Map<PhoneType, String> getPhones () {
         return this.phones;
     }
@@ -149,29 +119,8 @@ class Member extends MemberModel {
     @Override
     @Nullable
     public
-    String getDeathdayString () {
-        return this.deathdayString;
-    }
-
-    @Override
-    @Nullable
-    public
     LocalDate getDeathday () {
         return this.deathday;
-    }
-
-    @Override
-    @NotNull
-    public
-    String getBirthdayString () {
-        return this.birthdayString;
-    }
-
-    @Override
-    @NotNull
-    public
-    String getFullName () {
-        return this.fullName;
     }
 
     @Override
@@ -240,7 +189,7 @@ class Member extends MemberModel {
             } else if (requireNonNull(firstName).isBlank()) {
                 throw new IllegalArgumentException("First Name cannot be blank");
             }
-            this.firstName = capitalizeFully(firstName.replaceAll("\\s", ""), '-');
+            this.firstName = capitalizeFully(firstName.replaceAll(DdbUtils.NAME_VALIDATOR_REGEX, ""), '-');
             this.isFirstNameSet = true;
             return this;
         }
@@ -262,7 +211,7 @@ class Member extends MemberModel {
                 this.isMiddleNameSet = true;
                 return this;
             }
-            this.middleName = capitalizeFully(middleName.replaceAll("\\s", ""), '-');
+            this.middleName = capitalizeFully(middleName.replaceAll(DdbUtils.NAME_VALIDATOR_REGEX, ""), '-');
             this.isMiddleNameSet = true;
             return this;
         }
@@ -276,7 +225,7 @@ class Member extends MemberModel {
             } else if (requireNonNull(lastName).isBlank()) {
                 throw new IllegalArgumentException("Last Name cannot be blank");
             }
-            this.lastName = capitalizeFully(lastName.replaceAll("\\s", ""), '-');
+            this.lastName = capitalizeFully(lastName.replaceAll(DdbUtils.NAME_VALIDATOR_REGEX, ""), '-');
             this.isLastNameSet = true;
             return this;
         }

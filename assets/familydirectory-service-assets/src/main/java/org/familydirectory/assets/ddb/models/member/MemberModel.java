@@ -92,4 +92,15 @@ class MemberModel {
 
     public abstract @Nullable
     SuffixType getSuffix ();
+
+    public @NotNull
+    String getDisplayName () {
+        final StringBuilder displayName = new StringBuilder();
+        displayName.append("%s %s".formatted(this.getFirstName(), this.getLastName()));
+        if (nonNull(this.getSuffix())) {
+            displayName.append(" %s".formatted(this.getSuffix()
+                                                   .value()));
+        }
+        return displayName.toString();
+    }
 }
