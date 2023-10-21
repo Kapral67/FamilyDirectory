@@ -19,6 +19,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
 import static java.time.LocalDate.now;
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.text.WordUtils.capitalizeFully;
@@ -362,6 +363,8 @@ class Member extends MemberModel {
             this.checkBuildStatus();
             if (this.isAddressSet) {
                 throw new IllegalStateException("Address already set");
+            } else if (nonNull(address) && address.size() > 2) {
+                throw new IllegalArgumentException("Only 2 Address Lines Supported");
             }
             this.address = address;
             this.isAddressSet = true;
