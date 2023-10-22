@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
 import org.familydirectory.assets.ddb.models.member.MemberModel;
@@ -17,7 +18,6 @@ import org.jetbrains.annotations.Nullable;
 import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
 import static java.time.LocalDate.now;
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.text.WordUtils.capitalizeFully;
@@ -252,7 +252,7 @@ class Member extends MemberModel {
             this.checkBuildStatus();
             if (this.isEmailSet) {
                 throw new IllegalStateException("Email already set");
-            } else if (isNull(email)) {
+            } else if (isNull(email) || email.isBlank()) {
                 this.isEmailSet = true;
                 return this;
             }
@@ -301,6 +301,8 @@ class Member extends MemberModel {
             }
             this.phones = phones.entrySet()
                                 .stream()
+                                .filter(e -> !e.getValue()
+                                               .isBlank())
                                 .collect(toMap(Map.Entry::getKey, entry -> DdbUtils.normalizePhoneNumber(entry.getValue())));
             this.isPhonesSet = true;
             return this;
@@ -312,10 +314,15 @@ class Member extends MemberModel {
             this.checkBuildStatus();
             if (this.isAddressSet) {
                 throw new IllegalStateException("Address already set");
-            } else if (nonNull(address) && address.size() > 2) {
-                throw new IllegalArgumentException("Only 2 Address Lines Supported");
+            } else if (isNull(address)) {
+                this.isAddressSet = true;
+                return this;
+            } else if (address.size() != 2) {
+                throw new IllegalArgumentException("Address Must Be Exactly Two Lines");
             }
-            this.address = address;
+            this.address = address.stream()
+                                  .filter(Predicate.not(String::isBlank))
+                                  .toList();
             this.isAddressSet = true;
             return this;
         }
