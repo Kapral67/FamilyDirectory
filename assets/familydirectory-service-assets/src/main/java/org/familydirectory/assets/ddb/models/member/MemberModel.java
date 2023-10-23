@@ -17,6 +17,8 @@ import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
 
 public abstract
 class MemberModel {
+    public static final char DAGGER = '†';
+
     public abstract @Nullable
     String getEmail ();
 

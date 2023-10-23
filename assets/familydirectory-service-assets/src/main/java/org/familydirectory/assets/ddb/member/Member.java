@@ -255,6 +255,8 @@ class Member extends MemberModel {
             } else if (isNull(email) || email.isBlank()) {
                 this.isEmailSet = true;
                 return this;
+            } else if (email.contains(String.valueOf(DAGGER))) {
+                throw new IllegalArgumentException("Forbidden Character in Email");
             }
             final String e_mail = email.replaceAll("\\s", "")
                                        .toLowerCase();
@@ -299,6 +301,11 @@ class Member extends MemberModel {
                 this.isPhonesSet = true;
                 return this;
             }
+            phones.forEach((k, v) -> {
+                if (v.contains(String.valueOf(DAGGER))) {
+                    throw new IllegalArgumentException("Forbidden Character in %s Phone".formatted(k.name()));
+                }
+            });
             this.phones = phones.entrySet()
                                 .stream()
                                 .filter(e -> !e.getValue()
@@ -320,6 +327,11 @@ class Member extends MemberModel {
             } else if (address.size() != 2) {
                 throw new IllegalArgumentException("Address Must Be Exactly Two Lines");
             }
+            address.forEach(s -> {
+                if (s.contains(String.valueOf(DAGGER))) {
+                    throw new IllegalArgumentException("Forbidden Character in Address");
+                }
+            });
             this.address = address.stream()
                                   .filter(Predicate.not(String::isBlank))
                                   .map(String::trim)

@@ -31,6 +31,7 @@ class PdfHelper {
         super();
         this.title = "%s FAMILY DIRECTORY".formatted(Optional.of(rootMemberSurname)
                                                              .filter(Predicate.not(String::isBlank))
+                                                             .map(String::toUpperCase)
                                                              .orElseThrow());
         this.newPage();
     }
@@ -46,11 +47,14 @@ class PdfHelper {
     public
     void addFamily (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> descendants) throws IOException {
         try {
-            for (int i = 0; i < 13; ++i) {
-                this.page.addBodyTextBlock(member, spouse, descendants);
-            }
+            this.page.addBodyTextBlock(member, spouse, descendants);
         } catch (final PDPageHelper.NewPageException e) {
-            throw new RuntimeException(e);
+            this.newPage();
+            try {
+                this.page.addBodyTextBlock(member, spouse, descendants);
+            } catch (final PDPageHelper.NewPageException x) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

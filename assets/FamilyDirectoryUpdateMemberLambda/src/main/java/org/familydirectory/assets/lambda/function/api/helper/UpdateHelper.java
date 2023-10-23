@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
-import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
@@ -132,7 +131,6 @@ class UpdateHelper extends ApiHelper {
     PutItemRequest getPutRequest (final @NotNull Caller caller, final @NotNull EventWrapper eventWrapper) {
         final Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), DdbTable.FAMILY)).orElseThrow();
 
-        boolean ddbMemberIsSpouse = false;
         if (caller.memberId()
                   .equals(eventWrapper.ddbMemberId()))
         {
@@ -141,7 +139,6 @@ class UpdateHelper extends ApiHelper {
                          .equals(eventWrapper.ddbFamilyId()) || caller.familyId()
                                                                       .equals(eventWrapper.ddbMemberId()))
         {
-            ddbMemberIsSpouse = true;
             this.logger.log("<MEMBER,`%s`> update <SPOUSE,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
         } else if (!eventWrapper.ddbMemberIsAdult() && ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
                                                                                                                                      .map(AttributeValue::ss)
@@ -156,12 +153,12 @@ class UpdateHelper extends ApiHelper {
 
         return PutItemRequest.builder()
                              .tableName(DdbTable.MEMBER.name())
-                             .item(this.buildMember(eventWrapper, ddbMemberIsSpouse))
+                             .item(this.buildMember(eventWrapper))
                              .build();
     }
 
     private @NotNull
-    Map<String, AttributeValue> buildMember (final @NotNull EventWrapper eventWrapper, final boolean ddbMemberIsSpouse) {
+    Map<String, AttributeValue> buildMember (final @NotNull EventWrapper eventWrapper) {
         final Map<String, AttributeValue> member = new HashMap<>();
 
         for (final MemberTableParameter field : MemberTableParameter.values()) {
@@ -193,22 +190,10 @@ class UpdateHelper extends ApiHelper {
                                                      .getEmail()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
                 case PHONES -> ofNullable(eventWrapper.updateEvent()
                                                       .member()
-                                                      .getPhonesDdbMap()).ifPresent(m -> {
-                    final Map<String, AttributeValue> map = new HashMap<>();
-                    for (final PhoneType phoneType : PhoneType.values()) {
-                        if (m.containsKey(phoneType.name()) && (!ddbMemberIsSpouse || phoneType != PhoneType.LANDLINE)) {
-                            map.put(phoneType.name(), m.get(phoneType.name()));
-                        }
-                    }
-                    member.put(field.jsonFieldName(), AttributeValue.fromM(map));
-                });
-                case ADDRESS -> {
-                    if (!ddbMemberIsSpouse) {
-                        ofNullable(eventWrapper.updateEvent()
-                                               .member()
-                                               .getAddress()).ifPresent(ss -> member.put(field.jsonFieldName(), AttributeValue.fromSs(ss)));
-                    }
-                }
+                                                      .getPhonesDdbMap()).ifPresent(m -> member.put(field.jsonFieldName(), AttributeValue.fromM(m)));
+                case ADDRESS -> ofNullable(eventWrapper.updateEvent()
+                                                       .member()
+                                                       .getAddress()).ifPresent(ss -> member.put(field.jsonFieldName(), AttributeValue.fromSs(ss)));
                 case FAMILY_ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbFamilyId()));
                 default -> throw new IllegalStateException("Unhandled Member Parameter: `%s`".formatted(field.jsonFieldName()));
             }
