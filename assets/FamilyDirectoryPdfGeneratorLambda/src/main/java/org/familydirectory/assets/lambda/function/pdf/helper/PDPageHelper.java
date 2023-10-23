@@ -3,11 +3,13 @@ package org.familydirectory.assets.lambda.function.pdf.helper;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.member.Member;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,6 +19,8 @@ import static java.util.Objects.nonNull;
 final
 class PDPageHelper implements Closeable {
     private static final char DAGGER = '†';
+    private static final char BULLET = '•';
+    private static final String TAB = "  ";
     private static final float PX_IN_INCH = 72.0f;
     private static final float TOP_BOTTOM_MARGIN = inch2px(0.75f);
     private static final float LEFT_RIGHT_MARGIN = inch2px(0.5f);
@@ -75,6 +79,72 @@ class PDPageHelper implements Closeable {
     private static
     float getTextWidth (final @NotNull PDFont font, final float fontSize, final @NotNull String text) throws IOException {
         return font.getStringWidth(text) / 1000.0f * fontSize;
+    }
+
+    private static
+    float calculateBlockSizeYOffset (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> deadEndDescendants) {
+        float blockSizeYOffset = isNull(spouse)
+                ? singleMemberBlockSizeYOffset(member)
+                : parentsBlockSizeYOffset(member, spouse);
+        if (nonNull(deadEndDescendants)) {
+            blockSizeYOffset += descendantsBlockSizeYOffset(deadEndDescendants);
+        }
+        return blockSizeYOffset;
+    }
+
+    private static
+    float descendantsBlockSizeYOffset (final @NotNull List<Member> descendants) {
+        float blockSizeYOffset = 0.0f;
+        for (final Member desc : descendants) {
+            blockSizeYOffset += STANDARD_LINE_SPACING; // For Name
+            if (nonNull(desc.getEmail())) {
+                blockSizeYOffset += STANDARD_LINE_SPACING;
+            }
+            if (nonNull(desc.getPhones())) {
+                blockSizeYOffset += STANDARD_LINE_SPACING;
+            }
+        }
+        return blockSizeYOffset;
+    }
+
+    private static
+    float parentsBlockSizeYOffset (final @NotNull Member member, final @NotNull Member spouse) {
+        float blockSizeYOffset = 0.0f;
+        if (member.getLastName()
+                  .equals(spouse.getLastName()))
+        {
+            blockSizeYOffset += STANDARD_LINE_SPACING;
+        } else {
+            blockSizeYOffset += STANDARD_LINE_SPACING * 2.0f;
+        }
+        blockSizeYOffset += singleMemberBlockSizeYOffset(member);
+        blockSizeYOffset += singleMemberBlockSizeYOffset(spouse);
+        return blockSizeYOffset;
+    }
+
+    private static
+    float singleMemberBlockSizeYOffset (final @NotNull Member member) {
+        float blockSizeYOffset = 0.0f;
+        if (nonNull(member.getEmail())) {
+            blockSizeYOffset += STANDARD_LINE_SPACING;
+        }
+        if (nonNull(member.getAddress())) {
+            blockSizeYOffset += STANDARD_LINE_SPACING * member.getAddress()
+                                                              .size();
+        }
+        if (nonNull(member.getPhones())) {
+            if (member.getPhones()
+                      .containsKey(PhoneType.LANDLINE))
+            {
+                blockSizeYOffset += STANDARD_LINE_SPACING;
+            }
+            if (member.getPhones()
+                      .containsKey(PhoneType.MOBILE))
+            {
+                blockSizeYOffset += STANDARD_LINE_SPACING;
+            }
+        }
+        return blockSizeYOffset;
     }
 
     private
@@ -142,31 +212,6 @@ class PDPageHelper implements Closeable {
     }
 
     private
-    boolean nextColumn () {
-        if (this.currentColumn == MAX_COLUMNS) {
-            return false;
-        }
-        ++this.currentColumn;
-        this.location.x = LEFT_RIGHT_MARGIN + HALF_LINE_SPACING;
-        for (int i = 1; i < this.currentColumn; ++i) {
-            this.location.x += this.columnWidth();
-        }
-        this.location.y = this.bodyContentStartY;
-        return true;
-    }
-
-    private
-    float columnWidth () {
-        return (this.width() - LEFT_RIGHT_MARGIN * 2.0f) / (float) MAX_COLUMNS;
-    }
-
-    private
-    float width () {
-        return this.page.getMediaBox()
-                        .getWidth();
-    }
-
-    private
     float centerY () {
         return this.height() * 0.5f;
     }
@@ -183,76 +228,61 @@ class PDPageHelper implements Closeable {
     }
 
     private
+    void addBodyTextBlockHeader (final @NotNull Member member, final @Nullable Member spouse) throws IOException {
+        if (isNull(spouse)) {
+            final String header = (nonNull(member.getDeathday()))
+                    ? "%c%s".formatted(DAGGER, member.getDisplayName())
+                    : member.getDisplayName();
+            this.addColumnCenteredText(header, TITLE_FONT);
+            this.newLine(STANDARD_LINE_SPACING);
+        } else if (member.getLastName()
+                         .equals(spouse.getLastName()))
+        {
+            final String memberFirstName = (nonNull(member.getDeathday()))
+                    ? "%c%s".formatted(DAGGER, member.getFirstName())
+                    : member.getFirstName();
+            final String spouseFirstName = (nonNull(spouse.getDeathday()))
+                    ? "%c%s".formatted(DAGGER, spouse.getFirstName())
+                    : spouse.getFirstName();
+            final String header = "%s & %s %s".formatted(memberFirstName, spouseFirstName, member.getLastName());
+            this.addColumnCenteredText(header, TITLE_FONT);
+            this.newLine(STANDARD_LINE_SPACING);
+        } else {
+            final String memberName = (nonNull(member.getDeathday()))
+                    ? "%c%s".formatted(DAGGER, member.getDisplayName())
+                    : member.getDisplayName();
+            final String spouseName = (nonNull(spouse.getDeathday()))
+                    ? "%c%s".formatted(DAGGER, spouse.getDisplayName())
+                    : spouse.getDisplayName();
+            if (getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, memberName) >= getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, spouseName)) {
+                final String header = "%s &".formatted(memberName);
+                this.addColumnCenteredText(header, TITLE_FONT);
+            } else {
+                this.addColumnCenteredText(memberName, TITLE_FONT);
+            }
+            this.newLine(STANDARD_LINE_SPACING);
+            this.addColumnCenteredText(spouseName, TITLE_FONT);
+            this.newLine(STANDARD_LINE_SPACING);
+        }
+    }
+
+    private
+    void addColumnCenteredText (final @NotNull String line, final @NotNull PDFont font) throws IOException {
+        final float fontSize = this.getColumnFittedFontSize(line, font);
+        this.contents.setFont(font, fontSize);
+        final float columnCenterX = (this.currentColumn == 1 || this.currentColumn == MAX_COLUMNS)
+                ? (this.columnWidth() - HALF_LINE_SPACING) * 0.5f
+                : (this.columnWidth() - STANDARD_LINE_SPACING) * 0.5f;
+        this.location.x += columnCenterX - getTextWidth(font, fontSize, line) * 0.5f;
+        this.addColumnAgnosticText(line);
+    }
+
+    private
     void addColumnAgnosticText (final @NotNull String line) throws IOException {
         this.contents.beginText();
         this.contents.newLineAtOffset(this.location.x, this.location.y);
         this.contents.showText(line);
         this.contents.endText();
-    }
-
-    void addBodyTextBlock (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> deadEndDescendants) {
-        if (isNull(spouse) && isNull(deadEndDescendants)) {
-            // SINGLE MEMBER & NO DESCENDANTS
-            this.addSingleMemberBodyTextBlock(member);
-        } else if (isNull(spouse)) {
-            // SINGLE PARENT
-        } else if (isNull(deadEndDescendants)) {
-            // PARENTS & NO DESCENDANTS
-        } else {
-            // PARENTS
-        }
-    }
-
-    private
-    void addSingleMemberBodyTextBlock (final @NotNull Member member) {
-        final float blockSizeYOffset = calculateBlockSizeYOffset(member, null, null);
-    }
-
-    private static
-    float calculateBlockSizeYOffset (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> deadEndDescendants) {
-        float blockSizeYOffset = 0.0f;
-        if (isNull(spouse) && isNull(deadEndDescendants)) {
-            // SINGLE MEMBER & NO DESCENDANTS
-            if (nonNull(member.getEmail())) {
-                blockSizeYOffset += STANDARD_LINE_SPACING;
-            }
-            if (nonNull(member.getAddress())) {
-                blockSizeYOffset += STANDARD_LINE_SPACING * member.getAddress()
-                                                                  .size();
-            }
-            if (nonNull(member.getPhones())) {
-                blockSizeYOffset += STANDARD_LINE_SPACING * member.getPhones()
-                                                                  .size();
-            }
-        } else if (isNull(spouse)) {
-            // SINGLE PARENT
-            if (nonNull(member.getEmail())) {
-                blockSizeYOffset += STANDARD_LINE_SPACING;
-            }
-            if (nonNull(member.getAddress())) {
-                blockSizeYOffset += STANDARD_LINE_SPACING * member.getAddress()
-                                                                  .size();
-            }
-            if (nonNull(member.getPhones())) {
-                blockSizeYOffset += STANDARD_LINE_SPACING * member.getPhones()
-                                                                  .size();
-            }
-            for (final Member desc : deadEndDescendants) {
-                blockSizeYOffset += STANDARD_LINE_SPACING;
-                if (nonNull(desc.getEmail())) {
-                    blockSizeYOffset += STANDARD_LINE_SPACING;
-                }
-                if (nonNull(member.getPhones())) {
-                    blockSizeYOffset += STANDARD_LINE_SPACING;
-                }
-            }
-        } else if (isNull(deadEndDescendants)) {
-            // PARENTS & NO DESCENDANTS
-            
-        } else {
-            // PARENTS
-        }
-        return blockSizeYOffset;
     }
 
     private
@@ -262,6 +292,184 @@ class PDPageHelper implements Closeable {
             fontSize -= 0.01f;
         }
         return fontSize;
+    }
+
+    void addBodyTextBlock (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> deadEndDescendants) throws NewPageException, IOException {
+        if (this.bodyTextBlockNeedsNewColumn(calculateBlockSizeYOffset(member, spouse, deadEndDescendants)) && !this.nextColumn()) {
+            throw new NewPageException();
+        }
+
+//  PRINT BLOCK HEADER
+        this.addBodyTextBlockHeader(member, spouse);
+
+//  PRINT ADDRESS TO PDF
+        if (nonNull(member.getAddress())) {
+            float addressFontSize = STANDARD_FONT_SIZE;
+            for (final String line : member.getAddress()) {
+                final float fontSize = this.getColumnFittedFontSize(line, STANDARD_FONT);
+                if (fontSize < addressFontSize) {
+                    addressFontSize = fontSize;
+                }
+            }
+            this.contents.setFont(STANDARD_FONT, addressFontSize);
+            for (final String line : member.getAddress()) {
+                this.addColumnAgnosticText(line);
+                this.newLine(STANDARD_LINE_SPACING);
+            }
+        }
+
+//  PRINT LANDLINE PHONE TO PDF
+        float phoneFontSize = STANDARD_FONT_SIZE;
+        if (nonNull(spouse) && nonNull(spouse.getPhones())) {
+            for (final Map.Entry<PhoneType, String> phone : spouse.getPhones()
+                                                                  .entrySet()) {
+                final float fontSize = this.getColumnFittedFontSize(phone.getValue(), STANDARD_FONT);
+                if (fontSize < phoneFontSize) {
+                    phoneFontSize = fontSize;
+                }
+            }
+        }
+        if (nonNull(member.getPhones())) {
+            for (final Map.Entry<PhoneType, String> phone : member.getPhones()
+                                                                  .entrySet()) {
+                final float fontSize = this.getColumnFittedFontSize(phone.getValue(), STANDARD_FONT);
+                if (fontSize < phoneFontSize) {
+                    phoneFontSize = fontSize;
+                }
+            }
+            if (member.getPhones()
+                      .containsKey(PhoneType.LANDLINE))
+            {
+                this.contents.setFont(STANDARD_FONT, phoneFontSize);
+                this.addColumnAgnosticText(member.getPhones()
+                                                 .get(PhoneType.LANDLINE));
+                this.newLine(STANDARD_LINE_SPACING);
+            }
+        }
+
+//  PRINT MEMBER AND SPOUSE EMAILS (MEMBER FIRST)
+        float emailFontSize = STANDARD_FONT_SIZE;
+        if (nonNull(member.getEmail())) {
+            final float fontSize = this.getColumnFittedFontSize(member.getEmail(), STANDARD_FONT);
+            if (fontSize < emailFontSize) {
+                emailFontSize = fontSize;
+            }
+        }
+        if (nonNull(spouse) && nonNull(spouse.getEmail())) {
+            final float fontSize = this.getColumnFittedFontSize(spouse.getEmail(), STANDARD_FONT);
+            if (fontSize < emailFontSize) {
+                emailFontSize = fontSize;
+            }
+        }
+        if (nonNull(member.getEmail())) {
+            this.contents.setFont(STANDARD_FONT, emailFontSize);
+            this.addColumnAgnosticText(member.getEmail());
+            this.newLine(STANDARD_LINE_SPACING);
+        }
+        if (nonNull(spouse) && nonNull(spouse.getEmail())) {
+            this.contents.setFont(STANDARD_FONT, emailFontSize);
+            this.addColumnAgnosticText(spouse.getEmail());
+            this.newLine(STANDARD_LINE_SPACING);
+        }
+
+//  PRINT MEMBER AND SPOUSE MOBILE PHONES (MEMBER FIRST)
+        if (nonNull(member.getPhones()) && member.getPhones()
+                                                 .containsKey(PhoneType.MOBILE))
+        {
+            this.contents.setFont(STANDARD_FONT, phoneFontSize);
+            this.addColumnAgnosticText(member.getPhones()
+                                             .get(PhoneType.MOBILE));
+            this.newLine(STANDARD_LINE_SPACING);
+        }
+        if (nonNull(spouse) && nonNull(spouse.getPhones()) && spouse.getPhones()
+                                                                    .containsKey(PhoneType.MOBILE))
+        {
+            this.contents.setFont(STANDARD_FONT, phoneFontSize);
+            this.addColumnAgnosticText(spouse.getPhones()
+                                             .get(PhoneType.MOBILE));
+            this.newLine(STANDARD_LINE_SPACING);
+        }
+
+//  PRINT DEAD-END DESCENDANTS TO PDF
+        if (nonNull(deadEndDescendants)) {
+            for (final Member desc : deadEndDescendants) {
+//          ADD DESCENDANT NAME
+                final String header = "%c %s".formatted(BULLET, (nonNull(desc.getDeathday()))
+                        ? "%c%s".formatted(DAGGER, desc.getDisplayName())
+                        : desc.getDisplayName());
+                final float headerFontSize = this.getColumnFittedFontSize(header, STANDARD_FONT);
+                this.contents.setFont(STANDARD_FONT, headerFontSize);
+                this.addColumnAgnosticText(header);
+                this.newLine(STANDARD_LINE_SPACING);
+
+//          ADD DESCENDANT EMAIL
+                if (nonNull(desc.getEmail())) {
+                    final String email = "%s%s".formatted(TAB, desc.getEmail());
+                    final float fontSize = this.getColumnFittedFontSize(email, STANDARD_FONT);
+                    this.contents.setFont(STANDARD_FONT, fontSize);
+                    this.addColumnAgnosticText(email);
+                    this.newLine(STANDARD_LINE_SPACING);
+                }
+
+//          ADD DESCENDANT MOBILE PHONE
+                if (nonNull(desc.getPhones()) && desc.getPhones()
+                                                     .containsKey(PhoneType.MOBILE))
+                {
+                    final String phone = "%s%s".formatted(TAB, desc.getPhones()
+                                                                   .get(PhoneType.MOBILE));
+                    final float fontSize = this.getColumnFittedFontSize(phone, STANDARD_FONT);
+                    this.contents.setFont(STANDARD_FONT, fontSize);
+                    this.addColumnAgnosticText(phone);
+                    this.newLine(STANDARD_LINE_SPACING);
+                }
+            }
+        }
+
+        this.newLine(HALF_LINE_SPACING);
+    }
+
+    private
+    boolean nextColumn () {
+        if (this.currentColumn == MAX_COLUMNS) {
+            return false;
+        }
+        ++this.currentColumn;
+        this.alignXtoColumn();
+        this.location.y = this.bodyContentStartY;
+        return true;
+    }
+
+    private
+    void newLine (final float lineSpacing) {
+        this.alignXtoColumn();
+        this.location.y -= lineSpacing;
+    }
+
+    private
+    void alignXtoColumn () {
+        this.location.x = LEFT_RIGHT_MARGIN;
+        for (int i = 1; i < this.currentColumn; ++i) {
+            this.location.x += this.columnWidth();
+            if (i == 1) {
+                this.location.x += HALF_LINE_SPACING;
+            }
+        }
+    }
+
+    private
+    float columnWidth () {
+        return (this.width() - LEFT_RIGHT_MARGIN * 2.0f) / (float) MAX_COLUMNS;
+    }
+
+    private
+    float width () {
+        return this.page.getMediaBox()
+                        .getWidth();
+    }
+
+    private
+    boolean bodyTextBlockNeedsNewColumn (final float blockSizeYOffset) {
+        return this.location.y < this.bodyContentStartY && (this.location.y - blockSizeYOffset) < BODY_CONTENT_END_Y;
     }
 
     @Override

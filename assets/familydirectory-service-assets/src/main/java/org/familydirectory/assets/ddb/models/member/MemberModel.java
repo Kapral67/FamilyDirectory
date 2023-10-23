@@ -39,11 +39,14 @@ class MemberModel {
 
     public
     boolean isAdult () {
-        return DdbUtils.isPersonAdult(this.getBirthday());
+        return DdbUtils.isPersonAdult(this.getBirthday(), this.getDeathday());
     }
 
     public abstract @NotNull
     LocalDate getBirthday ();
+
+    public abstract @Nullable
+    LocalDate getDeathday ();
 
     public @NotNull
     String getKey () {
@@ -57,9 +60,6 @@ class MemberModel {
         return ofNullable(this.getDeathday()).map(DdbUtils.DATE_FORMATTER::format)
                                              .orElse(null);
     }
-
-    public abstract @Nullable
-    LocalDate getDeathday ();
 
     public @NotNull
     String getBirthdayString () {

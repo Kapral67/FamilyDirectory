@@ -3,18 +3,18 @@ package org.familydirectory.assets.lambda.function.pdf.helper;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.familydirectory.assets.ddb.member.Member;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.nonNull;
 
 public final
 class PdfHelper {
-    private static final char BULLET = '•';
-    private static final String TAB = "    ";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MMMM d, yyyy");
     @NotNull
     private final PDDocument pdf = new PDDocument();
@@ -44,43 +44,15 @@ class PdfHelper {
     }
 
     public
-    void addMember (final @NotNull Member member) throws IOException {
-//        final List<String> text = new ArrayList<>();
-//        text.add(member.getDisplayName());
-//        ofNullable(member.getAddress()).ifPresent(text::addAll);
-//        ofNullable(member.getPhones()).ifPresent(m -> m.forEach((k, v) -> text.add("%s".formatted(v))));
-//        ofNullable(member.getEmail()).ifPresent(text::add);
-//        this.page.addBodyTextBlock(text);
-//        this.page.addMember(member);
+    void addFamily (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> descendants) throws IOException {
+        try {
+            for (int i = 0; i < 13; ++i) {
+                this.page.addBodyTextBlock(member, spouse, descendants);
+            }
+        } catch (final PDPageHelper.NewPageException e) {
+            throw new RuntimeException(e);
+        }
     }
-
-    public
-    void addTestText () throws IOException {
-//        final List<String> testList = new ArrayList<>();
-//        final StringBuilder stringBuilder = new StringBuilder();
-//        for (int i = 0; i < 100; ++i) {
-//            stringBuilder.append('a');
-//            testList.add(stringBuilder.toString());
-//        }
-//        for (int i = 1; i <= 4; ++i) {
-//            this.page.addName("Wmmmmmmmmmmmmmmm Sr.", i);
-//        }
-    }
-
-//    public
-//    void addFamily (final @NotNull Member member, final @NotNull Member spouse) throws IOException {
-//        // TODO: CHECK IF NEED NEW COLUMN
-//        // TODO: CHECK IF NEED NEW PAGE
-//
-//        final float namesWidth;
-//
-//        { // NAMES
-//            this.page.contents()
-//                     .setFont(BOLD_FONT, STANDARD_FONT_SIZE);
-//            final String names = "%s & %s".formatted(member.getDisplayName(), spouse.getDisplayName());
-//            namesWidth = getTextWidth(BOLD_FONT, STANDARD_FONT_SIZE, names);
-//        }
-//    }
 
     /**
      * TODO: DELETE THIS

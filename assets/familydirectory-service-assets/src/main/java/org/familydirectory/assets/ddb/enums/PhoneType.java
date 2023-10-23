@@ -7,8 +7,7 @@ import org.jetbrains.annotations.NotNull;
 public
 enum PhoneType {
     MOBILE,
-    LANDLINE,
-    WORK;
+    LANDLINE;
 
     @JsonCreator
     @NotNull

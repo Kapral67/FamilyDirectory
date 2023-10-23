@@ -322,6 +322,8 @@ class Member extends MemberModel {
             }
             this.address = address.stream()
                                   .filter(Predicate.not(String::isBlank))
+                                  .map(String::trim)
+                                  .map(s -> s.replaceAll("\\s", " "))
                                   .toList();
             this.isAddressSet = true;
             return this;

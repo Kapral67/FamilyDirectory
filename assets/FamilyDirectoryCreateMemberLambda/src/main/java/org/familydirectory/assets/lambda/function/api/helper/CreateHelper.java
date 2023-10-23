@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.lambda.function.api.models.CreateEvent;
@@ -137,6 +138,7 @@ class CreateHelper extends ApiHelper {
         final List<TransactWriteItem> transactionItems = new ArrayList<>();
         final Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), DdbTable.FAMILY)).orElseThrow();
         final String inputFamilyId;
+        boolean newMemberIsSpouse = false;
         if (caller.memberId()
                   .equals(caller.familyId()) && createEvent.isSpouse())
         {
@@ -144,6 +146,7 @@ class CreateHelper extends ApiHelper {
                                                                                          .filter(Predicate.not(String::isBlank))
                                                                                          .isEmpty())
             {
+                newMemberIsSpouse = true;
                 this.logger.log("<MEMBER,`%s`> Creating Spouse".formatted(caller.memberId()), INFO);
                 inputFamilyId = caller.familyId();
                 transactionItems.add(TransactWriteItem.builder()
@@ -189,7 +192,7 @@ class CreateHelper extends ApiHelper {
         transactionItems.add(TransactWriteItem.builder()
                                               .put(Put.builder()
                                                       .tableName(DdbTable.MEMBER.name())
-                                                      .item(this.buildMember(createEvent, inputFamilyId))
+                                                      .item(this.buildMember(createEvent, inputFamilyId, newMemberIsSpouse))
                                                       .build())
                                               .build());
         return TransactWriteItemsRequest.builder()
@@ -198,7 +201,7 @@ class CreateHelper extends ApiHelper {
     }
 
     private @NotNull
-    Map<String, AttributeValue> buildMember (final @NotNull CreateEvent createEvent, final @NotNull String inputFamilyId) {
+    Map<String, AttributeValue> buildMember (final @NotNull CreateEvent createEvent, final @NotNull String inputFamilyId, final boolean newMemberIsSpouse) {
         final Map<String, AttributeValue> member = new HashMap<>();
 
         for (final MemberTableParameter field : MemberTableParameter.values()) {
@@ -221,9 +224,21 @@ class CreateHelper extends ApiHelper {
                 case EMAIL -> ofNullable(createEvent.member()
                                                     .getEmail()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
                 case PHONES -> ofNullable(createEvent.member()
-                                                     .getPhonesDdbMap()).ifPresent(m -> member.put(field.jsonFieldName(), AttributeValue.fromM(m)));
-                case ADDRESS -> ofNullable(createEvent.member()
-                                                      .getAddress()).ifPresent(ss -> member.put(field.jsonFieldName(), AttributeValue.fromSs(ss)));
+                                                     .getPhonesDdbMap()).ifPresent(m -> {
+                    final Map<String, AttributeValue> map = new HashMap<>();
+                    for (final PhoneType phoneType : PhoneType.values()) {
+                        if (m.containsKey(phoneType.name()) && (!newMemberIsSpouse || phoneType != PhoneType.LANDLINE)) {
+                            map.put(phoneType.name(), m.get(phoneType.name()));
+                        }
+                    }
+                    member.put(field.jsonFieldName(), AttributeValue.fromM(map));
+                });
+                case ADDRESS -> {
+                    if (!newMemberIsSpouse) {
+                        ofNullable(createEvent.member()
+                                              .getAddress()).ifPresent(ss -> member.put(field.jsonFieldName(), AttributeValue.fromSs(ss)));
+                    }
+                }
                 case FAMILY_ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(inputFamilyId));
                 default -> throw new IllegalStateException("Unhandled Member Parameter: `%s`".formatted(field.jsonFieldName()));
             }

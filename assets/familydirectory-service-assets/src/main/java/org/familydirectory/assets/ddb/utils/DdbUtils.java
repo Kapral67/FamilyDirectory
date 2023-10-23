@@ -7,10 +7,12 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import static com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat.INTERNATIONAL;
 import static java.time.LocalDate.now;
 import static java.time.Period.between;
 import static java.time.format.DateTimeFormatter.ofPattern;
+import static java.util.Objects.isNull;
 
 public
 enum DdbUtils {
@@ -41,7 +43,9 @@ enum DdbUtils {
     }
 
     public static
-    boolean isPersonAdult (final @NotNull LocalDate birthday) {
-        return (between(birthday, now()).getYears() >= AGE_OF_MAJORITY);
+    boolean isPersonAdult (final @NotNull LocalDate birthday, final @Nullable LocalDate deathday) {
+        return (isNull(deathday))
+                ? (between(birthday, now()).getYears() >= AGE_OF_MAJORITY)
+                : (between(birthday, deathday).getYears() >= AGE_OF_MAJORITY);
     }
 }
