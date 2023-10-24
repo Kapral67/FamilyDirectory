@@ -45,13 +45,13 @@ class PdfHelper {
     }
 
     public
-    void addFamily (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> descendants) throws IOException {
+    void addFamily (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> descendants, final boolean endOfSection) throws IOException {
         try {
-            this.page.addBodyTextBlock(member, spouse, descendants);
+            this.page.addBodyTextBlock(member, spouse, descendants, endOfSection);
         } catch (final PDPageHelper.NewPageException e) {
             this.newPage();
             try {
-                this.page.addBodyTextBlock(member, spouse, descendants);
+                this.page.addBodyTextBlock(member, spouse, descendants, endOfSection);
             } catch (final PDPageHelper.NewPageException x) {
                 throw new RuntimeException(e);
             }

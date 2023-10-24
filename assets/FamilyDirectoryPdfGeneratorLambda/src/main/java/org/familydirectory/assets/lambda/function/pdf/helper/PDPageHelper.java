@@ -333,7 +333,9 @@ class PDPageHelper implements Closeable {
         }
     }
 
-    void addBodyTextBlock (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> deadEndDescendants) throws NewPageException, IOException {
+    void addBodyTextBlock (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> deadEndDescendants, final boolean endOfSection)
+            throws NewPageException, IOException
+    {
         if (this.bodyTextBlockNeedsNewColumn(calculateBlockSizeYOffset(member, spouse, deadEndDescendants)) && !this.nextColumn()) {
             throw new NewPageException();
         }
@@ -469,7 +471,18 @@ class PDPageHelper implements Closeable {
             }
         }
 
-        this.newLine(HALF_LINE_SPACING);
+//  DRAW LINE BETWEEN SECTIONS
+        if (endOfSection && this.location.y > BODY_CONTENT_END_Y) {
+            this.contents.moveTo(this.location.x, this.location.y);
+            final float linesEnd = (this.currentColumn == 1 || this.currentColumn == MAX_COLUMNS)
+                    ? this.location.x + this.columnWidth() - HALF_LINE_SPACING
+                    : this.location.x + this.columnWidth() - STANDARD_LINE_SPACING;
+            this.contents.lineTo(linesEnd, this.location.y);
+            this.contents.stroke();
+            this.newLine(THREE_HALF_LINE_SPACING);
+        } else {
+            this.newLine(HALF_LINE_SPACING);
+        }
     }
 
     private
