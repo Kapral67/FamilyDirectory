@@ -1,8 +1,8 @@
 package org.familydirectory.assets.lambda.function.pdf.helper;
 
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -11,24 +11,29 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.familydirectory.assets.ddb.member.Member;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
 
 public final
 class PdfHelper {
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MMMM d, yyyy");
     @NotNull
     private final PDDocument pdf = new PDDocument();
     @NotNull
-    private final String date = LocalDate.now()
-                                         .format(DATE_FORMATTER);
+    private final LocalDate date = LocalDate.now();
+    @NotNull
+    private final DynamoDbClient dynamoDbClient = DynamoDbClient.create();
+    @NotNull
+    private final LambdaLogger logger;
     @NotNull
     private final String title;
     private int pageNumber = 0;
     private PDPageHelper page = null;
 
     public
-    PdfHelper (final @NotNull String rootMemberSurname) throws IOException {
+    PdfHelper (final @NotNull LambdaLogger logger, final @NotNull String rootMemberSurname) throws IOException {
         super();
+        this.logger = requireNonNull(logger);
         this.title = "%s FAMILY DIRECTORY".formatted(Optional.of(rootMemberSurname)
                                                              .filter(Predicate.not(String::isBlank))
                                                              .map(String::toUpperCase)
@@ -56,6 +61,11 @@ class PdfHelper {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public
+    void traverse (final @NotNull String familyId) throws IOException {
+        
     }
 
     /**

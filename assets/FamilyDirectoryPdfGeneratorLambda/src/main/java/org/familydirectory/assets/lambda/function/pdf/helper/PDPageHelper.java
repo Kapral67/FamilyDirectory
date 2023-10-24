@@ -2,6 +2,8 @@ package org.familydirectory.assets.lambda.function.pdf.helper;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -20,6 +22,7 @@ import static org.familydirectory.assets.ddb.models.member.MemberModel.DAGGER;
 
 final
 class PDPageHelper implements Closeable {
+    private static final DateTimeFormatter DISPLAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("MMMM d, yyyy");
     private static final char BULLET = '•';
     private static final String TAB = "  ";
     private static final float PX_IN_INCH = 72.0f;
@@ -44,13 +47,13 @@ class PDPageHelper implements Closeable {
     private final float bodyContentStartY;
     private int currentColumn = 1;
 
-    PDPageHelper (final @NotNull PDDocument pdf, final @NotNull PDPage page, final @NotNull String title, final @NotNull String subtitle, final int pageNumber) throws IOException {
+    PDPageHelper (final @NotNull PDDocument pdf, final @NotNull PDPage page, final @NotNull String title, final @NotNull LocalDate subtitle, final int pageNumber) throws IOException {
         super();
         this.page = page;
         pdf.addPage(this.page);
         this.contents = new PDPageContentStream(pdf, this.page);
         this.addTitle(title);
-        this.addSubtitle(subtitle);
+        this.addSubtitle(subtitle.format(DISPLAY_DATE_FORMATTER));
         this.addTopLine();
         this.bodyContentStartY = this.location.y - THREE_HALF_LINE_SPACING;
         this.addBottomLine();
@@ -98,7 +101,10 @@ class PDPageHelper implements Closeable {
     float descendantsBlockSizeYOffset (final @NotNull List<Member> descendants) {
         float blockSizeYOffset = 0.0f;
         for (final Member desc : descendants) {
-            blockSizeYOffset += STANDARD_LINE_SPACING; // For Name
+            blockSizeYOffset += DOUBLE_LINE_SPACING; // For Name & Birthday
+            if (nonNull(desc.getDeathday())) {
+                blockSizeYOffset += STANDARD_LINE_SPACING;
+            }
             if (nonNull(desc.getEmail())) {
                 blockSizeYOffset += STANDARD_LINE_SPACING;
             }
@@ -134,7 +140,10 @@ class PDPageHelper implements Closeable {
 
     private static
     float singleMemberBlockSizeYOffset (final @NotNull Member member) {
-        float blockSizeYOffset = 0.0f;
+        float blockSizeYOffset = STANDARD_LINE_SPACING; // ACCOUNT FOR BIRTHDAY
+        if (nonNull(member.getDeathday())) {
+            blockSizeYOffset += STANDARD_LINE_SPACING;
+        }
         if (nonNull(member.getEmail())) {
             blockSizeYOffset += STANDARD_LINE_SPACING;
         }
@@ -241,7 +250,7 @@ class PDPageHelper implements Closeable {
             final String header = (nonNull(member.getDeathday()))
                     ? "%c%s".formatted(DAGGER, member.getDisplayName())
                     : member.getDisplayName();
-            this.addColumnCenteredTitleFontText(header);
+            this.addColumnCenteredText(header, TITLE_FONT);
             this.newLine(STANDARD_LINE_SPACING);
         } else if (member.getLastName()
                          .equals(spouse.getLastName()))
@@ -253,7 +262,7 @@ class PDPageHelper implements Closeable {
                     ? "%c%s".formatted(DAGGER, spouse.getFirstName())
                     : spouse.getFirstName();
             final String header = "%s & %s %s".formatted(memberFirstName, spouseFirstName, member.getLastName());
-            this.addColumnCenteredTitleFontText(header);
+            this.addColumnCenteredText(header, TITLE_FONT);
             this.newLine(STANDARD_LINE_SPACING);
         } else {
             final String memberName = (nonNull(member.getDeathday()))
@@ -265,22 +274,79 @@ class PDPageHelper implements Closeable {
             final Pair<String, String> header = (getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, spouseName) > getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, memberName))
                     ? Pair.of("%s &".formatted(memberName), spouseName)
                     : Pair.of(memberName, "& %s".formatted(spouseName));
-            this.addColumnCenteredTitleFontText(header.left());
+            this.addColumnCenteredText(header.left(), TITLE_FONT);
             this.newLine(STANDARD_LINE_SPACING);
-            this.addColumnCenteredTitleFontText(header.right());
+            this.addColumnCenteredText(header.right(), TITLE_FONT);
             this.newLine(STANDARD_LINE_SPACING);
+        }
+
+//  ADD MEMBER BIRTHDAY
+        this.addColumnRightJustifiedText(member.getBirthday()
+                                               .format(DISPLAY_DATE_FORMATTER), STANDARD_FONT);
+        this.newLine(STANDARD_LINE_SPACING);
+
+//  ADD MEMBER DEATHDAY
+        if (nonNull(member.getDeathday())) {
+            this.addColumnRightJustifiedText("%c%s".formatted(DAGGER, member.getDeathday()
+                                                                            .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT);
+            this.newLine(STANDARD_LINE_SPACING);
+        }
+
+        if (nonNull(spouse)) {
+//      ADD SPOUSE BIRTHDAY
+            this.addColumnRightJustifiedText(spouse.getBirthday()
+                                                   .format(DISPLAY_DATE_FORMATTER), STANDARD_FONT);
+            this.newLine(STANDARD_LINE_SPACING);
+
+//      ADD SPOUSE DEATHDAY
+            if (nonNull(spouse.getDeathday())) {
+                this.addColumnRightJustifiedText("%c%s".formatted(DAGGER, spouse.getDeathday()
+                                                                                .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT);
+                this.newLine(STANDARD_LINE_SPACING);
+            }
         }
     }
 
     private
-    void addColumnCenteredTitleFontText (final @NotNull String line) throws IOException {
-        final float fontSize = this.getColumnFittedFontSize(line, PDPageHelper.TITLE_FONT);
-        this.contents.setFont(PDPageHelper.TITLE_FONT, fontSize);
+    void addColumnCenteredText (final @NotNull String line, final @NotNull PDFont font) throws IOException {
+        final float fontSize = this.getColumnFittedFontSize(line, font);
+        this.contents.setFont(font, fontSize);
         final float columnCenterX = (this.currentColumn == 1 || this.currentColumn == MAX_COLUMNS)
                 ? (this.columnWidth() - HALF_LINE_SPACING) * 0.5f
                 : (this.columnWidth() - STANDARD_LINE_SPACING) * 0.5f;
-        this.location.x += columnCenterX - getTextWidth(PDPageHelper.TITLE_FONT, fontSize, line) * 0.5f;
+        this.location.x += columnCenterX - getTextWidth(font, fontSize, line) * 0.5f;
         this.addColumnAgnosticText(line);
+    }
+
+    private
+    void addColumnRightJustifiedText (final @NotNull String line, final @NotNull PDFont font) throws IOException {
+        final float fontSize = this.getColumnFittedFontSize(line, font);
+        this.contents.setFont(font, fontSize);
+        final float columnRightX = (this.currentColumn == 1 || this.currentColumn == MAX_COLUMNS)
+                ? this.columnWidth() - HALF_LINE_SPACING
+                : this.columnWidth() - STANDARD_LINE_SPACING;
+        this.location.x += columnRightX - getTextWidth(font, fontSize, line);
+        this.addColumnAgnosticText(line);
+    }
+
+    private
+    float getColumnFittedFontSize (final @NotNull String line, final @NotNull PDFont font) throws IOException {
+        float fontSize = STANDARD_FONT_SIZE;
+        while (getTextWidth(font, fontSize, line) > this.columnWidth() - STANDARD_LINE_SPACING) {
+            fontSize -= 0.01f;
+        }
+        return fontSize;
+    }
+
+    private
+    float columnWidth () {
+        return (this.width() - LEFT_RIGHT_MARGIN * 2.0f) / (float) MAX_COLUMNS;
+    }
+
+    private
+    float width () {
+        return this.page.getMediaBox()
+                        .getWidth();
     }
 
     private
@@ -306,15 +372,6 @@ class PDPageHelper implements Closeable {
             }
             this.contents.endText();
         }
-    }
-
-    private
-    float getColumnFittedFontSize (final @NotNull String line, final @NotNull PDFont font) throws IOException {
-        float fontSize = STANDARD_FONT_SIZE;
-        while (getTextWidth(font, fontSize, line) > this.columnWidth() - STANDARD_LINE_SPACING) {
-            fontSize -= 0.01f;
-        }
-        return fontSize;
     }
 
     private
@@ -448,6 +505,18 @@ class PDPageHelper implements Closeable {
                 this.addColumnAgnosticText(header);
                 this.newLine(STANDARD_LINE_SPACING);
 
+//          ADD DESCENDANT BIRTHDAY
+                this.addColumnRightJustifiedText("%s%s".formatted(TAB, desc.getBirthday()
+                                                                           .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT);
+                this.newLine(STANDARD_LINE_SPACING);
+
+//          ADD DESCENDANT DEATHDAY
+                if (nonNull(desc.getDeathday())) {
+                    this.addColumnRightJustifiedText("%s%c%s".formatted(TAB, DAGGER, desc.getDeathday()
+                                                                                         .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT);
+                    this.newLine(STANDARD_LINE_SPACING);
+                }
+
 //          ADD DESCENDANT EMAIL
                 if (nonNull(desc.getEmail())) {
                     final String email = "%s%s".formatted(TAB, desc.getEmail());
@@ -511,17 +580,6 @@ class PDPageHelper implements Closeable {
                 this.location.x += HALF_LINE_SPACING;
             }
         }
-    }
-
-    private
-    float columnWidth () {
-        return (this.width() - LEFT_RIGHT_MARGIN * 2.0f) / (float) MAX_COLUMNS;
-    }
-
-    private
-    float width () {
-        return this.page.getMediaBox()
-                        .getWidth();
     }
 
     private
