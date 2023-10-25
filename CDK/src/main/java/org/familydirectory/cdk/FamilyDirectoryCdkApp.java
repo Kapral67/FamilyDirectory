@@ -1,6 +1,5 @@
 package org.familydirectory.cdk;
 
-import java.io.IOException;
 import org.familydirectory.cdk.apigateway.FamilyDirectoryApiGatewayStack;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.ddb.FamilyDirectoryDynamoDbStack;
@@ -14,58 +13,61 @@ import static java.lang.System.getenv;
 
 public final
 class FamilyDirectoryCdkApp {
+
+    public static final Environment DEFAULT_ENVIRONMENT = Environment.builder()
+                                                                     .account(getenv("CDK_DEFAULT_ACCOUNT"))
+                                                                     .region(getenv("CDK_DEFAULT_REGION"))
+                                                                     .build();
+
+    public static final String DOMAIN_STACK_NAME = "FamilyDirectoryDomainStack";
+    public static final String SES_STACK_NAME = "FamilyDirectorySesStack";
+    public static final String COGNITO_STACK_NAME = "FamilyDirectoryCognitoStack";
+    public static final String DDB_STACK_NAME = "FamilyDirectoryDynamoDbStack";
+    public static final String LAMBDA_STACK_NAME = "FamilyDirectoryLambdaStack";
+    public static final String API_STACK_NAME = "FamilyDirectoryApiGatewayStack";
+
     private
     FamilyDirectoryCdkApp () {
         super();
     }
 
     public static
-    void main (final String[] args) throws IOException {
+    void main (final String[] args) {
         final App app = new App();
-        final Environment env = Environment.builder()
-                                           .account(getenv("CDK_DEFAULT_ACCOUNT"))
-                                           .region(getenv("CDK_DEFAULT_REGION"))
-                                           .build();
 
-        final String domainStackName = "FamilyDirectoryDomainStack";
-        final FamilyDirectoryDomainStack domainStack = new FamilyDirectoryDomainStack(app, domainStackName, StackProps.builder()
-                                                                                                                      .env(env)
-                                                                                                                      .stackName(domainStackName)
-                                                                                                                      .build());
+        final FamilyDirectoryDomainStack domainStack = new FamilyDirectoryDomainStack(app, DOMAIN_STACK_NAME, StackProps.builder()
+                                                                                                                        .env(DEFAULT_ENVIRONMENT)
+                                                                                                                        .stackName(DOMAIN_STACK_NAME)
+                                                                                                                        .build());
 
-        final String sesStackName = "FamilyDirectorySesStack";
-        final FamilyDirectorySesStack sesStack = new FamilyDirectorySesStack(app, sesStackName, StackProps.builder()
-                                                                                                          .env(env)
-                                                                                                          .stackName(sesStackName)
-                                                                                                          .build());
+        final FamilyDirectorySesStack sesStack = new FamilyDirectorySesStack(app, SES_STACK_NAME, StackProps.builder()
+                                                                                                            .env(DEFAULT_ENVIRONMENT)
+                                                                                                            .stackName(SES_STACK_NAME)
+                                                                                                            .build());
         sesStack.addDependency(domainStack);
 
-        final String cognitoStackName = "FamilyDirectoryCognitoStack";
-        final FamilyDirectoryCognitoStack cognitoStack = new FamilyDirectoryCognitoStack(app, cognitoStackName, StackProps.builder()
-                                                                                                                          .env(env)
-                                                                                                                          .stackName(cognitoStackName)
-                                                                                                                          .build());
+        final FamilyDirectoryCognitoStack cognitoStack = new FamilyDirectoryCognitoStack(app, COGNITO_STACK_NAME, StackProps.builder()
+                                                                                                                            .env(DEFAULT_ENVIRONMENT)
+                                                                                                                            .stackName(COGNITO_STACK_NAME)
+                                                                                                                            .build());
         cognitoStack.addDependency(sesStack);
 
-        final String ddbStackName = "FamilyDirectoryDynamoDbStack";
-        final FamilyDirectoryDynamoDbStack dynamoDbStack = new FamilyDirectoryDynamoDbStack(app, ddbStackName, StackProps.builder()
-                                                                                                                         .env(env)
-                                                                                                                         .stackName(ddbStackName)
-                                                                                                                         .build());
+        final FamilyDirectoryDynamoDbStack dynamoDbStack = new FamilyDirectoryDynamoDbStack(app, DDB_STACK_NAME, StackProps.builder()
+                                                                                                                           .env(DEFAULT_ENVIRONMENT)
+                                                                                                                           .stackName(DDB_STACK_NAME)
+                                                                                                                           .build());
 
-        final String lambdaStackName = "FamilyDirectoryLambdaStack";
-        final FamilyDirectoryLambdaStack lambdaStack = new FamilyDirectoryLambdaStack(app, lambdaStackName, StackProps.builder()
-                                                                                                                      .env(env)
-                                                                                                                      .stackName(lambdaStackName)
-                                                                                                                      .build());
+        final FamilyDirectoryLambdaStack lambdaStack = new FamilyDirectoryLambdaStack(app, LAMBDA_STACK_NAME, StackProps.builder()
+                                                                                                                        .env(DEFAULT_ENVIRONMENT)
+                                                                                                                        .stackName(LAMBDA_STACK_NAME)
+                                                                                                                        .build());
         lambdaStack.addDependency(dynamoDbStack);
         lambdaStack.addDependency(cognitoStack);
 
-        final String apiGatewayStackName = "FamilyDirectoryApiGatewayStack";
-        final FamilyDirectoryApiGatewayStack apiGatewayStack = new FamilyDirectoryApiGatewayStack(app, apiGatewayStackName, StackProps.builder()
-                                                                                                                                      .env(env)
-                                                                                                                                      .stackName(apiGatewayStackName)
-                                                                                                                                      .build());
+        final FamilyDirectoryApiGatewayStack apiGatewayStack = new FamilyDirectoryApiGatewayStack(app, API_STACK_NAME, StackProps.builder()
+                                                                                                                                 .env(DEFAULT_ENVIRONMENT)
+                                                                                                                                 .stackName(API_STACK_NAME)
+                                                                                                                                 .build());
         apiGatewayStack.addDependency(lambdaStack);
 
         app.synth();
