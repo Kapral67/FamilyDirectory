@@ -105,13 +105,6 @@ class PdfHelper implements LambdaFunctionHelper {
         return memberBuilder.build();
     }
 
-    /*
-     * FIXME: How to know if needs endOfSection set when calling addFamily()?
-     * INSIGHT:
-     * Instead of having addFamily() be endOfSection, have it be startOfSection.
-     * That way we can print the section line before the body block whenever we are printing one of ROOT's direct-descendants
-     * (Do Not Print Section Lines when location.y equals bodyContentStartY)
-     */
     private
     void traverse (final @NotNull String id) throws IOException {
         final @NotNull Map<String, AttributeValue> family = this.retrieveFamily(id);
@@ -119,7 +112,9 @@ class PdfHelper implements LambdaFunctionHelper {
         final @Nullable Member spouse = this.retrieveMember(ofNullable(family.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
                                                                                                                                .filter(Predicate.not(String::isBlank))
                                                                                                                                .orElse(null));
-        final @NotNull List<Member> deadEndDescendants = new ArrayList<>(0);
+        final @NotNull List<Member> deadEndDescendants = new ArrayList<>();
+
+        final @NotNull List<String> recursiveDescendants = new ArrayList<>();
 
         final @Nullable List<String> descendantIds = ofNullable(family.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
                                                                                                                              .map(AttributeValue::ss)
@@ -127,16 +122,17 @@ class PdfHelper implements LambdaFunctionHelper {
                                                                                                                              .filter(l -> !l.stream()
                                                                                                                                             .allMatch(String::isBlank))
                                                                                                                              .orElse(null);
+
         if (nonNull(descendantIds)) {
-//            boolean isLastDescendant = true;
             for (final String descendantId : descendantIds) {
                 if (descendantId.isBlank()) {
                     continue;
                 }
-//                isLastDescendant = false;
 
                 final @NotNull Map<String, AttributeValue> descendantFamily = this.retrieveFamily(descendantId);
                 final @NotNull Member descendant = this.retrieveMember(descendantId);
+
+//          DEAD-END-DESCENDANTS ARE (A) NOT ADULTS & (B) DON'T HAVE DESCENDANTS
                 if (!descendant.isAdult() && ofNullable(descendantFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
                                                                                                                                .map(AttributeValue::ss)
                                                                                                                                .filter(Predicate.not(List::isEmpty))
@@ -146,21 +142,23 @@ class PdfHelper implements LambdaFunctionHelper {
                 {
                     deadEndDescendants.add(descendant);
                 } else {
-//                    this.traverse(descendantId, false);
+                    recursiveDescendants.add(descendantId);
                 }
             }
-//            if (endOfSection) {
-//                this.traverse(id, true);
-//            }
         }
 
-//        if (id.equals(this.rootMemberId)) {
-//            this.addFamily(member, spouse, (deadEndDescendants.isEmpty())
-//                    ? null
-//                    : deadEndDescendants, true);
-//        } else {
-//
-//        }
+        this.addFamily(member, spouse, (deadEndDescendants.isEmpty())
+                ? null
+                : deadEndDescendants, ofNullable(this.retrieveFamily(this.rootMemberId)
+                                                     .get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
+                                                                                                            .map(AttributeValue::ss)
+                                                                                                            .filter(Predicate.not(List::isEmpty))
+                                                                                                            .filter(ss -> ss.contains(id))
+                                                                                                            .isPresent());
+
+        for (final String recursiveDescendant : recursiveDescendants) {
+            this.traverse(recursiveDescendant);
+        }
     }
 
     @Contract("null -> null; !null -> !null")
@@ -187,13 +185,13 @@ class PdfHelper implements LambdaFunctionHelper {
     }
 
     private
-    void addFamily (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> descendants, final boolean endOfSection) throws IOException {
+    void addFamily (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> descendants, final boolean startOfSection) throws IOException {
         try {
-            this.page.addBodyTextBlock(member, spouse, descendants, endOfSection);
+            this.page.addBodyTextBlock(member, spouse, descendants, startOfSection);
         } catch (final PDPageHelper.NewPageException e) {
             this.newPage();
             try {
-                this.page.addBodyTextBlock(member, spouse, descendants, endOfSection);
+                this.page.addBodyTextBlock(member, spouse, descendants, startOfSection);
             } catch (final PDPageHelper.NewPageException x) {
                 throw new RuntimeException(e);
             }

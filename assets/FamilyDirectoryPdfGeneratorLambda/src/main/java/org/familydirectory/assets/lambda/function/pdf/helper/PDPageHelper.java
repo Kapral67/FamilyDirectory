@@ -390,11 +390,27 @@ class PDPageHelper implements Closeable {
         }
     }
 
-    void addBodyTextBlock (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> deadEndDescendants, final boolean endOfSection)
+    void addBodyTextBlock (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> deadEndDescendants, final boolean startOfSection)
             throws NewPageException, IOException
     {
-        if (this.bodyTextBlockNeedsNewColumn(calculateBlockSizeYOffset(member, spouse, deadEndDescendants)) && !this.nextColumn()) {
+//  DETERMINE IF BLOCK FITS IN COLUMN
+        float blockSizeYOffset = calculateBlockSizeYOffset(member, spouse, deadEndDescendants);
+        if (startOfSection && this.location.y < this.bodyContentStartY) {
+            blockSizeYOffset += THREE_HALF_LINE_SPACING;
+        }
+        if (this.bodyTextBlockNeedsNewColumn(blockSizeYOffset) && !this.nextColumn()) {
             throw new NewPageException();
+        }
+
+//  DRAW LINE BETWEEN SECTIONS
+        if (startOfSection && this.location.y < this.bodyContentStartY) {
+            this.contents.moveTo(this.location.x, this.location.y);
+            final float linesEnd = (this.currentColumn == 1 || this.currentColumn == MAX_COLUMNS)
+                    ? this.location.x + this.columnWidth() - HALF_LINE_SPACING
+                    : this.location.x + this.columnWidth() - STANDARD_LINE_SPACING;
+            this.contents.lineTo(linesEnd, this.location.y);
+            this.contents.stroke();
+            this.newLine(THREE_HALF_LINE_SPACING);
         }
 
 //  PRINT BLOCK HEADER
@@ -540,18 +556,7 @@ class PDPageHelper implements Closeable {
             }
         }
 
-//  DRAW LINE BETWEEN SECTIONS
-        if (endOfSection && this.location.y > BODY_CONTENT_END_Y) {
-            this.contents.moveTo(this.location.x, this.location.y);
-            final float linesEnd = (this.currentColumn == 1 || this.currentColumn == MAX_COLUMNS)
-                    ? this.location.x + this.columnWidth() - HALF_LINE_SPACING
-                    : this.location.x + this.columnWidth() - STANDARD_LINE_SPACING;
-            this.contents.lineTo(linesEnd, this.location.y);
-            this.contents.stroke();
-            this.newLine(THREE_HALF_LINE_SPACING);
-        } else {
-            this.newLine(HALF_LINE_SPACING);
-        }
+        this.newLine(HALF_LINE_SPACING);
     }
 
     private
