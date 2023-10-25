@@ -1,8 +1,10 @@
 package org.familydirectory.assets.ddb.models.member;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
@@ -12,12 +14,39 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
 
 public abstract
 class MemberModel {
     public static final char DAGGER = '†';
+
+    public static @Nullable
+    Map<PhoneType, String> convertPhonesDdbMap (final @NotNull Map<String, AttributeValue> phonesDdbMap) {
+        final Set<String> phoneTypeNames = Arrays.stream(PhoneType.values())
+                                                 .map(PhoneType::name)
+                                                 .collect(toSet());
+        return phonesDdbMap.entrySet()
+                           .stream()
+                           .filter(entry -> phoneTypeNames.contains(entry.getKey()) && nonNull(entry.getValue()
+                                                                                                    .s()) && !entry.getValue()
+                                                                                                                   .s()
+                                                                                                                   .isBlank())
+                           .collect(collectingAndThen(toMap(entry -> PhoneType.valueOf(entry.getKey()), entry -> entry.getValue()
+                                                                                                                      .s()), map -> map.isEmpty()
+                                   ? null
+                                   : map));
+    }
+
+    /**
+     * @param date Must be a date formatted as defined by {@link DdbUtils#DATE_FORMAT_STRING}
+     */
+    public static @NotNull
+    LocalDate convertStringToDate (final @NotNull String date) {
+        return LocalDate.parse(date, DdbUtils.DATE_FORMATTER);
+    }
 
     public abstract @Nullable
     String getEmail ();

@@ -1,6 +1,5 @@
 package org.familydirectory.assets.lambda.function.api.helper;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import java.util.Map;
@@ -9,22 +8,18 @@ import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
-import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 
 public abstract
-class ApiHelper {
+class ApiHelper implements LambdaFunctionHelper {
     public final @NotNull
     Caller getCaller () {
         final Map<String, AttributeValue> caller;
@@ -65,26 +60,7 @@ class ApiHelper {
     }
 
     public abstract @NotNull
-    LambdaLogger getLogger ();
-
-    public abstract @NotNull
     APIGatewayProxyRequestEvent getRequestEvent ();
-
-    public @Nullable
-    Map<String, AttributeValue> getDdbItem (final @NotNull String primaryKey, final @NotNull DdbTable ddbTable) {
-        final GetItemRequest request = GetItemRequest.builder()
-                                                     .tableName(ddbTable.name())
-                                                     .key(singletonMap(DdbTable.PK.getName(), AttributeValue.fromS(primaryKey)))
-                                                     .build();
-        final GetItemResponse response = this.getDynamoDbClient()
-                                             .getItem(request);
-        return (response.hasItem())
-                ? response.item()
-                : null;
-    }
-
-    public abstract @NotNull
-    DynamoDbClient getDynamoDbClient ();
 
     public
     record Caller(@NotNull String memberId, @NotNull Map<String, AttributeValue> attributeMap, @NotNull String familyId) {
