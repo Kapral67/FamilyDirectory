@@ -1,4 +1,4 @@
-## Oct 25
+## Oct 26 Updated
 
 ### Finish CognitoStack
 
@@ -8,6 +8,18 @@
 
 - Interval? Realtime?
 
+### CDK
+
+- Domain Stack has static reference to A record for `example.com`
+
+- Cognito Stack cannot create the triggers because of circular dependency. Should be moved to Lambda Stack
+
+    - Once Complete, Write Unit Test for Cognito Stack
+
+---
+
+### Deferred Tasks
+
 ### Changelog
 
 - Maybe CREATE/UPDATE/DELETE should publish their changes to some kind of log so that releases of PDFs/vCard files can
@@ -16,9 +28,3 @@
         - apis would acquire this lock at the end of their function
         - generating functions would acquire this lock at the start of their function
     - **Look into DDB Streams**
-
-### CDK
-
-- Domain Stack has static reference to A record for `example.com`
-
-- Cognito Stack cannot create the triggers because of circular dependency. Should be moved to Lambda Stack

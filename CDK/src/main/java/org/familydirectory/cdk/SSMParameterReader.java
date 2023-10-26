@@ -1,6 +1,7 @@
 package org.familydirectory.cdk;
 
 import java.time.Instant;
+import java.util.regex.Pattern;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.customresources.AwsCustomResource;
@@ -19,6 +20,7 @@ public
 class SSMParameterReader extends AwsCustomResource {
 
     public static final String SSM_PARAMETER_READER_RESOURCE_ID = "SSMParameterReader";
+    public static final String SSM_PARAMETER_READER_DATA_PATH = "Parameter.Value";
 
     public
     SSMParameterReader (final @NotNull Construct scope, final @NotNull String id, final @NotNull String parameterName, final @NotNull Region region)
@@ -48,10 +50,19 @@ class SSMParameterReader extends AwsCustomResource {
                          .build();
     }
 
+    public static
+    boolean validateTemplate (final @NotNull String fromTemplate, final @NotNull String parameterName, final @NotNull Region region) {
+        final String regex = "\\{\"action\":\"getParameter\",\"service\":\"SSM\",\"parameters\":\\{\"Name\":\"" + parameterName + "\"\\},\"physicalResourceId\":\\{\"id\":\"\\d+\"\\},\"region\":\"" +
+                             region + "\"\\}";
+        return Pattern.compile(regex)
+                      .matcher(fromTemplate)
+                      .matches();
+    }
+
     @Override
     @NotNull
     public final
     String toString () {
-        return this.getResponseField("Parameter.Value");
+        return this.getResponseField(SSM_PARAMETER_READER_DATA_PATH);
     }
 }

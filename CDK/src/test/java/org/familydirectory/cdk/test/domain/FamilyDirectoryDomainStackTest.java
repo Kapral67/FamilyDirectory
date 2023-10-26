@@ -41,6 +41,7 @@ class FamilyDirectoryDomainStackTest {
                 Map.of(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME, singletonMap("Ref", hostedZoneIdCapture.asString()), "Name", FULL_HOSTED_ZONE_NAME, "ResourceRecords",
                        singletonList("0 issue \"amazon.com\""), "TTL", "1800", "Type", "CAA")));
 
+        // FIXME: Validating Temporary A Record pointing to example.com (necessary for Cognito subdomain to have A records)
         template.hasResourceProperties("AWS::Route53::RecordSet", objectLike(
                 Map.of(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME, singletonMap("Ref", hostedZoneIdCapture.asString()), "Name", FULL_HOSTED_ZONE_NAME, "ResourceRecords",
                        singletonList(FamilyDirectoryDomainStack.HOSTED_ZONE_A_RECORD_IP_ADDRESS), "TTL", "1800", "Type", "A")));

@@ -13,6 +13,7 @@ import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
+import software.amazon.awscdk.services.ssm.ParameterTier;
 import software.amazon.awscdk.services.ssm.StringParameter;
 import software.amazon.awscdk.services.ssm.StringParameterProps;
 import software.amazon.awssdk.regions.Region;
@@ -59,6 +60,7 @@ class FamilyDirectoryCognitoUsEastOneStack extends Stack {
         new StringParameter(this, COGNITO_CERTIFICATE_ARN_PARAMETER_NAME, StringParameterProps.builder()
                                                                                               .parameterName(COGNITO_CERTIFICATE_ARN_PARAMETER_NAME)
                                                                                               .stringValue(cognitoCertificate.getCertificateArn())
+                                                                                              .tier(ParameterTier.STANDARD)
                                                                                               .build());
     }
 }

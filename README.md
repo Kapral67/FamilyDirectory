@@ -53,7 +53,8 @@
 
         - `cdk bootstrap "aws://$CDK_DEFAULT_ACCOUNT/$CDK_DEFAULT_REGION"`
 
-        - `cdk bootstrap "aws://$CDK_DEFAULT_ACCOUNT/us-east-1`
+        - `cdk bootstrap "aws://$CDK_DEFAULT_ACCOUNT/us-east-1` (Only needed if your `$CDK_DEFAULT_REGION` is
+          not `us-east-1`)
 
 
 4. If on a `*nix` system, you can use the `stage.bash` script to build this project in the correct order
@@ -86,12 +87,15 @@
     2. Now, deploy the `FamilyDirectorySesStack` solely (e.g. `cdk deploy FamilyDirectorySesStack`)
 
         - Since the domain used for SES is attached to the HostedZone defined in `FamilyDirectoryDomainStack`, DNS
-          records are created automatically, but they still need to propagate before moving on
+          records are created automatically
+
+        - Wait Until DNS Propagates, Then Continue
 
     3. Now, deploy the `FamilyDirectoryCognitoStack`, this stack should automatically deploy
        the `FamilyDirectoryCognitoUsEastOneStack` as it depends on it
 
         - After this stack deploys, you'll have to wait around an hour, but then you can view your Cognito page
-          at `https://${ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME}.${ORG_FAMILY_DIRECTORY_HOSTED_ZONE_NAME}`
+          (
+          see [Step 3](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-add-custom-domain.html#cognito-user-pools-add-custom-domain-console-step-3))
 
 ***TODO** Finish Deployment Order*

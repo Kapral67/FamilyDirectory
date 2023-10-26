@@ -35,7 +35,7 @@ class FamilyDirectoryDomainStack extends Stack {
         new StringParameter(this, HOSTED_ZONE_ID_PARAMETER_NAME, StringParameterProps.builder()
                                                                                      .parameterName(HOSTED_ZONE_ID_PARAMETER_NAME)
                                                                                      .stringValue(hostedZone.getHostedZoneId())
-                                                                                     .tier(ParameterTier.ADVANCED)
+                                                                                     .tier(ParameterTier.STANDARD)
                                                                                      .build());
 
         /**
