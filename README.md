@@ -39,17 +39,22 @@
         - The `ROOT MEMBER` of this FamilyDirectory must be known and so an Environment Variable is set for it.
         - A good value for this variable is `"00000000-0000-0000-0000-000000000000"`
 
-    6. `CDK_DEFAULT_ACCOUNT`
+    7. `CDK_DEFAULT_ACCOUNT`
 
         - The AWS Account Id
 
-    7. `CDK_DEFAULT_REGION`
+    8. `CDK_DEFAULT_REGION`
 
         - The AWS Region
 
 3. Now is a good time to bootstrap you're aws account for cdk if you haven't already
 
-    - This only needs to be done once before the first deployment
+    - This only needs to be done once before the first deployment:
+
+        - `cdk bootstrap "aws://$CDK_DEFAULT_ACCOUNT/$CDK_DEFAULT_REGION"`
+
+        - `cdk bootstrap "aws://$CDK_DEFAULT_ACCOUNT/us-east-1`
+
 
 4. If on a `*nix` system, you can use the `stage.bash` script to build this project in the correct order
 
@@ -68,20 +73,25 @@
         - Here, you need to copy the NS records for `${ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME}` and apply them at your
           registrar
 
-            - Make sure that you are applying these records for the subdomain, not the root domain, and also make sure
-              the TTL values match both at your registrar and on Route53
+            - If `${ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME}` is a subdomain (e.g. `subdomain.example.com`):
 
-        - Wait Until DNS Propagates (eta 24 hours), Then Continue
+                - Make sure that you are applying these records for the subdomain, not the root domain
+
+                - *Note that some DNS Providers/Registrars don't work very well for delegating domains. I had success
+                  when using Cloudflare as the Nameserver for my root domain. For these purposes, Cloudflare is free if
+                  you already own the root domain.*
+
+        - Wait Until DNS Propagates, Then Continue
 
     2. Now, deploy the `FamilyDirectorySesStack` solely (e.g. `cdk deploy FamilyDirectorySesStack`)
 
         - Since the domain used for SES is attached to the HostedZone defined in `FamilyDirectoryDomainStack`, DNS
-          records are created automatically
+          records are created automatically, but they still need to propagate before moving on
 
-        - Still, these records may take up to 72 hours to propagate, and it's best to wait until these propagate before
-          moving forward
+    3. Now, deploy the `FamilyDirectoryCognitoStack`, this stack should automatically deploy
+       the `FamilyDirectoryCognitoUsEastOneStack` as it depends on it
 
-        - This is because Cognito (the next stack) relies on SES to send email, so having a fully operational SES is
-          best before creating the `FamilyDirectoryCognitoStack` resources
+        - After this stack deploys, you'll have to wait around an hour, but then you can view your Cognito page
+          at `https://${ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME}.${ORG_FAMILY_DIRECTORY_HOSTED_ZONE_NAME}`
 
 ***TODO** Finish Deployment Order*

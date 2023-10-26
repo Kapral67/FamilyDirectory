@@ -1,8 +1,4 @@
-## Oct 9
-
-### Finish ApiGatewayStack
-
-- Needs Review (e.g. CORS ALLOW/EXPOSE Headers)
+## Oct 25
 
 ### Finish CognitoStack
 
@@ -20,3 +16,9 @@
         - apis would acquire this lock at the end of their function
         - generating functions would acquire this lock at the start of their function
     - **Look into DDB Streams**
+
+### CDK
+
+- Domain Stack has static reference to A record for `example.com`
+
+- Cognito Stack cannot create the triggers because of circular dependency. Should be moved to Lambda Stack

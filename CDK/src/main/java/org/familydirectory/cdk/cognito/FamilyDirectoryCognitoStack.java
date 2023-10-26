@@ -1,21 +1,17 @@
 package org.familydirectory.cdk.cognito;
 
-import java.util.Arrays;
-import java.util.Map;
-import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
-import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
+import org.familydirectory.cdk.SSMParameterReader;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
-import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
-import software.amazon.awscdk.services.certificatemanager.CertificateProps;
-import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
+import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cognito.AccountRecovery;
 import software.amazon.awscdk.services.cognito.AdvancedSecurityMode;
 import software.amazon.awscdk.services.cognito.AuthFlow;
@@ -40,9 +36,7 @@ import software.amazon.awscdk.services.cognito.UserPoolDomainOptions;
 import software.amazon.awscdk.services.cognito.UserPoolEmail;
 import software.amazon.awscdk.services.cognito.UserPoolProps;
 import software.amazon.awscdk.services.cognito.UserPoolSESOptions;
-import software.amazon.awscdk.services.cognito.UserPoolTriggers;
 import software.amazon.awscdk.services.cognito.UserVerificationConfig;
-import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
 import software.amazon.awscdk.services.route53.HostedZone;
@@ -50,22 +44,21 @@ import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.UserPoolDomainTarget;
+import software.amazon.awscdk.services.ssm.IStringParameter;
+import software.amazon.awscdk.services.ssm.StringParameter;
+import software.amazon.awssdk.regions.Region;
 import software.constructs.Construct;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
+import static java.util.Optional.ofNullable;
 import static software.amazon.awscdk.Duration.days;
-import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider.COGNITO;
 import static software.amazon.awscdk.services.cognito.VerificationEmailStyle.LINK;
 
 public
 class FamilyDirectoryCognitoStack extends Stack {
-
-    public static final String COGNITO_CERTIFICATE_RESOURCE_ID = "CognitoCertificate";
-    public static final String COGNITO_CERTIFICATE_NAME = "%s-%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME, COGNITO_CERTIFICATE_RESOURCE_ID);
-    public static final String COGNITO_CERTIFICATE_ARN_EXPORT_NAME = "%sArn".formatted(COGNITO_CERTIFICATE_RESOURCE_ID);
     public static final String COGNITO_DOMAIN_NAME_RESOURCE_ID = "CognitoDomainName";
     public static final String COGNITO_A_RECORD_RESOURCE_ID = "CognitoARecord";
     public static final String COGNITO_USER_POOL_CLIENT_RESOURCE_ID = "UserPoolClient";
@@ -86,14 +79,16 @@ class FamilyDirectoryCognitoStack extends Stack {
     FamilyDirectoryCognitoStack (final Construct scope, final String id, final StackProps stackProps) {
         super(scope, id, stackProps);
 
+        final IStringParameter hostedZoneId = StringParameter.fromStringParameterName(this, FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME,
+                                                                                      FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME);
         final HostedZoneAttributes hostedZoneAttrs = HostedZoneAttributes.builder()
-                                                                         .hostedZoneId(importValue(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME))
+                                                                         .hostedZoneId(hostedZoneId.getStringValue())
                                                                          .zoneName(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
                                                                          .build();
         final IHostedZone hostedZone = HostedZone.fromHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
 
 //  Construct Triggers
-        final Map<LambdaFunctionModel, Function> cognitoTriggerLambdaFunctions = LambdaFunctionConstructUtility.constructFunctionMap(this, Arrays.asList(TriggerFunction.values()));
+//        final Map<LambdaFunctionModel, Function> cognitoTriggerLambdaFunctions = LambdaFunctionConstructUtility.constructFunctionMap(this, Arrays.asList(TriggerFunction.values()));
 
         final UserPoolProps userPoolProps = UserPoolProps.builder()
                                                          .accountRecovery(AccountRecovery.EMAIL_ONLY)
@@ -105,19 +100,19 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                          .deletionProtection(TRUE)
                                                          .email(UserPoolEmail.withSES(UserPoolSESOptions.builder()
                                                                                                         .configurationSetName(FamilyDirectorySesStack.SES_CONFIGURATION_SET_NAME)
-                                                                                                        .fromEmail("no-reply@%s".formatted(FamilyDirectorySesStack.SES_MAIL_FROM_DOMAIN_NAME))
+                                                                                                        .fromEmail("no-reply@%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME))
                                                                                                         .replyTo(COGNITO_REPLY_TO_EMAIL_ADDRESS)
-                                                                                                        .sesVerifiedDomain(FamilyDirectorySesStack.SES_MAIL_FROM_DOMAIN_NAME)
+                                                                                                        .sesVerifiedDomain(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
                                                                                                         .build()))
                                                          .enableSmsRole(FALSE)
                                                          .keepOriginal(KeepOriginalAttrs.builder()
                                                                                         .email(TRUE)
                                                                                         .phone(FALSE)
                                                                                         .build())
-                                                         .lambdaTriggers(UserPoolTriggers.builder()
-                                                                                         .preSignUp(cognitoTriggerLambdaFunctions.get(TriggerFunction.PRE_SIGN_UP))
-                                                                                         .postConfirmation(cognitoTriggerLambdaFunctions.get(TriggerFunction.POST_CONFIRMATION))
-                                                                                         .build())
+//                                                         .lambdaTriggers(UserPoolTriggers.builder()
+//                                                                                         .preSignUp(cognitoTriggerLambdaFunctions.get(TriggerFunction.PRE_SIGN_UP))
+//                                                                                         .postConfirmation(cognitoTriggerLambdaFunctions.get(TriggerFunction.POST_CONFIRMATION))
+//                                                                                         .build())
                                                          .mfa(Mfa.OFF)
                                                          .passwordPolicy(PasswordPolicy.builder()
                                                                                        .minLength(MIN_PASSWORD_LENGTH)
@@ -150,9 +145,6 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                             .exportName(COGNITO_USER_POOL_ID_EXPORT_NAME)
                                                                             .build());
 
-//  Add Permissions to Triggers
-        LambdaFunctionConstructUtility.constructFunctionPermissions(this, userPool, cognitoTriggerLambdaFunctions);
-
         final OAuthSettings userPoolClientOAuthSettings = OAuthSettings.builder()
                                                                        // TODO: ADD CALLBACK URLS
 //                                                                       .callbackUrls(singletonList(""))
@@ -162,10 +154,14 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                         .authorizationCodeGrant(TRUE)
                                                                                         .build())
                                                                        .build();
-        final ClientAttributes userPoolClientAttributes = new ClientAttributes().withStandardAttributes(StandardAttributesMask.builder()
-                                                                                                                              .email(TRUE)
-                                                                                                                              .emailVerified(TRUE)
-                                                                                                                              .build());
+        final ClientAttributes userPoolClientReadAttributes = new ClientAttributes().withStandardAttributes(StandardAttributesMask.builder()
+                                                                                                                                  .email(TRUE)
+                                                                                                                                  .emailVerified(TRUE)
+                                                                                                                                  .build());
+        final ClientAttributes userPoolClientWriteAttributes = new ClientAttributes().withStandardAttributes(StandardAttributesMask.builder()
+                                                                                                                                   .email(TRUE)
+                                                                                                                                   .emailVerified(FALSE)
+                                                                                                                                   .build());
         final UserPoolClientOptions userPoolClientOptions = UserPoolClientOptions.builder()
                                                                                  .authFlows(AuthFlow.builder()
                                                                                                     .userSrp(TRUE)
@@ -173,26 +169,29 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                  .generateSecret(FALSE)
                                                                                  .oAuth(userPoolClientOAuthSettings)
                                                                                  .preventUserExistenceErrors(TRUE)
-                                                                                 .readAttributes(userPoolClientAttributes)
+                                                                                 .readAttributes(userPoolClientReadAttributes)
                                                                                  .supportedIdentityProviders(singletonList(COGNITO))
-                                                                                 .writeAttributes(userPoolClientAttributes)
+                                                                                 .writeAttributes(userPoolClientWriteAttributes)
                                                                                  .build();
         final UserPoolClient userPoolClient = userPool.addClient(COGNITO_USER_POOL_CLIENT_RESOURCE_ID, userPoolClientOptions);
         new CfnOutput(this, COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME, CfnOutputProps.builder()
                                                                                    .value(userPoolClient.getUserPoolClientId())
                                                                                    .exportName(COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME)
                                                                                    .build());
-//  Cognito Certificate
-        final CertificateProps cognitoCertificateProps = CertificateProps.builder()
-                                                                         .certificateName(COGNITO_CERTIFICATE_NAME)
-                                                                         .domainName(COGNITO_DOMAIN_NAME)
-                                                                         .validation(CertificateValidation.fromDns(hostedZone))
-                                                                         .build();
-        final Certificate cognitoCertificate = new Certificate(this, COGNITO_CERTIFICATE_RESOURCE_ID, cognitoCertificateProps);
-        new CfnOutput(this, COGNITO_CERTIFICATE_ARN_EXPORT_NAME, CfnOutputProps.builder()
-                                                                               .value(cognitoCertificate.getCertificateArn())
-                                                                               .exportName(COGNITO_CERTIFICATE_ARN_EXPORT_NAME)
-                                                                               .build());
+
+        final String cognitoCertificateArn;
+        if (ofNullable(stackProps.getEnv()).map(Environment::getRegion)
+                                           .filter(region -> region.equals(FamilyDirectoryCognitoUsEastOneStack.REGION))
+                                           .isPresent())
+        {
+            cognitoCertificateArn = StringParameter.fromStringParameterName(this, FamilyDirectoryCognitoUsEastOneStack.COGNITO_CERTIFICATE_ARN_PARAMETER_NAME,
+                                                                            FamilyDirectoryCognitoUsEastOneStack.COGNITO_CERTIFICATE_ARN_PARAMETER_NAME)
+                                                   .getStringValue();
+        } else {
+            cognitoCertificateArn = new SSMParameterReader(this, SSMParameterReader.SSM_PARAMETER_READER_RESOURCE_ID, FamilyDirectoryCognitoUsEastOneStack.COGNITO_CERTIFICATE_ARN_PARAMETER_NAME,
+                                                           Region.of(FamilyDirectoryCognitoUsEastOneStack.REGION)).toString();
+        }
+        final ICertificate cognitoCertificate = Certificate.fromCertificateArn(this, FamilyDirectoryCognitoUsEastOneStack.COGNITO_CERTIFICATE_RESOURCE_ID, cognitoCertificateArn);
         final CustomDomainOptions cognitoCustomDomainOptions = CustomDomainOptions.builder()
                                                                                   .certificate(cognitoCertificate)
                                                                                   .domainName(COGNITO_DOMAIN_NAME)
@@ -218,5 +217,12 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                            .value(userPoolSignInUrl)
                                                                            .exportName(COGNITO_SIGN_IN_URL_EXPORT_NAME)
                                                                            .build());
+
+//      Add Permissions to Triggers
+//        LambdaFunctionConstructUtility.constructFunctionPermissions(this, userPool, cognitoTriggerLambdaFunctions);
+
+//      Add Triggers
+//        userPool.addTrigger(UserPoolOperation.PRE_SIGN_UP, cognitoTriggerLambdaFunctions.get(TriggerFunction.PRE_SIGN_UP));
+//        userPool.addTrigger(UserPoolOperation.POST_CONFIRMATION, cognitoTriggerLambdaFunctions.get(TriggerFunction.POST_CONFIRMATION));
     }
 }

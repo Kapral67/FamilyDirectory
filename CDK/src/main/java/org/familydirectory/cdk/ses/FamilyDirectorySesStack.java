@@ -19,11 +19,12 @@ import software.amazon.awscdk.services.ses.EmailIdentityProps;
 import software.amazon.awscdk.services.ses.Identity;
 import software.amazon.awscdk.services.ses.MailFromBehaviorOnMxFailure;
 import software.amazon.awscdk.services.ses.SuppressionReasons;
+import software.amazon.awscdk.services.ssm.IStringParameter;
+import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 import static java.lang.Boolean.TRUE;
 import static java.lang.System.getenv;
 import static java.util.Objects.requireNonNull;
-import static software.amazon.awscdk.Fn.importValue;
 
 public
 class FamilyDirectorySesStack extends Stack {
@@ -49,8 +50,10 @@ class FamilyDirectorySesStack extends Stack {
                                        .orElseThrow();
 
 //  PUBLIC HOSTED ZONE
+        final IStringParameter hostedZoneId = StringParameter.fromStringParameterName(this, FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME,
+                                                                                      FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME);
         final PublicHostedZoneAttributes hostedZoneAttrs = PublicHostedZoneAttributes.builder()
-                                                                                     .hostedZoneId(importValue(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME))
+                                                                                     .hostedZoneId(hostedZoneId.getStringValue())
                                                                                      .zoneName(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
                                                                                      .build();
         final IPublicHostedZone hostedZone = PublicHostedZone.fromPublicHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);

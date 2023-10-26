@@ -34,6 +34,8 @@ import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.ApiGatewayv2DomainProperties;
+import software.amazon.awscdk.services.ssm.IStringParameter;
+import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -44,6 +46,7 @@ import static software.amazon.awscdk.Fn.importValue;
 public
 class FamilyDirectoryApiGatewayStack extends Stack {
     public static final String API_CERTIFICATE_RESOURCE_ID = "ApiCertificate";
+    public static final String API_A_RECORD_RESOURCE_ID = "ApiARecord";
     public static final String API_CERTIFICATE_NAME = "%s-%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME, API_CERTIFICATE_RESOURCE_ID);
     public static final String API_CERTIFICATE_ARN_EXPORT_NAME = "%sArn".formatted(API_CERTIFICATE_RESOURCE_ID);
     public static final String API_DOMAIN_NAME_RESOURCE_ID = "ApiDomainName";
@@ -57,8 +60,10 @@ class FamilyDirectoryApiGatewayStack extends Stack {
     FamilyDirectoryApiGatewayStack (final Construct scope, final String id, final StackProps stackProps) {
         super(scope, id, stackProps);
 
+        final IStringParameter hostedZoneId = StringParameter.fromStringParameterName(this, FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME,
+                                                                                      FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME);
         final HostedZoneAttributes hostedZoneAttrs = HostedZoneAttributes.builder()
-                                                                         .hostedZoneId(importValue(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_EXPORT_NAME))
+                                                                         .hostedZoneId(hostedZoneId.getStringValue())
                                                                          .zoneName(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
                                                                          .build();
         final IHostedZone hostedZone = HostedZone.fromHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
@@ -89,7 +94,7 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                          .recordName(API_DOMAIN_NAME)
                                                          .target(RecordTarget.fromAlias(apiDomainNameProperties))
                                                          .build();
-        new ARecord(this, "ApiARecord", apiARecordProps);
+        new ARecord(this, API_A_RECORD_RESOURCE_ID, apiARecordProps);
 
 //  Configure CORS options for httpApi
         final CorsPreflightOptions httpApiPropsCorsOptions = CorsPreflightOptions.builder()

@@ -19,7 +19,7 @@ import static software.amazon.awscdk.assertions.Match.objectLike;
 
 public
 class FamilyDirectorySesStackTest {
-    private static final Environment SES_ENVIRONMENT = FamilyDirectoryCdkApp.DEFAULT_ENVIRONMENT;
+    private static final Environment SES_ENVIRONMENT = FamilyDirectoryCdkApp.DEFAULT_ENV;
 
     @Test
     public
