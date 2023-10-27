@@ -61,18 +61,21 @@ class FamilyDirectoryCdkApp {
                                                                                                                                                                  .stackName(
                                                                                                                                                                          COGNITO_US_EAST_1_STACK_NAME)
                                                                                                                                                                  .build());
-
-        final FamilyDirectoryCognitoStack cognitoStack = new FamilyDirectoryCognitoStack(app, COGNITO_STACK_NAME, StackProps.builder()
-                                                                                                                            .env(DEFAULT_ENV)
-                                                                                                                            .stackName(COGNITO_STACK_NAME)
-                                                                                                                            .build());
-        cognitoStack.addDependency(sesStack);
-        cognitoStack.addDependency(cognitoUsEastOneStack);
+        cognitoUsEastOneStack.addDependency(domainStack);
 
         final FamilyDirectoryDynamoDbStack dynamoDbStack = new FamilyDirectoryDynamoDbStack(app, DDB_STACK_NAME, StackProps.builder()
                                                                                                                            .env(DEFAULT_ENV)
                                                                                                                            .stackName(DDB_STACK_NAME)
                                                                                                                            .build());
+
+        final FamilyDirectoryCognitoStack cognitoStack = new FamilyDirectoryCognitoStack(app, COGNITO_STACK_NAME, StackProps.builder()
+                                                                                                                            .env(DEFAULT_ENV)
+                                                                                                                            .stackName(COGNITO_STACK_NAME)
+                                                                                                                            .build());
+        cognitoStack.addDependency(domainStack);
+        cognitoStack.addDependency(sesStack);
+        cognitoStack.addDependency(cognitoUsEastOneStack);
+        cognitoStack.addDependency(dynamoDbStack);
 
         final FamilyDirectoryLambdaStack lambdaStack = new FamilyDirectoryLambdaStack(app, LAMBDA_STACK_NAME, StackProps.builder()
                                                                                                                         .env(DEFAULT_ENV)
@@ -85,6 +88,8 @@ class FamilyDirectoryCdkApp {
                                                                                                                                  .env(DEFAULT_ENV)
                                                                                                                                  .stackName(API_STACK_NAME)
                                                                                                                                  .build());
+        apiGatewayStack.addDependency(domainStack);
+        apiGatewayStack.addDependency(cognitoStack);
         apiGatewayStack.addDependency(lambdaStack);
 
         app.synth();

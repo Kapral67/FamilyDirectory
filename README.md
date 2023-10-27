@@ -92,7 +92,7 @@
         - Wait Until DNS Propagates, Then Continue
 
     3. Now, deploy the `FamilyDirectoryCognitoStack`, this stack should automatically deploy
-       the `FamilyDirectoryCognitoUsEastOneStack` as it depends on it
+       the `FamilyDirectoryCognitoUsEastOneStack` and the `FamilyDirectoryDynamodbStack`, as it depends on these stacks
 
         - After this stack deploys, you'll have to wait around an hour, but then you can view your Cognito page
           (

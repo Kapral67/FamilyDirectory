@@ -10,9 +10,12 @@ import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.services.cognito.IUserPool;
+import software.amazon.awscdk.services.iam.IRole;
+import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionProps;
 import software.constructs.Construct;
@@ -40,17 +43,42 @@ class LambdaFunctionConstructUtility {
     }
 
     public static @NotNull
-    Map<LambdaFunctionModel, Function> constructFunctionMap (final @NotNull Construct scope, final @NotNull List<? extends LambdaFunctionModel> values) {
+    Map<LambdaFunctionModel, Function> constructFunctionMap (final @NotNull Construct scope, final @NotNull List<? extends LambdaFunctionModel> values, final @Nullable IUserPool userPool) {
         return values.stream()
-                     .collect(Collectors.toUnmodifiableMap(f -> f, f -> new Function(scope, f.functionName(), FunctionProps.builder()
-                                                                                                                           .runtime(JAVA_17)
-                                                                                                                           .code(fromAsset(getLambdaJar(f.functionName())))
-                                                                                                                           .handler(f.handler())
-                                                                                                                           .timeout(seconds(60))
-                                                                                                                           .architecture(ARM_64)
-                                                                                                                           .memorySize(ONE_GiB_IN_MiB)
-                                                                                                                           .reservedConcurrentExecutions(1)
-                                                                                                                           .build())));
+                     .collect(Collectors.toUnmodifiableMap(f -> f, f -> {
+                         final Function function = new Function(scope, f.functionName(), FunctionProps.builder()
+                                                                                                      .runtime(JAVA_17)
+                                                                                                      .code(fromAsset(getLambdaJar(f.functionName())))
+                                                                                                      .handler(f.handler())
+                                                                                                      .timeout(seconds(60))
+                                                                                                      .architecture(ARM_64)
+                                                                                                      .memorySize(ONE_GiB_IN_MiB)
+                                                                                                      .build());
+
+                         Arrays.stream(LambdaUtils.EnvVar.values())
+                               .forEach(env -> {
+                                   switch (env) {
+                                       case COGNITO_USER_POOL_ID -> ofNullable(userPool).map(IUserPool::getUserPoolId)
+                                                                                        .ifPresent(id -> function.addEnvironment(env.name(), id));
+                                       case ROOT_ID -> function.addEnvironment(env.name(), getenv("ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID"));
+                                       case SES_EMAIL_IDENTITY_NAME -> function.addEnvironment(env.name(), importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_NAME_EXPORT_NAME));
+                                       case SES_MAIL_FROM_DOMAIN -> function.addEnvironment(env.name(), FamilyDirectorySesStack.SES_MAIL_FROM_DOMAIN_NAME);
+                                       default -> {
+                                       }
+                                   }
+                               });
+
+                         new CfnOutput(scope, f.arnExportName(), CfnOutputProps.builder()
+                                                                               .value(function.getFunctionArn())
+                                                                               .exportName(f.arnExportName())
+                                                                               .build());
+                         new CfnOutput(scope, f.roleArnExportName(), CfnOutputProps.builder()
+                                                                                   .value(requireNonNull(function.getRole()).getRoleArn())
+                                                                                   .exportName(f.roleArnExportName())
+                                                                                   .build());
+
+                         return function;
+                     }));
     }
 
     @NotNull
@@ -67,42 +95,59 @@ class LambdaFunctionConstructUtility {
     }
 
     public static
-    void constructFunctionPermissions (final @NotNull Construct scope, final @NotNull IUserPool userPool, final @NotNull Map<LambdaFunctionModel, Function> values) {
+    void constructFunctionPermissions (final @NotNull Construct scope, final @NotNull IUserPool userPool, final @NotNull Map<? extends LambdaFunctionModel, Function> values) {
         values.forEach((k, v) -> {
 //      Assign Ddb Permissions
-            ofNullable(k.ddbActions()).ifPresent(map -> map.forEach((table, actions) -> requireNonNull(v.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
-                                                                                                                                                 .actions(actions)
-                                                                                                                                                 .resources(singletonList(
-                                                                                                                                                         importValue(table.arnExportName())))
-                                                                                                                                                 .build())));
+            ofNullable(k.ddbActions()).ifPresent(map -> map.forEach((table, actions) -> v.addToRolePolicy(create().effect(ALLOW)
+                                                                                                                  .actions(actions)
+                                                                                                                  .resources(singletonList(importValue(table.arnExportName())))
+                                                                                                                  .build())));
 //      Assign Cognito Permissions
-            ofNullable(k.cognitoActions()).ifPresent(actions -> requireNonNull(v.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
-                                                                                                                         .actions(actions)
-                                                                                                                         .resources(singletonList(userPool.getUserPoolArn()))
-                                                                                                                         .build()));
+            ofNullable(k.cognitoActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
+                                                                                          .actions(actions)
+                                                                                          .resources(singletonList(userPool.getUserPoolArn()))
+                                                                                          .build()));
+
+//            ofNullable(k.cognitoActions()).ifPresent(actions -> {
+//                final String policyName = "%sCognitoPolicy".formatted(k.functionName());
+//                requireNonNull(v.getRole()).attachInlinePolicy(Policy.Builder.create(scope, policyName)
+//                                                                             .statements(singletonList(create().effect(ALLOW)
+//                                                                                                               .actions(actions)
+//                                                                                                               .resources(singletonList(userPool.getUserPoolArn()))
+//                                                                                                               .build()))
+//                                                                             .build());
+//            });
+
 //      Assign Ses Permissions
-            ofNullable(k.sesActions()).ifPresent(actions -> requireNonNull(v.getRole()).addToPrincipalPolicy(create().effect(ALLOW)
-                                                                                                                     .actions(actions)
-                                                                                                                     .resources(singletonList(
-                                                                                                                             importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)))
-                                                                                                                     .build()));
+            ofNullable(k.sesActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
+                                                                                      .actions(actions)
+                                                                                      .resources(singletonList(importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)))
+                                                                                      .build()));
+        });
+    }
 
-            Arrays.stream(LambdaUtils.EnvVar.values())
-                  .forEach(env -> {
-                      switch (env) {
-                          case COGNITO_USER_POOL_ID -> v.addEnvironment(env.name(), userPool.getUserPoolId());
-                          case ROOT_ID -> v.addEnvironment(env.name(), getenv("ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID"));
-                          case SES_EMAIL_IDENTITY_NAME -> v.addEnvironment(env.name(), importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_NAME_EXPORT_NAME));
-                          case SES_MAIL_FROM_DOMAIN -> v.addEnvironment(env.name(), FamilyDirectorySesStack.SES_MAIL_FROM_DOMAIN_NAME);
-                          default -> {
-                          }
-                      }
-                  });
+    public static
+    void constructFunctionPermissions (final @NotNull Construct scope, final @NotNull IUserPool userPool, final @NotNull List<? extends LambdaFunctionModel> values) {
+        values.forEach(f -> {
+            final IRole executionRole = Role.fromRoleArn(scope, f.roleArnExportName(), importValue(f.roleArnExportName()));
 
-            new CfnOutput(scope, k.arnExportName(), CfnOutputProps.builder()
-                                                                  .value(v.getFunctionArn())
-                                                                  .exportName(k.arnExportName())
-                                                                  .build());
+//      Assign Ddb Permissions
+            ofNullable(f.ddbActions()).ifPresent(map -> map.forEach((table, actions) -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
+                                                                                                                                   .actions(actions)
+                                                                                                                                   .resources(singletonList(importValue(table.arnExportName())))
+                                                                                                                                   .build())));
+
+//      Assign Cognito Permissions
+            ofNullable(f.cognitoActions()).ifPresent(actions -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
+                                                                                                           .actions(actions)
+                                                                                                           .resources(singletonList(userPool.getUserPoolArn()))
+                                                                                                           .build()));
+//      Assign Ses Permissions
+            ofNullable(f.sesActions()).ifPresent(actions -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
+                                                                                                       .actions(actions)
+                                                                                                       .resources(
+                                                                                                               singletonList(importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)))
+                                                                                                       .build()));
         });
     }
 }

@@ -27,4 +27,9 @@ interface LambdaFunctionModel {
 
     @NotNull
     String functionName ();
+
+    default @NotNull
+    String roleArnExportName () {
+        return "%sRoleArn".formatted(this.functionName());
+    }
 }

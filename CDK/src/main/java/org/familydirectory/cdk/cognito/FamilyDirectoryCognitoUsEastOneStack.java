@@ -2,7 +2,7 @@ package org.familydirectory.cdk.cognito;
 
 import java.util.Optional;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
-import org.familydirectory.cdk.SSMParameterReader;
+import org.familydirectory.cdk.customresource.SSMParameterReader;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;

@@ -1,4 +1,4 @@
-package org.familydirectory.cdk;
+package org.familydirectory.cdk.customresource;
 
 import java.time.Instant;
 import java.util.regex.Pattern;

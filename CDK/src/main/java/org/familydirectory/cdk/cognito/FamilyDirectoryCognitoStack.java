@@ -1,7 +1,12 @@
 package org.familydirectory.cdk.cognito;
 
-import org.familydirectory.cdk.SSMParameterReader;
+import java.util.Arrays;
+import java.util.Map;
+import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
+import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
+import org.familydirectory.cdk.customresource.SSMParameterReader;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
+import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
@@ -34,9 +39,11 @@ import software.amazon.awscdk.services.cognito.UserPoolClientOptions;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolDomainOptions;
 import software.amazon.awscdk.services.cognito.UserPoolEmail;
+import software.amazon.awscdk.services.cognito.UserPoolOperation;
 import software.amazon.awscdk.services.cognito.UserPoolProps;
 import software.amazon.awscdk.services.cognito.UserPoolSESOptions;
 import software.amazon.awscdk.services.cognito.UserVerificationConfig;
+import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
 import software.amazon.awscdk.services.route53.HostedZone;
@@ -87,8 +94,8 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                          .build();
         final IHostedZone hostedZone = HostedZone.fromHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
 
-//  Construct Triggers
-//        final Map<LambdaFunctionModel, Function> cognitoTriggerLambdaFunctions = LambdaFunctionConstructUtility.constructFunctionMap(this, Arrays.asList(TriggerFunction.values()));
+//  Cognito Trigger Lambda Functions
+        final Map<LambdaFunctionModel, Function> cognitoTriggerLambdaFunctions = LambdaFunctionConstructUtility.constructFunctionMap(this, Arrays.asList(TriggerFunction.values()), null);
 
         final UserPoolProps userPoolProps = UserPoolProps.builder()
                                                          .accountRecovery(AccountRecovery.EMAIL_ONLY)
@@ -109,10 +116,6 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                         .email(TRUE)
                                                                                         .phone(FALSE)
                                                                                         .build())
-//                                                         .lambdaTriggers(UserPoolTriggers.builder()
-//                                                                                         .preSignUp(cognitoTriggerLambdaFunctions.get(TriggerFunction.PRE_SIGN_UP))
-//                                                                                         .postConfirmation(cognitoTriggerLambdaFunctions.get(TriggerFunction.POST_CONFIRMATION))
-//                                                                                         .build())
                                                          .mfa(Mfa.OFF)
                                                          .passwordPolicy(PasswordPolicy.builder()
                                                                                        .minLength(MIN_PASSWORD_LENGTH)
@@ -144,6 +147,10 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                             .value(userPool.getUserPoolId())
                                                                             .exportName(COGNITO_USER_POOL_ID_EXPORT_NAME)
                                                                             .build());
+
+//  Add Triggers to User Pool
+        userPool.addTrigger(UserPoolOperation.PRE_SIGN_UP, cognitoTriggerLambdaFunctions.get(TriggerFunction.PRE_SIGN_UP));
+        userPool.addTrigger(UserPoolOperation.POST_CONFIRMATION, cognitoTriggerLambdaFunctions.get(TriggerFunction.POST_CONFIRMATION));
 
         final OAuthSettings userPoolClientOAuthSettings = OAuthSettings.builder()
                                                                        // TODO: ADD CALLBACK URLS
@@ -217,12 +224,5 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                            .value(userPoolSignInUrl)
                                                                            .exportName(COGNITO_SIGN_IN_URL_EXPORT_NAME)
                                                                            .build());
-
-//      Add Permissions to Triggers
-//        LambdaFunctionConstructUtility.constructFunctionPermissions(this, userPool, cognitoTriggerLambdaFunctions);
-
-//      Add Triggers
-//        userPool.addTrigger(UserPoolOperation.PRE_SIGN_UP, cognitoTriggerLambdaFunctions.get(TriggerFunction.PRE_SIGN_UP));
-//        userPool.addTrigger(UserPoolOperation.POST_CONFIRMATION, cognitoTriggerLambdaFunctions.get(TriggerFunction.POST_CONFIRMATION));
     }
 }

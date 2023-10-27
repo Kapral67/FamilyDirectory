@@ -19,7 +19,7 @@ import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
 import static java.time.LocalDate.now;
 import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.apache.commons.text.WordUtils.capitalizeFully;
 
 @JsonDeserialize(builder = Member.Builder.class)
@@ -310,7 +310,7 @@ class Member extends MemberModel {
                                 .stream()
                                 .filter(e -> !e.getValue()
                                                .isBlank())
-                                .collect(toMap(Map.Entry::getKey, entry -> DdbUtils.normalizePhoneNumber(entry.getValue())));
+                                .collect(toUnmodifiableMap(Map.Entry::getKey, entry -> DdbUtils.normalizePhoneNumber(entry.getValue())));
             this.isPhonesSet = true;
             return this;
         }

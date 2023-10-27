@@ -2,6 +2,7 @@ package org.familydirectory.cdk.lambda;
 
 import java.util.Arrays;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
+import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
 import software.amazon.awscdk.Stack;
@@ -21,6 +22,9 @@ class FamilyDirectoryLambdaStack extends Stack {
         final IUserPool userPool = UserPool.fromUserPoolId(this, FamilyDirectoryCognitoStack.COGNITO_USER_POOL_RESOURCE_ID, importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME));
 
 //  API Lambda Functions
-        LambdaFunctionConstructUtility.constructFunctionPermissions(this, userPool, LambdaFunctionConstructUtility.constructFunctionMap(this, Arrays.asList(ApiFunction.values())));
+        LambdaFunctionConstructUtility.constructFunctionPermissions(this, userPool, LambdaFunctionConstructUtility.constructFunctionMap(this, Arrays.asList(ApiFunction.values()), userPool));
+
+//  Cognito Trigger Permissions
+        LambdaFunctionConstructUtility.constructFunctionPermissions(this, userPool, Arrays.asList(TriggerFunction.values()));
     }
 }

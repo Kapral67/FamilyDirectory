@@ -15,8 +15,8 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
 
 public abstract
@@ -34,8 +34,8 @@ class MemberModel {
                                                                                                     .s()) && !entry.getValue()
                                                                                                                    .s()
                                                                                                                    .isBlank())
-                           .collect(collectingAndThen(toMap(entry -> PhoneType.valueOf(entry.getKey()), entry -> entry.getValue()
-                                                                                                                      .s()), map -> map.isEmpty()
+                           .collect(collectingAndThen(toUnmodifiableMap(entry -> PhoneType.valueOf(entry.getKey()), entry -> entry.getValue()
+                                                                                                                                  .s()), map -> map.isEmpty()
                                    ? null
                                    : map));
     }
@@ -61,8 +61,8 @@ class MemberModel {
                 : this.getPhones()
                       .entrySet()
                       .stream()
-                      .collect(toMap(entry -> entry.getKey()
-                                                   .name(), entry -> AttributeValue.fromS(entry.getValue())));
+                      .collect(toUnmodifiableMap(entry -> entry.getKey()
+                                                               .name(), entry -> AttributeValue.fromS(entry.getValue())));
     }
 
     public abstract @Nullable
