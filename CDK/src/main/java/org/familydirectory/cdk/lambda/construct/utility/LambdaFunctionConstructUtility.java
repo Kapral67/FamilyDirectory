@@ -100,7 +100,7 @@ class LambdaFunctionConstructUtility {
 //      Assign Ddb Permissions
             ofNullable(k.ddbActions()).ifPresent(map -> map.forEach((table, actions) -> v.addToRolePolicy(create().effect(ALLOW)
                                                                                                                   .actions(actions)
-                                                                                                                  .resources(singletonList(importValue(table.arnExportName())))
+                                                                                                                  .resources(singletonList("%s/*".formatted(importValue(table.arnExportName()))))
                                                                                                                   .build())));
 //      Assign Cognito Permissions
             ofNullable(k.cognitoActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
@@ -134,7 +134,8 @@ class LambdaFunctionConstructUtility {
 //      Assign Ddb Permissions
             ofNullable(f.ddbActions()).ifPresent(map -> map.forEach((table, actions) -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
                                                                                                                                    .actions(actions)
-                                                                                                                                   .resources(singletonList(importValue(table.arnExportName())))
+                                                                                                                                   .resources(singletonList(
+                                                                                                                                           "%s/*".formatted(importValue(table.arnExportName()))))
                                                                                                                                    .build())));
 
 //      Assign Cognito Permissions
