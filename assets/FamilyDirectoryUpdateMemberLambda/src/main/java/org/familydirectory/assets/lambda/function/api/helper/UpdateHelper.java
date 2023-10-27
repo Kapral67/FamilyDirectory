@@ -70,7 +70,9 @@ class UpdateHelper extends ApiHelper {
                                                                              .limit(2)
                                                                              .build());
 
-        if (!response.hasItems()) {
+        if (response.items()
+                    .isEmpty())
+        {
             this.logger.log("<MEMBER,`%s`> Requested Update to Non-Existent Member <KEY,`%s`>".formatted(caller.memberId(), updateEvent.member()
                                                                                                                                        .getKey()), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_NOT_FOUND));
@@ -106,7 +108,9 @@ class UpdateHelper extends ApiHelper {
                                                           .limit(1)
                                                           .build();
             final QueryResponse emailResponse = this.dynamoDbClient.query(emailRequest);
-            if (emailResponse.hasItems()) {
+            if (!emailResponse.items()
+                              .isEmpty())
+            {
                 final String emailResponseMemberId = emailResponse.items()
                                                                   .get(0)
                                                                   .get(MemberTableParameter.ID.jsonFieldName())
@@ -210,14 +214,14 @@ class UpdateHelper extends ApiHelper {
 
     @Override
     public @NotNull
-    APIGatewayProxyRequestEvent getRequestEvent () {
-        return this.requestEvent;
+    DynamoDbClient getDynamoDbClient () {
+        return this.dynamoDbClient;
     }
 
     @Override
     public @NotNull
-    DynamoDbClient getDynamoDbClient () {
-        return this.dynamoDbClient;
+    APIGatewayProxyRequestEvent getRequestEvent () {
+        return this.requestEvent;
     }
 
     public

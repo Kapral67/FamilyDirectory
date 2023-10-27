@@ -80,7 +80,9 @@ class DeleteHelper extends ApiHelper {
                                                                              .limit(2)
                                                                              .build());
 
-        if (!response.hasItems()) {
+        if (response.items()
+                    .isEmpty())
+        {
             this.logger.log("<MEMBER,`%s`> Requested Delete to Non-Existent Member <KEY,`%s`>".formatted(caller.memberId(), deleteEvent.member()
                                                                                                                                        .getKey()), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_NOT_FOUND));
@@ -147,7 +149,9 @@ class DeleteHelper extends ApiHelper {
                                                                    .limit(1)
                                                                    .build();
         final QueryResponse cognitoMemberQueryResponse = this.dynamoDbClient.query(cognitoMemberQueryRequest);
-        if (cognitoMemberQueryResponse.hasItems()) {
+        if (!cognitoMemberQueryResponse.items()
+                                       .isEmpty())
+        {
             final String ddbMemberCognitoSub = ofNullable(cognitoMemberQueryResponse.items()
                                                                                     .get(0)
                                                                                     .get(CognitoTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
@@ -196,14 +200,14 @@ class DeleteHelper extends ApiHelper {
 
     @Override
     public @NotNull
-    APIGatewayProxyRequestEvent getRequestEvent () {
-        return this.requestEvent;
+    DynamoDbClient getDynamoDbClient () {
+        return this.dynamoDbClient;
     }
 
     @Override
     public @NotNull
-    DynamoDbClient getDynamoDbClient () {
-        return this.dynamoDbClient;
+    APIGatewayProxyRequestEvent getRequestEvent () {
+        return this.requestEvent;
     }
 
     public

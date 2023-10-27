@@ -84,7 +84,9 @@ class CreateHelper extends ApiHelper {
                                                     .limit(1)
                                                     .build();
         final QueryResponse keyResponse = this.dynamoDbClient.query(keyRequest);
-        if (keyResponse.hasItems()) {
+        if (!keyResponse.items()
+                        .isEmpty())
+        {
             final String keyMemberId = keyResponse.items()
                                                   .get(0)
                                                   .get(MemberTableParameter.ID.jsonFieldName())
@@ -102,7 +104,9 @@ class CreateHelper extends ApiHelper {
                                                           .limit(1)
                                                           .build();
             final QueryResponse emailResponse = this.dynamoDbClient.query(emailRequest);
-            if (emailResponse.hasItems()) {
+            if (!emailResponse.items()
+                              .isEmpty())
+            {
                 final String emailResponseMemberId = emailResponse.items()
                                                                   .get(0)
                                                                   .get(MemberTableParameter.ID.jsonFieldName())
@@ -122,14 +126,14 @@ class CreateHelper extends ApiHelper {
 
     @Override
     public @NotNull
-    APIGatewayProxyRequestEvent getRequestEvent () {
-        return this.requestEvent;
+    DynamoDbClient getDynamoDbClient () {
+        return this.dynamoDbClient;
     }
 
     @Override
     public @NotNull
-    DynamoDbClient getDynamoDbClient () {
-        return this.dynamoDbClient;
+    APIGatewayProxyRequestEvent getRequestEvent () {
+        return this.requestEvent;
     }
 
     public @NotNull

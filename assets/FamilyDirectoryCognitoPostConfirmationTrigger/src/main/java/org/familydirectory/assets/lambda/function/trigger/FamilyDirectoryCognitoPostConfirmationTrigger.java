@@ -38,87 +38,93 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
     public final @NotNull
     CognitoUserPoolPostConfirmationEvent handleRequest (final @NotNull CognitoUserPoolPostConfirmationEvent event, final @NotNull Context context)
     {
-        final LambdaLogger logger = context.getLogger();
-        final String email;
-        final String sub;
-        email = ofNullable(event.getRequest()
-                                .getUserAttributes()
-                                .get("email")).filter(s -> s.contains("@"))
+        try {
+            final LambdaLogger logger = context.getLogger();
+            final String email;
+            final String sub;
+            email = ofNullable(event.getRequest()
+                                    .getUserAttributes()
+                                    .get("email")).filter(s -> s.contains("@"))
+                                                  .orElseThrow(() -> {
+                                                      logger.log("ERROR: Cognito <USER,`%s`> Email Not Found".formatted(event.getUserName()), ERROR);
+                                                      final IllegalStateException e = new IllegalStateException();
+                                                      adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), null, e);
+                                                      return e;
+                                                  });
+            sub = ofNullable(event.getRequest()
+                                  .getUserAttributes()
+                                  .get("sub")).filter(Predicate.not(String::isBlank))
                                               .orElseThrow(() -> {
-                                                  logger.log("ERROR: Cognito <USER,`%s`> Email Not Found".formatted(event.getUserName()), ERROR);
+                                                  logger.log("ERROR: Cognito <EMAIL,`%s`> Sub Not Found".formatted(email), ERROR);
                                                   final IllegalStateException e = new IllegalStateException();
-                                                  adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), null, e);
+                                                  adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
                                                   return e;
                                               });
-        sub = ofNullable(event.getRequest()
-                              .getUserAttributes()
-                              .get("sub")).filter(Predicate.not(String::isBlank))
-                                          .orElseThrow(() -> {
-                                              logger.log("ERROR: Cognito <EMAIL,`%s`> Sub Not Found".formatted(email), ERROR);
-                                              final IllegalStateException e = new IllegalStateException();
-                                              adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
-                                              return e;
-                                          });
 
-//  Check if Entry in Cognito Ddb Already Exists
-        try {
-            if (DDB_CLIENT.getItem(GetItemRequest.builder()
-                                                 .tableName(DdbTable.COGNITO.name())
-                                                 .key(singletonMap(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(sub)))
-                                                 .build())
-                          .hasItem())
-            {
-//          If There Is a PreExisting Entry, Then The User is Just Changing Their Email For Cognito
-                return getValidEvent(event, email);
+            //  Check if Entry in Cognito Ddb Already Exists
+            try {
+                if (DDB_CLIENT.getItem(GetItemRequest.builder()
+                                                     .tableName(DdbTable.COGNITO.name())
+                                                     .key(singletonMap(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(sub)))
+                                                     .build())
+                              .hasItem())
+                {
+                    //          If There Is a PreExisting Entry, Then The User is Just Changing Their Email For Cognito
+                    return getValidEvent(event, email);
+                }
+            } catch (final Throwable e) {
+                adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
+                LambdaUtils.logTrace(logger, e, ERROR);
+                throw e;
             }
+
+            //  Find Member By Email
+            final QueryRequest memberEmailQueryRequest = QueryRequest.builder()
+                                                                     .tableName(DdbTable.MEMBER.name())
+                                                                     .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())
+                                                                     .keyConditionExpression("%s = :email".formatted(MemberTableParameter.EMAIL.jsonFieldName()))
+                                                                     .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(email)))
+                                                                     .limit(2)
+                                                                     .build();
+            final QueryResponse memberEmailQueryResponse = DDB_CLIENT.query(memberEmailQueryRequest);
+            if (memberEmailQueryResponse.items()
+                                        .isEmpty())
+            {
+                logger.log("ERROR: No Member Found for <EMAIL,`%s`>".formatted(email), ERROR);
+                final IllegalStateException e = new IllegalStateException();
+                adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
+                throw e;
+            } else if (memberEmailQueryResponse.items()
+                                               .size() > 1)
+
+            {
+                logger.log("ERROR: Multiple Members Found for <EMAIL,`%s`>".formatted(email), ERROR);
+                final IllegalStateException e = new IllegalStateException();
+                adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
+                throw e;
+            }
+            final String memberId = ofNullable(memberEmailQueryResponse.items()
+                                                                       .get(0)
+                                                                       .get(MemberTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
+                                                                                                                     .filter(Predicate.not(String::isBlank))
+                                                                                                                     .orElseThrow();
+            //  Map Cognito Sub -> Member Id
+            try {
+                DDB_CLIENT.putItem(PutItemRequest.builder()
+                                                 .tableName(DdbTable.COGNITO.name())
+                                                 .item(Map.of(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(sub), CognitoTableParameter.MEMBER.jsonFieldName(),
+                                                              AttributeValue.fromS(memberId)))
+                                                 .build());
+            } catch (final Throwable e) {
+                adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
+                LambdaUtils.logTrace(logger, e, ERROR);
+                throw e;
+            }
+
+            return getValidEvent(event, email);
         } catch (final Throwable e) {
-            adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
-            LambdaUtils.logTrace(logger, e, ERROR);
-            throw e;
+            throw new Error("Request Denied", e);
         }
-
-//  Find Member By Email
-        final QueryRequest memberEmailQueryRequest = QueryRequest.builder()
-                                                                 .tableName(DdbTable.MEMBER.name())
-                                                                 .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())
-                                                                 .keyConditionExpression("%s = :email".formatted(MemberTableParameter.EMAIL.jsonFieldName()))
-                                                                 .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(email)))
-                                                                 .limit(2)
-                                                                 .build();
-        final QueryResponse memberEmailQueryResponse = DDB_CLIENT.query(memberEmailQueryRequest);
-        if (!memberEmailQueryResponse.hasItems()) {
-            logger.log("ERROR: No Member Found for <EMAIL,`%s`>".formatted(email), ERROR);
-            final IllegalStateException e = new IllegalStateException();
-            adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
-            throw e;
-        } else if (memberEmailQueryResponse.items()
-                                           .size() > 1)
-
-        {
-            logger.log("ERROR: Multiple Members Found for <EMAIL,`%s`>".formatted(email), ERROR);
-            final IllegalStateException e = new IllegalStateException();
-            adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
-            throw e;
-        }
-        final String memberId = ofNullable(memberEmailQueryResponse.items()
-                                                                   .get(0)
-                                                                   .get(MemberTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
-                                                                                                                 .filter(Predicate.not(String::isBlank))
-                                                                                                                 .orElseThrow();
-//  Map Cognito Sub -> Member Id
-        try {
-            DDB_CLIENT.putItem(PutItemRequest.builder()
-                                             .tableName(DdbTable.COGNITO.name())
-                                             .item(Map.of(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(sub), CognitoTableParameter.MEMBER.jsonFieldName(),
-                                                          AttributeValue.fromS(memberId)))
-                                             .build());
-        } catch (final Throwable e) {
-            adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
-            LambdaUtils.logTrace(logger, e, ERROR);
-            throw e;
-        }
-
-        return getValidEvent(event, email);
     }
 
     private static @NotNull
