@@ -41,7 +41,7 @@ enum LambdaUtils {
                                                        .content(EmailContent.builder()
                                                                             .simple(message)
                                                                             .build())
-                                                       .fromEmailAddress("no-reply@%s".formatted(getenv(EnvVar.SES_MAIL_FROM_DOMAIN.name())))
+                                                       .fromEmailAddress("no-reply@%s".formatted(getenv(EnvVar.HOSTED_ZONE_NAME.name())))
                                                        .build())
                             .messageId();
         }
@@ -59,8 +59,8 @@ enum LambdaUtils {
     public
     enum EnvVar {
         COGNITO_USER_POOL_ID,
+        HOSTED_ZONE_NAME,
         ROOT_ID,
-        SES_EMAIL_IDENTITY_NAME,
-        SES_MAIL_FROM_DOMAIN
+        SES_EMAIL_IDENTITY_NAME
     }
 }

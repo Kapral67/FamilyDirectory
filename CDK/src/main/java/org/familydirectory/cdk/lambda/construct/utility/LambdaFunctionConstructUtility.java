@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
+import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -65,7 +66,7 @@ class LambdaFunctionConstructUtility {
                                                                                         .ifPresent(id -> function.addEnvironment(env.name(), id));
                                        case ROOT_ID -> function.addEnvironment(env.name(), ROOT_ID);
                                        case SES_EMAIL_IDENTITY_NAME -> function.addEnvironment(env.name(), importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_NAME_EXPORT_NAME));
-                                       case SES_MAIL_FROM_DOMAIN -> function.addEnvironment(env.name(), FamilyDirectorySesStack.SES_MAIL_FROM_DOMAIN_NAME);
+                                       case HOSTED_ZONE_NAME -> function.addEnvironment(env.name(), FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
                                        default -> {
                                        }
                                    }

@@ -90,9 +90,9 @@ class FamilyDirectoryCognitoStackTest {
                                                                                                                        LambdaUtils.EnvVar.SES_EMAIL_IDENTITY_NAME.name(),
                                                                                                                        singletonMap("Fn::ImportValue",
                                                                                                                                     FamilyDirectorySesStack.SES_EMAIL_IDENTITY_NAME_EXPORT_NAME),
-                                                                                                                       LambdaUtils.EnvVar.SES_MAIL_FROM_DOMAIN.name(),
-                                                                                                                       FamilyDirectorySesStack.SES_MAIL_FROM_DOMAIN_NAME)), "Handler",
-                                                                                      trigger.handler(), "MemorySize", trigger.memorySize(), "Role",
+                                                                                                                       LambdaUtils.EnvVar.HOSTED_ZONE_NAME.name(),
+                                                                                                                       FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)), "Handler", trigger.handler(),
+                                                                                      "MemorySize", trigger.memorySize(), "Role",
                                                                                       singletonMap("Fn::GetAtt", List.of(triggerRoleIdMap.get(trigger), "Arn")), "Runtime",
                                                                                       LambdaFunctionConstructUtility.RUNTIME.toString(), "Timeout", trigger.timeout()
                                                                                                                                                            .toSeconds())));

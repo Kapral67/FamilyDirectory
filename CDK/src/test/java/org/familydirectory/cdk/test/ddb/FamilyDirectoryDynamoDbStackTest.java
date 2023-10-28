@@ -18,6 +18,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static software.amazon.awscdk.assertions.Match.objectLike;
 
@@ -49,17 +50,28 @@ class FamilyDirectoryDynamoDbStackTest {
                                                       singletonMap("ProjectionType", requireNonNull(gsi.getProjectionType()).name())));
                 });
             }
+            final Map<String, Map<String, Object>> tableMap;
             if (globalSecondaryIndexes.isEmpty()) {
-                template.hasResourceProperties("AWS::DynamoDB::Table", objectLike(
-                        Map.of("AttributeDefinitions", attributeDefinitions, "BillingMode", "PAY_PER_REQUEST", "DeletionProtectionEnabled", true, "KeySchema",
-                               singletonList(Map.of("AttributeName", DdbTableParameter.PK.getName(), "KeyType", "HASH")), "PointInTimeRecoverySpecification",
-                               singletonMap("PointInTimeRecoveryEnabled", true), "SSESpecification", singletonMap("SSEEnabled", true), "TableName", ddbTable.name())));
+                tableMap = template.findResources("AWS::DynamoDB::Table", objectLike(singletonMap("Properties", Map.of("AttributeDefinitions", attributeDefinitions, "BillingMode", "PAY_PER_REQUEST",
+                                                                                                                       "DeletionProtectionEnabled", true, "KeySchema", singletonList(
+                                Map.of("AttributeName", DdbTableParameter.PK.getName(), "KeyType", "HASH")), "PointInTimeRecoverySpecification", singletonMap("PointInTimeRecoveryEnabled", true),
+                                                                                                                       "SSESpecification", singletonMap("SSEEnabled", true), "TableName",
+                                                                                                                       ddbTable.name()))));
             } else {
-                template.hasResourceProperties("AWS::DynamoDB::Table", objectLike(
-                        Map.of("AttributeDefinitions", attributeDefinitions, "BillingMode", "PAY_PER_REQUEST", "DeletionProtectionEnabled", true, "GlobalSecondaryIndexes", globalSecondaryIndexes,
-                               "KeySchema", singletonList(Map.of("AttributeName", DdbTableParameter.PK.getName(), "KeyType", "HASH")), "PointInTimeRecoverySpecification",
-                               singletonMap("PointInTimeRecoveryEnabled", true), "SSESpecification", singletonMap("SSEEnabled", true), "TableName", ddbTable.name())));
+                tableMap = template.findResources("AWS::DynamoDB::Table", objectLike(singletonMap("Properties", Map.of("AttributeDefinitions", attributeDefinitions, "BillingMode", "PAY_PER_REQUEST",
+                                                                                                                       "DeletionProtectionEnabled", true, "GlobalSecondaryIndexes",
+                                                                                                                       globalSecondaryIndexes, "KeySchema", singletonList(
+                                Map.of("AttributeName", DdbTableParameter.PK.getName(), "KeyType", "HASH")), "PointInTimeRecoverySpecification", singletonMap("PointInTimeRecoveryEnabled", true),
+                                                                                                                       "SSESpecification", singletonMap("SSEEnabled", true), "TableName",
+                                                                                                                       ddbTable.name()))));
             }
+            assertEquals(1, tableMap.size());
+
+            final String tableId = tableMap.entrySet()
+                                           .iterator()
+                                           .next()
+                                           .getKey();
+            template.hasOutput(ddbTable.arnExportName(), objectLike(Map.of("Value", singletonMap("Fn::GetAtt", List.of(tableId, "Arn")), "Export", singletonMap("Name", ddbTable.arnExportName()))));
         }
     }
 
