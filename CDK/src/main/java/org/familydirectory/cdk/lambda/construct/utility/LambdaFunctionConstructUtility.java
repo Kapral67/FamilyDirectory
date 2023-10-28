@@ -16,8 +16,10 @@ import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.iam.IRole;
 import software.amazon.awscdk.services.iam.Role;
+import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionProps;
+import software.amazon.awscdk.services.lambda.Runtime;
 import software.constructs.Construct;
 import static java.lang.System.getProperty;
 import static java.lang.System.getenv;
@@ -25,7 +27,6 @@ import static java.nio.file.Paths.get;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
-import static software.amazon.awscdk.Duration.seconds;
 import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.iam.Effect.ALLOW;
 import static software.amazon.awscdk.services.iam.PolicyStatement.Builder.create;
@@ -35,7 +36,9 @@ import static software.amazon.awscdk.services.lambda.Runtime.JAVA_17;
 
 public final
 class LambdaFunctionConstructUtility {
-    private static final Number ONE_GiB_IN_MiB = 1024;
+    public static final Runtime RUNTIME = JAVA_17;
+    public static final Architecture ARCHITECTURE = ARM_64;
+    public static final String ROOT_ID = getenv("ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID");
 
     private
     LambdaFunctionConstructUtility () {
@@ -47,12 +50,12 @@ class LambdaFunctionConstructUtility {
         return values.stream()
                      .collect(Collectors.toUnmodifiableMap(f -> f, f -> {
                          final Function function = new Function(scope, f.functionName(), FunctionProps.builder()
-                                                                                                      .runtime(JAVA_17)
+                                                                                                      .runtime(RUNTIME)
                                                                                                       .code(fromAsset(getLambdaJar(f.functionName())))
                                                                                                       .handler(f.handler())
-                                                                                                      .timeout(seconds(60))
-                                                                                                      .architecture(ARM_64)
-                                                                                                      .memorySize(ONE_GiB_IN_MiB)
+                                                                                                      .timeout(f.timeout())
+                                                                                                      .architecture(ARCHITECTURE)
+                                                                                                      .memorySize(f.memorySize())
                                                                                                       .build());
 
                          Arrays.stream(LambdaUtils.EnvVar.values())
@@ -60,7 +63,7 @@ class LambdaFunctionConstructUtility {
                                    switch (env) {
                                        case COGNITO_USER_POOL_ID -> ofNullable(userPool).map(IUserPool::getUserPoolId)
                                                                                         .ifPresent(id -> function.addEnvironment(env.name(), id));
-                                       case ROOT_ID -> function.addEnvironment(env.name(), getenv("ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID"));
+                                       case ROOT_ID -> function.addEnvironment(env.name(), ROOT_ID);
                                        case SES_EMAIL_IDENTITY_NAME -> function.addEnvironment(env.name(), importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_NAME_EXPORT_NAME));
                                        case SES_MAIL_FROM_DOMAIN -> function.addEnvironment(env.name(), FamilyDirectorySesStack.SES_MAIL_FROM_DOMAIN_NAME);
                                        default -> {
@@ -107,16 +110,6 @@ class LambdaFunctionConstructUtility {
                                                                                           .actions(actions)
                                                                                           .resources(singletonList(userPool.getUserPoolArn()))
                                                                                           .build()));
-
-//            ofNullable(k.cognitoActions()).ifPresent(actions -> {
-//                final String policyName = "%sCognitoPolicy".formatted(k.functionName());
-//                requireNonNull(v.getRole()).attachInlinePolicy(Policy.Builder.create(scope, policyName)
-//                                                                             .statements(singletonList(create().effect(ALLOW)
-//                                                                                                               .actions(actions)
-//                                                                                                               .resources(singletonList(userPool.getUserPoolArn()))
-//                                                                                                               .build()))
-//                                                                             .build());
-//            });
 
 //      Assign Ses Permissions
             ofNullable(k.sesActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)

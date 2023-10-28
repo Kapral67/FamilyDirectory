@@ -1,6 +1,7 @@
 package org.familydirectory.cdk.cognito;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
@@ -10,7 +11,6 @@ import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructU
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
-import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -26,6 +26,7 @@ import software.amazon.awscdk.services.cognito.CustomDomainOptions;
 import software.amazon.awscdk.services.cognito.KeepOriginalAttrs;
 import software.amazon.awscdk.services.cognito.Mfa;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
+import software.amazon.awscdk.services.cognito.OAuthScope;
 import software.amazon.awscdk.services.cognito.OAuthSettings;
 import software.amazon.awscdk.services.cognito.PasswordPolicy;
 import software.amazon.awscdk.services.cognito.SignInAliases;
@@ -35,6 +36,7 @@ import software.amazon.awscdk.services.cognito.StandardAttributes;
 import software.amazon.awscdk.services.cognito.StandardAttributesMask;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
+import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolClientOptions;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolDomainOptions;
@@ -73,14 +75,26 @@ class FamilyDirectoryCognitoStack extends Stack {
     public static final String COGNITO_USER_POOL_ID_EXPORT_NAME = "%sId".formatted(COGNITO_USER_POOL_RESOURCE_ID);
     public static final String COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME = "%sId".formatted(COGNITO_USER_POOL_CLIENT_RESOURCE_ID);
     public static final String COGNITO_DOMAIN_NAME = "%s.%s".formatted(getenv("ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME"), FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
+    public static final String COGNITO_FROM_EMAIL_ADDRESS = "no-reply@%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
     public static final String COGNITO_REPLY_TO_EMAIL_ADDRESS = getenv("ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS");
     public static final String COGNITO_SIGN_IN_URL_EXPORT_NAME = "CognitoSignInUrl";
-    private static final StandardAttribute MUTABLE_REQUIRED_ATTRIBUTE = StandardAttribute.builder()
-                                                                                         .required(TRUE)
-                                                                                         .mutable(TRUE)
+    public static final String COGNITO_SIGN_IN_REDIRECT_URI = "https://example.com";
+    public static final List<UserPoolClientIdentityProvider> COGNITO_USER_POOL_CLIENT_IDENTITY_PROVIDERS = singletonList(COGNITO);
+    public static final Number COGNITO_MIN_PASSWORD_LENGTH = 8;
+    public static final boolean COGNITO_REQUIRE_LOWERCASE_IN_PASSWORD = true;
+    public static final boolean COGNITO_REQUIRE_DIGITS_IN_PASSWORD = true;
+    public static final boolean COGNITO_REQUIRE_SYMBOLS_IN_PASSWORD = true;
+    public static final boolean COGNITO_REQUIRE_UPPERCASE_IN_PASSWORD = true;
+    public static final Number COGNITO_TEMPORARY_PASSWORD_VALIDITY_DAYS = 15;
+    public static final boolean COGNITO_EMAIL_REQUIRE_ATTRIBUTE = true;
+    public static final boolean COGNITO_EMAIL_MUTABLE_ATTRIBUTE = true;
+    public static final boolean COGNITO_SIGN_IN_CASE_SENSITIVE = false;
+    public static final boolean COGNITO_SELF_SIGN_UP_ENABLED = true;
+    public static final boolean COGNITO_USER_POOL_CLIENT_GENERATE_SECRET = false;
+    private static final StandardAttribute EMAIL_ATTRIBUTE_PROPERTIES = StandardAttribute.builder()
+                                                                                         .required(COGNITO_EMAIL_REQUIRE_ATTRIBUTE)
+                                                                                         .mutable(COGNITO_EMAIL_MUTABLE_ATTRIBUTE)
                                                                                          .build();
-    private static final Duration TEMPORARY_PASSWORD_VALIDITY = days(15);
-    private static final Number MIN_PASSWORD_LENGTH = 8;
 
     public
     FamilyDirectoryCognitoStack (final Construct scope, final String id, final StackProps stackProps) {
@@ -107,7 +121,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                          .deletionProtection(TRUE)
                                                          .email(UserPoolEmail.withSES(UserPoolSESOptions.builder()
                                                                                                         .configurationSetName(FamilyDirectorySesStack.SES_CONFIGURATION_SET_NAME)
-                                                                                                        .fromEmail("no-reply@%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME))
+                                                                                                        .fromEmail(COGNITO_FROM_EMAIL_ADDRESS)
                                                                                                         .replyTo(COGNITO_REPLY_TO_EMAIL_ADDRESS)
                                                                                                         .sesVerifiedDomain(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
                                                                                                         .build()))
@@ -118,24 +132,24 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                         .build())
                                                          .mfa(Mfa.OFF)
                                                          .passwordPolicy(PasswordPolicy.builder()
-                                                                                       .minLength(MIN_PASSWORD_LENGTH)
-                                                                                       .requireLowercase(TRUE)
-                                                                                       .requireDigits(TRUE)
-                                                                                       .requireSymbols(TRUE)
-                                                                                       .requireUppercase(TRUE)
-                                                                                       .tempPasswordValidity(TEMPORARY_PASSWORD_VALIDITY)
+                                                                                       .minLength(COGNITO_MIN_PASSWORD_LENGTH)
+                                                                                       .requireLowercase(COGNITO_REQUIRE_LOWERCASE_IN_PASSWORD)
+                                                                                       .requireDigits(COGNITO_REQUIRE_DIGITS_IN_PASSWORD)
+                                                                                       .requireSymbols(COGNITO_REQUIRE_SYMBOLS_IN_PASSWORD)
+                                                                                       .requireUppercase(COGNITO_REQUIRE_UPPERCASE_IN_PASSWORD)
+                                                                                       .tempPasswordValidity(days(COGNITO_TEMPORARY_PASSWORD_VALIDITY_DAYS))
                                                                                        .build())
                                                          .removalPolicy(RemovalPolicy.DESTROY)
-                                                         .selfSignUpEnabled(TRUE)
+                                                         .selfSignUpEnabled(COGNITO_SELF_SIGN_UP_ENABLED)
                                                          .signInAliases(SignInAliases.builder()
                                                                                      .username(FALSE)
                                                                                      .preferredUsername(FALSE)
                                                                                      .phone(FALSE)
                                                                                      .email(TRUE)
                                                                                      .build())
-                                                         .signInCaseSensitive(FALSE)
+                                                         .signInCaseSensitive(COGNITO_SIGN_IN_CASE_SENSITIVE)
                                                          .standardAttributes(StandardAttributes.builder()
-                                                                                               .email(MUTABLE_REQUIRED_ATTRIBUTE)
+                                                                                               .email(EMAIL_ATTRIBUTE_PROPERTIES)
                                                                                                .build())
                                                          .userVerification(UserVerificationConfig.builder()
                                                                                                  .emailStyle(LINK)
@@ -152,33 +166,31 @@ class FamilyDirectoryCognitoStack extends Stack {
         userPool.addTrigger(UserPoolOperation.PRE_SIGN_UP, cognitoTriggerLambdaFunctions.get(TriggerFunction.PRE_SIGN_UP));
         userPool.addTrigger(UserPoolOperation.POST_CONFIRMATION, cognitoTriggerLambdaFunctions.get(TriggerFunction.POST_CONFIRMATION));
 
-        final OAuthSettings userPoolClientOAuthSettings = OAuthSettings.builder()
-                                                                       // TODO: ADD CALLBACK URLS
-//                                                                       .callbackUrls(singletonList(""))
-                                                                       // TODO: ADD LOGOUT URLS
-//                                                                       .logoutUrls(singletonList(""))
-                                                                       .flows(OAuthFlows.builder()
-                                                                                        .authorizationCodeGrant(TRUE)
-                                                                                        .build())
-                                                                       .build();
-        final ClientAttributes userPoolClientReadAttributes = new ClientAttributes().withStandardAttributes(StandardAttributesMask.builder()
-                                                                                                                                  .email(TRUE)
-                                                                                                                                  .emailVerified(TRUE)
-                                                                                                                                  .build());
-        final ClientAttributes userPoolClientWriteAttributes = new ClientAttributes().withStandardAttributes(StandardAttributesMask.builder()
-                                                                                                                                   .email(TRUE)
-                                                                                                                                   .emailVerified(FALSE)
-                                                                                                                                   .build());
+//  Configure User Pool Client
         final UserPoolClientOptions userPoolClientOptions = UserPoolClientOptions.builder()
                                                                                  .authFlows(AuthFlow.builder()
                                                                                                     .userSrp(TRUE)
                                                                                                     .build())
-                                                                                 .generateSecret(FALSE)
-                                                                                 .oAuth(userPoolClientOAuthSettings)
+                                                                                 .generateSecret(COGNITO_USER_POOL_CLIENT_GENERATE_SECRET)
+                                                                                 .oAuth(OAuthSettings.builder()
+                                                                                                     .callbackUrls(singletonList(COGNITO_SIGN_IN_REDIRECT_URI))
+                                                                                                     // TODO: ADD LOGOUT URLS
+//                                                                                                   .logoutUrls(singletonList(""))
+                                                                                                     .flows(OAuthFlows.builder()
+                                                                                                                      .authorizationCodeGrant(TRUE)
+                                                                                                                      .build())
+                                                                                                     .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.COGNITO_ADMIN, OAuthScope.PROFILE))
+                                                                                                     .build())
                                                                                  .preventUserExistenceErrors(TRUE)
-                                                                                 .readAttributes(userPoolClientReadAttributes)
-                                                                                 .supportedIdentityProviders(singletonList(COGNITO))
-                                                                                 .writeAttributes(userPoolClientWriteAttributes)
+                                                                                 .readAttributes(new ClientAttributes().withStandardAttributes(StandardAttributesMask.builder()
+                                                                                                                                                                     .email(TRUE)
+                                                                                                                                                                     .emailVerified(TRUE)
+                                                                                                                                                                     .build()))
+                                                                                 .supportedIdentityProviders(COGNITO_USER_POOL_CLIENT_IDENTITY_PROVIDERS)
+                                                                                 .writeAttributes(new ClientAttributes().withStandardAttributes(StandardAttributesMask.builder()
+                                                                                                                                                                      .email(TRUE)
+                                                                                                                                                                      .emailVerified(FALSE)
+                                                                                                                                                                      .build()))
                                                                                  .build();
         final UserPoolClient userPoolClient = userPool.addClient(COGNITO_USER_POOL_CLIENT_RESOURCE_ID, userPoolClientOptions);
         new CfnOutput(this, COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME, CfnOutputProps.builder()
@@ -186,6 +198,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                    .exportName(COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME)
                                                                                    .build());
 
+//  Cognito Domain
         final String cognitoCertificateArn;
         if (ofNullable(stackProps.getEnv()).map(Environment::getRegion)
                                            .filter(region -> region.equals(FamilyDirectoryCognitoUsEastOneStack.REGION))
@@ -208,7 +221,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                  .build();
         final UserPoolDomain userPoolDomain = userPool.addDomain(COGNITO_DOMAIN_NAME_RESOURCE_ID, userPoolDomainOptions);
         final UserPoolDomainTarget userPoolDomainTarget = new UserPoolDomainTarget(userPoolDomain);
-//  Cognito Domain
+
         final ARecordProps cognitoARecordProps = ARecordProps.builder()
                                                              .zone(hostedZone)
                                                              .recordName(COGNITO_DOMAIN_NAME)
@@ -218,7 +231,7 @@ class FamilyDirectoryCognitoStack extends Stack {
         final String userPoolSignInUrl = userPoolDomain.signInUrl(userPoolClient, SignInUrlOptions.builder()
                                                                                                   // TODO: CHANGE TO VIEW URL WHEN FRONTEND EXISTS
 //                                                                                                  .redirectUri(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
-                                                                                                  .redirectUri("https://example.com")
+                                                                                                  .redirectUri(COGNITO_SIGN_IN_REDIRECT_URI)
                                                                                                   .build());
         new CfnOutput(this, COGNITO_SIGN_IN_URL_EXPORT_NAME, CfnOutputProps.builder()
                                                                            .value(userPoolSignInUrl)

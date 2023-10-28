@@ -6,6 +6,7 @@ import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awscdk.Duration;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -65,5 +66,19 @@ enum TriggerFunction implements LambdaFunctionModel {
     public final
     String functionName () {
         return this.functionName;
+    }
+
+    @Override
+    @NotNull
+    public final
+    Duration timeout () {
+        return DEFAULT_TIMEOUT;
+    }
+
+    @Override
+    @NotNull
+    public final
+    Number memorySize () {
+        return DEFAULT_MEMORY_SIZE;
     }
 }

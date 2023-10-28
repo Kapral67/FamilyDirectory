@@ -8,6 +8,7 @@ import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.services.apigatewayv2.alpha.CorsHttpMethod;
 import software.amazon.awscdk.services.apigatewayv2.alpha.HttpMethod;
 import static java.util.Collections.singletonList;
@@ -100,6 +101,20 @@ enum ApiFunction implements LambdaFunctionModel {
     public final
     String functionName () {
         return this.functionName;
+    }
+
+    @Override
+    @NotNull
+    public final
+    Duration timeout () {
+        return DEFAULT_TIMEOUT;
+    }
+
+    @Override
+    @NotNull
+    public final
+    Number memorySize () {
+        return DEFAULT_MEMORY_SIZE;
     }
 
     @NotNull

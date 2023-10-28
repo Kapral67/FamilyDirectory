@@ -25,6 +25,8 @@ import static software.amazon.awscdk.assertions.Match.objectLike;
 public
 class FamilyDirectoryCognitoUsEastOneStackTest {
 
+    private static final String HOSTED_ZONE_ID_PARAMETER_NAME = "%sParameter".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME);
+
     @Test
     public
     void testStack () {
@@ -67,12 +69,13 @@ class FamilyDirectoryCognitoUsEastOneStackTest {
                                .isEmpty());
             assertTrue(template.findResources("AWS::IAM::Policy", objectLike(singletonMap("Properties", ssmReaderIamPolicy)))
                                .isEmpty());
-            final String hostedZoneIdParameter = "%sParameter".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME);
-            template.hasParameter(hostedZoneIdParameter, objectEquals(Map.of("Type", "AWS::SSM::Parameter::Value<String>", "Default", FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME)));
+            template.hasParameter(HOSTED_ZONE_ID_PARAMETER_NAME,
+                                  objectEquals(Map.of("Type", "AWS::SSM::Parameter::Value<String>", "Default", FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME)));
             template.hasResourceProperties("AWS::CertificateManager::Certificate", objectLike(Map.of("DomainName", FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME, "DomainValidationOptions",
                                                                                                      singletonList(Map.of("DomainName", FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME,
                                                                                                                           FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME,
-                                                                                                                          singletonMap("Ref", hostedZoneIdParameter))), "ValidationMethod", "DNS")));
+                                                                                                                          singletonMap("Ref", HOSTED_ZONE_ID_PARAMETER_NAME))), "ValidationMethod",
+                                                                                                     "DNS")));
         }
 
         final Capture cognitoCertificateArnCapture = new Capture();
