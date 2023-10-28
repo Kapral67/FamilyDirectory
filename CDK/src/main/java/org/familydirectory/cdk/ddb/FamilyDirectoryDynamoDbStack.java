@@ -1,8 +1,7 @@
 package org.familydirectory.cdk.ddb;
 
 import org.familydirectory.assets.ddb.enums.DdbTable;
-import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
-import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Stack;
@@ -24,26 +23,15 @@ class FamilyDirectoryDynamoDbStack extends Stack {
         for (final DdbTable ddbtable : DdbTable.values()) {
             final TableProps tableProps = TableProps.builder()
                                                     .tableName(ddbtable.name())
-                                                    .partitionKey(DdbTable.PK)
+                                                    .partitionKey(DdbTableParameter.PK)
                                                     .billingMode(PAY_PER_REQUEST)
                                                     .encryption(AWS_MANAGED)
                                                     .pointInTimeRecovery(TRUE)
                                                     .deletionProtection(TRUE)
                                                     .build();
             final Table table = new Table(this, ddbtable.name(), tableProps);
-            switch (ddbtable) {
-                case COGNITO -> {
-                    for (final CognitoTableParameter param : CognitoTableParameter.values()) {
-                        ofNullable(param.gsiProps()).ifPresent(table::addGlobalSecondaryIndex);
-                    }
-                }
-                case MEMBER -> {
-                    for (final MemberTableParameter param : MemberTableParameter.values()) {
-                        ofNullable(param.gsiProps()).ifPresent(table::addGlobalSecondaryIndex);
-                    }
-                }
-                default -> {
-                }
+            for (final DdbTableParameter param : ddbtable.parameters()) {
+                ofNullable(param.gsiProps()).ifPresent(table::addGlobalSecondaryIndex);
             }
             new CfnOutput(this, ddbtable.arnExportName(), CfnOutputProps.builder()
                                                                         .value(table.getTableArn())

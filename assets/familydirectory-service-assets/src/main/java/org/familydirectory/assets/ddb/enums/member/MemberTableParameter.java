@@ -1,7 +1,7 @@
 package org.familydirectory.assets.ddb.enums.member;
 
-import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.DdbType;
+import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awscdk.services.dynamodb.Attribute;
@@ -10,8 +10,8 @@ import static software.amazon.awscdk.services.dynamodb.AttributeType.STRING;
 import static software.amazon.awscdk.services.dynamodb.ProjectionType.KEYS_ONLY;
 
 public
-enum MemberTableParameter {
-    ID(DdbType.STR, DdbTable.PK.getName(), null),
+enum MemberTableParameter implements DdbTableParameter {
+    ID(DdbType.STR, DdbTableParameter.PK.getName(), null),
     KEY(DdbType.STR, "key", GlobalSecondaryIndexProps.builder()
                                                      .indexName("MemberKey")
                                                      .partitionKey(Attribute.builder()
@@ -51,18 +51,21 @@ enum MemberTableParameter {
         this.gsiProps = gsiProps;
     }
 
+    @Override
     @NotNull
     public final
     DdbType ddbType () {
         return this.ddbType;
     }
 
+    @Override
     @NotNull
     public final
     String jsonFieldName () {
         return this.jsonFieldName;
     }
 
+    @Override
     @Nullable
     public final
     GlobalSecondaryIndexProps gsiProps () {

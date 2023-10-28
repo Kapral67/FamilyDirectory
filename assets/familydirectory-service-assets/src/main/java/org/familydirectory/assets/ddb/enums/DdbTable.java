@@ -1,29 +1,39 @@
 package org.familydirectory.assets.ddb.enums;
 
+import java.util.List;
+import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
+import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
+import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.jetbrains.annotations.NotNull;
-import software.amazon.awscdk.services.dynamodb.Attribute;
-import static software.amazon.awscdk.services.dynamodb.AttributeType.STRING;
+import static java.util.Arrays.asList;
 
 public
 enum DdbTable {
-    COGNITO("CognitoTableArn"),
-    MEMBER("MemberTableArn"),
-    FAMILY("FamilyTableArn");
+    COGNITO("CognitoTableArn", asList(CognitoTableParameter.values())),
+    MEMBER("MemberTableArn", asList(MemberTableParameter.values())),
+    FAMILY("FamilyTableArn", asList(FamilyTableParameter.values()));
 
-    public static final Attribute PK = Attribute.builder()
-                                                .name("id")
-                                                .type(STRING)
-                                                .build();
     @NotNull
     private final String arnExportName;
 
-    DdbTable (final @NotNull String arnExportName) {
+    @NotNull
+    private final List<? extends DdbTableParameter> parameters;
+
+    DdbTable (final @NotNull String arnExportName, final @NotNull List<? extends DdbTableParameter> parameters) {
         this.arnExportName = arnExportName;
+        this.parameters = parameters;
     }
 
     @NotNull
     public final
     String arnExportName () {
         return this.arnExportName;
+    }
+
+    @NotNull
+    public final
+    List<? extends DdbTableParameter> parameters () {
+        return this.parameters;
     }
 }
