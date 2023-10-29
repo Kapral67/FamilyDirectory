@@ -85,7 +85,8 @@ class UpdateHelper extends ApiHelper {
         }
 
         final Map<String, AttributeValue> ddbMemberMap = response.items()
-                                                                 .get(0);
+                                                                 .iterator()
+                                                                 .next();
         final String ddbMemberId = ddbMemberMap.get(MemberTableParameter.ID.jsonFieldName())
                                                .s();
         final String ddbFamilyId = ddbMemberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
@@ -112,7 +113,8 @@ class UpdateHelper extends ApiHelper {
                               .isEmpty())
             {
                 final String emailResponseMemberId = emailResponse.items()
-                                                                  .get(0)
+                                                                  .iterator()
+                                                                  .next()
                                                                   .get(MemberTableParameter.ID.jsonFieldName())
                                                                   .s();
                 this.logger.log("<MEMBER,`%s`> Requested Update For <MEMBER,`%s`>, but <MEMBER,`%s`> Already Claims <EMAIL,`%s`>".formatted(caller.memberId(), ddbMemberId, emailResponseMemberId,

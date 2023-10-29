@@ -11,8 +11,8 @@ import static java.util.Arrays.asList;
 public
 enum DdbTable {
     COGNITO("CognitoTableArn", asList(CognitoTableParameter.values())),
-    MEMBER("MemberTableArn", asList(MemberTableParameter.values())),
-    FAMILY("FamilyTableArn", asList(FamilyTableParameter.values()));
+    FAMILY("FamilyTableArn", asList(FamilyTableParameter.values())),
+    MEMBER("MemberTableArn", asList(MemberTableParameter.values()));
 
     @NotNull
     private final String arnExportName;

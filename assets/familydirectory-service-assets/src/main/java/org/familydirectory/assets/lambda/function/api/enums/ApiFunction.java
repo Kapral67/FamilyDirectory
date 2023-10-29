@@ -17,15 +17,15 @@ import static java.util.Objects.requireNonNull;
 public
 enum ApiFunction implements LambdaFunctionModel {
     //    GET_MEMBER("FamilyDirectoryGetMemberLambda", "%s.%s::handleRequest", of("dynamodb:Query", "dynamodb:GetItem"), "get"),
-    CREATE_MEMBER("CreateMember",
-                  Map.of(DdbTable.MEMBER, List.of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:PutItem"),
-                         DdbTable.COGNITO, singletonList("dynamodb:GetItem")), null, null, singletonList(HttpMethod.POST), "create"),
-    UPDATE_MEMBER("UpdateMember", Map.of(DdbTable.MEMBER, List.of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:PutItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.COGNITO,
-                                         singletonList("dynamodb:GetItem")), null, null, singletonList(HttpMethod.PUT), "update"),
+    CREATE_MEMBER("CreateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"), DdbTable.MEMBER,
+                                         List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, singletonList(HttpMethod.POST), "create"),
+
     DELETE_MEMBER("DeleteMember",
-                  Map.of(DdbTable.MEMBER, List.of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:DeleteItem"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:UpdateItem"), DdbTable.COGNITO,
-                         List.of("dynamodb:Query", "dynamodb:GetItem", "dynamodb:DeleteItem")), List.of("cognito-idp:ListUsers", "cognito-idp:AdminDeleteUser"), singletonList("ses:SendEmail"),
-                  singletonList(HttpMethod.DELETE), "delete");
+                  Map.of(DdbTable.COGNITO, List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:UpdateItem"), DdbTable.MEMBER,
+                         List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query")), List.of("cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"), singletonList("ses:SendEmail"),
+                  singletonList(HttpMethod.DELETE), "delete"),
+    UPDATE_MEMBER("UpdateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER,
+                                         List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, singletonList(HttpMethod.PUT), "update");
 
     @NotNull
     private final String functionName;

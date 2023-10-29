@@ -88,7 +88,8 @@ class CreateHelper extends ApiHelper {
                         .isEmpty())
         {
             final String keyMemberId = keyResponse.items()
-                                                  .get(0)
+                                                  .iterator()
+                                                  .next()
                                                   .get(MemberTableParameter.ID.jsonFieldName())
                                                   .s();
             this.logger.log("<MEMBER,`%s`> Requested Create for Existing <MEMBER,`%s`> Using <KEY,`%s`>".formatted(callerMemberId, keyMemberId, memberKey), WARN);
@@ -108,7 +109,8 @@ class CreateHelper extends ApiHelper {
                               .isEmpty())
             {
                 final String emailResponseMemberId = emailResponse.items()
-                                                                  .get(0)
+                                                                  .iterator()
+                                                                  .next()
                                                                   .get(MemberTableParameter.ID.jsonFieldName())
                                                                   .s();
                 this.logger.log("<MEMBER,`%s`> Requested Create, but Existing <MEMBER,`%s`> Already Claims <EMAIL,`%s`>".formatted(callerMemberId, emailResponseMemberId, memberEmail), WARN);

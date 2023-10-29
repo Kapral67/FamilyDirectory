@@ -95,7 +95,8 @@ class DeleteHelper extends ApiHelper {
         }
 
         final Map<String, AttributeValue> ddbMemberMap = response.items()
-                                                                 .get(0);
+                                                                 .iterator()
+                                                                 .next();
         return new EventWrapper(deleteEvent, ddbMemberMap.get(MemberTableParameter.ID.jsonFieldName())
                                                          .s(), ddbMemberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
                                                                            .s());
@@ -153,7 +154,8 @@ class DeleteHelper extends ApiHelper {
                                        .isEmpty())
         {
             final String ddbMemberCognitoSub = ofNullable(cognitoMemberQueryResponse.items()
-                                                                                    .get(0)
+                                                                                    .iterator()
+                                                                                    .next()
                                                                                     .get(CognitoTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
                                                                                                                                    .filter(Predicate.not(String::isBlank))
                                                                                                                                    .orElseThrow();
@@ -164,7 +166,8 @@ class DeleteHelper extends ApiHelper {
                                                                       .build();
             final UserType ddbMemberCognitoUser = ofNullable(this.cognitoClient.listUsers(listUsersRequest)).filter(ListUsersResponse::hasUsers)
                                                                                                             .map(ListUsersResponse::users)
-                                                                                                            .map(list -> list.get(0))
+                                                                                                            .map(list -> list.iterator()
+                                                                                                                             .next())
                                                                                                             .orElseThrow();
             final String ddbMemberCognitoUsername = Optional.of(ddbMemberCognitoUser)
                                                             .map(UserType::username)
