@@ -34,7 +34,7 @@ dependencies {
     implementation 'com.googlecode.libphonenumber:libphonenumber:8.13.24'
     implementation 'commons-codec:commons-codec:1.16.0'
     implementation 'commons-validator:commons-validator:1.7'
-    implementation 'org.apache.commons:commons-text:1.10.0'
+    implementation 'org.apache.commons:commons-text:1.11.0'
     implementation 'org.apache.httpcomponents:httpcore:4.4.16'
     implementation 'software.amazon.awscdk:aws-cdk-lib:2.103.1'
     implementation 'software.amazon.awscdk:apigatewayv2-integrations-alpha:2.103.1-alpha.0'
