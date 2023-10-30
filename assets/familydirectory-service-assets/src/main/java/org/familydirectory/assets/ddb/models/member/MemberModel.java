@@ -81,15 +81,7 @@ class MemberModel {
 
     public @NotNull
     String getKey () {
-        return sha256Hex((isNull(this.getDeathdayString()))
-                                 ? "%s %s".formatted(this.getFullName(), this.getBirthdayString())
-                                 : "%s %s %s".formatted(this.getFullName(), this.getBirthdayString(), this.getDeathdayString()));
-    }
-
-    public @Nullable
-    String getDeathdayString () {
-        return ofNullable(this.getDeathday()).map(DdbUtils.DATE_FORMATTER::format)
-                                             .orElse(null);
+        return sha256Hex("%s %s".formatted(this.getFullName(), this.getBirthdayString()));
     }
 
     public @NotNull
@@ -123,6 +115,12 @@ class MemberModel {
 
     public abstract @Nullable
     SuffixType getSuffix ();
+
+    public @Nullable
+    String getDeathdayString () {
+        return ofNullable(this.getDeathday()).map(DdbUtils.DATE_FORMATTER::format)
+                                             .orElse(null);
+    }
 
     public @NotNull
     String getDisplayName () {
