@@ -63,11 +63,12 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
 
             //  Check if Entry in Cognito Ddb Already Exists
             try {
-                if (DDB_CLIENT.getItem(GetItemRequest.builder()
-                                                     .tableName(DdbTable.COGNITO.name())
-                                                     .key(singletonMap(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(sub)))
-                                                     .build())
-                              .hasItem())
+                if (!DDB_CLIENT.getItem(GetItemRequest.builder()
+                                                      .tableName(DdbTable.COGNITO.name())
+                                                      .key(singletonMap(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(sub)))
+                                                      .build())
+                               .item()
+                               .isEmpty())
                 {
                     //          If There Is a PreExisting Entry, Then The User is Just Changing Their Email For Cognito
                     return getValidEvent(event, email);

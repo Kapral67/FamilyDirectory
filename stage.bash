@@ -99,6 +99,9 @@ mvn package
 cd "$STAGE_DIR/assets/FamilyDirectoryDeleteMemberLambda" || script_error
 mvn package
 
+cd "$STAGE_DIR/assets/FamilyDirectoryGetPdfLambda" || script_error
+mvn package
+
 ## COGNITO
 cd "$STAGE_DIR/assets/FamilyDirectoryCognitoPreSignUpTrigger" || script_error
 mvn package

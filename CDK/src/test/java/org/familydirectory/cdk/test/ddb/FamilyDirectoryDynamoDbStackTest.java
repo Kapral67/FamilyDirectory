@@ -1,6 +1,7 @@
 package org.familydirectory.cdk.test.ddb;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.NotImplementedException;
@@ -50,21 +51,21 @@ class FamilyDirectoryDynamoDbStackTest {
                                                       singletonMap("ProjectionType", requireNonNull(gsi.getProjectionType()).name())));
                 });
             }
-            final Map<String, Map<String, Object>> tableMap;
-            if (globalSecondaryIndexes.isEmpty()) {
-                tableMap = template.findResources("AWS::DynamoDB::Table", objectLike(singletonMap("Properties", Map.of("AttributeDefinitions", attributeDefinitions, "BillingMode", "PAY_PER_REQUEST",
-                                                                                                                       "DeletionProtectionEnabled", true, "KeySchema", singletonList(
-                                Map.of("AttributeName", DdbTableParameter.PK.getName(), "KeyType", "HASH")), "PointInTimeRecoverySpecification", singletonMap("PointInTimeRecoveryEnabled", true),
-                                                                                                                       "SSESpecification", singletonMap("SSEEnabled", true), "TableName",
-                                                                                                                       ddbTable.name()))));
-            } else {
-                tableMap = template.findResources("AWS::DynamoDB::Table", objectLike(singletonMap("Properties", Map.of("AttributeDefinitions", attributeDefinitions, "BillingMode", "PAY_PER_REQUEST",
-                                                                                                                       "DeletionProtectionEnabled", true, "GlobalSecondaryIndexes",
-                                                                                                                       globalSecondaryIndexes, "KeySchema", singletonList(
-                                Map.of("AttributeName", DdbTableParameter.PK.getName(), "KeyType", "HASH")), "PointInTimeRecoverySpecification", singletonMap("PointInTimeRecoveryEnabled", true),
-                                                                                                                       "SSESpecification", singletonMap("SSEEnabled", true), "TableName",
-                                                                                                                       ddbTable.name()))));
+            final Map<String, Object> tableMapProperties = new HashMap<>();
+            tableMapProperties.put("AttributeDefinitions", attributeDefinitions);
+            tableMapProperties.put("BillingMode", "PAY_PER_REQUEST");
+            tableMapProperties.put("DeletionProtectionEnabled", true);
+            if (!globalSecondaryIndexes.isEmpty()) {
+                tableMapProperties.put("GlobalSecondaryIndexes", globalSecondaryIndexes);
             }
+            tableMapProperties.put("KeySchema", singletonList(Map.of("AttributeName", DdbTableParameter.PK.getName(), "KeyType", "HASH")));
+            tableMapProperties.put("PointInTimeRecoverySpecification", singletonMap("PointInTimeRecoveryEnabled", true));
+            tableMapProperties.put("SSESpecification", singletonMap("SSEEnabled", true));
+            if (ddbTable.hasStream()) {
+                tableMapProperties.put("StreamSpecification", singletonMap("StreamViewType", "KEYS_ONLY"));
+            }
+            tableMapProperties.put("TableName", ddbTable.name());
+            final Map<String, Map<String, Object>> tableMap = template.findResources("AWS::DynamoDB::Table", objectLike(singletonMap("Properties", tableMapProperties)));
             assertEquals(1, tableMap.size());
 
             final String tableId = tableMap.entrySet()

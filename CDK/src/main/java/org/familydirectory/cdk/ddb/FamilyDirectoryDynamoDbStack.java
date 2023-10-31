@@ -6,6 +6,7 @@ import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.dynamodb.StreamViewType;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.dynamodb.TableProps;
 import software.constructs.Construct;
@@ -21,14 +22,17 @@ class FamilyDirectoryDynamoDbStack extends Stack {
         super(scope, id, stackProps);
 
         for (final DdbTable ddbtable : DdbTable.values()) {
-            final TableProps tableProps = TableProps.builder()
-                                                    .tableName(ddbtable.name())
-                                                    .partitionKey(DdbTableParameter.PK)
-                                                    .billingMode(PAY_PER_REQUEST)
-                                                    .encryption(AWS_MANAGED)
-                                                    .pointInTimeRecovery(TRUE)
-                                                    .deletionProtection(TRUE)
-                                                    .build();
+            final TableProps.Builder tablePropsBuilder = TableProps.builder()
+                                                                   .tableName(ddbtable.name())
+                                                                   .partitionKey(DdbTableParameter.PK)
+                                                                   .billingMode(PAY_PER_REQUEST)
+                                                                   .encryption(AWS_MANAGED)
+                                                                   .pointInTimeRecovery(TRUE)
+                                                                   .deletionProtection(TRUE);
+            if (ddbtable.hasStream()) {
+                tablePropsBuilder.stream(StreamViewType.KEYS_ONLY);
+            }
+            final TableProps tableProps = tablePropsBuilder.build();
             final Table table = new Table(this, ddbtable.name(), tableProps);
             for (final DdbTableParameter param : ddbtable.parameters()) {
                 ofNullable(param.gsiProps()).ifPresent(table::addGlobalSecondaryIndex);

@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -21,17 +22,16 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
-import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN;
 import static java.util.Collections.singletonMap;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_CONFLICT;
 import static org.apache.http.HttpStatus.SC_FORBIDDEN;
-import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 
 public final
@@ -59,34 +59,13 @@ class UpdateHelper extends ApiHelper {
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
         }
 
-        final QueryResponse response = this.dynamoDbClient.query(QueryRequest.builder()
-                                                                             .tableName(DdbTable.MEMBER.name())
-                                                                             .indexName(requireNonNull(MemberTableParameter.KEY.gsiProps()).getIndexName())
-                                                                             .keyConditionExpression("%s = :key".formatted(MemberTableParameter.KEY.gsiProps()
-                                                                                                                                                   .getPartitionKey()
-                                                                                                                                                   .getName()))
-                                                                             .expressionAttributeValues(singletonMap(":key", AttributeValue.fromS(updateEvent.member()
-                                                                                                                                                             .getKey())))
-                                                                             .limit(2)
-                                                                             .build());
+        final Map<String, AttributeValue> ddbMemberMap = this.getDdbItem(updateEvent.id(), DdbTable.MEMBER);
 
-        if (response.items()
-                    .isEmpty())
-        {
-            this.logger.log("<MEMBER,`%s`> Requested Update to Non-Existent Member <KEY,`%s`>".formatted(caller.memberId(), updateEvent.member()
-                                                                                                                                       .getKey()), WARN);
+        if (isNull(ddbMemberMap)) {
+            this.logger.log("<MEMBER,`%s`> Requested Update to Non-Existent Member <ID,`%s`>".formatted(caller.memberId(), updateEvent.id()), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_NOT_FOUND));
-        } else if (response.items()
-                           .size() > 1)
-        {
-            this.logger.log("<MEMBER,`%s`> Requested Update to Ambiguous <KEY,`%s`> Referencing Multiple Members".formatted(caller.memberId(), updateEvent.member()
-                                                                                                                                                          .getKey()), ERROR);
-            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_INTERNAL_SERVER_ERROR));
         }
 
-        final Map<String, AttributeValue> ddbMemberMap = response.items()
-                                                                 .iterator()
-                                                                 .next();
         final String ddbMemberId = ddbMemberMap.get(MemberTableParameter.ID.jsonFieldName())
                                                .s();
         final String ddbFamilyId = ddbMemberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
@@ -146,8 +125,8 @@ class UpdateHelper extends ApiHelper {
                                                                       .equals(eventWrapper.ddbMemberId()))
         {
             this.logger.log("<MEMBER,`%s`> update <SPOUSE,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
-        } else if (!eventWrapper.ddbMemberIsAdult() && ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
-                                                                                                                                     .map(AttributeValue::ss)
+        } else if (!eventWrapper.ddbMemberIsAdult() && ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
+                                                                                                                                     .filter(Predicate.not(List::isEmpty))
                                                                                                                                      .filter(ss -> ss.contains(eventWrapper.ddbMemberId()))
                                                                                                                                      .isPresent())
         {

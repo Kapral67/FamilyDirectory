@@ -1,6 +1,9 @@
 package org.familydirectory.assets.lambda.function.pdf.helper;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -17,18 +20,23 @@ import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
+import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.s3.S3Client;
+import static java.lang.System.getenv;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 public final
-class PdfHelper implements LambdaFunctionHelper {
+class PdfHelper implements LambdaFunctionHelper, Closeable {
+    private static final String ROOT_MEMBER_ID = getenv(LambdaUtils.EnvVar.ROOT_ID.name());
     @NotNull
     private final PDDocument pdf = new PDDocument();
     @NotNull
@@ -36,9 +44,9 @@ class PdfHelper implements LambdaFunctionHelper {
     @NotNull
     private final DynamoDbClient dynamoDbClient = DynamoDbClient.create();
     @NotNull
-    private final LambdaLogger logger;
+    private final S3Client s3Client = S3Client.create();
     @NotNull
-    private final String rootMemberId;
+    private final LambdaLogger logger;
     @NotNull
     private final Map<String, Member> members;
     @NotNull
@@ -49,27 +57,17 @@ class PdfHelper implements LambdaFunctionHelper {
     private PDPageHelper page = null;
 
     public
-    PdfHelper (final @NotNull LambdaLogger logger, final @NotNull String rootMemberId) throws IOException {
+    PdfHelper (final @NotNull LambdaLogger logger) {
         super();
         this.logger = requireNonNull(logger);
-        this.rootMemberId = requireNonNull(rootMemberId);
         this.members = new HashMap<>();
-        this.members.put(this.rootMemberId, this.getMemberById(this.rootMemberId));
-        this.title = "%s FAMILY DIRECTORY".formatted(Optional.of(this.members.get(this.rootMemberId)
+        this.members.put(ROOT_MEMBER_ID, this.getMemberById(ROOT_MEMBER_ID));
+        this.title = "%s FAMILY DIRECTORY".formatted(Optional.of(this.members.get(ROOT_MEMBER_ID)
                                                                              .getLastName())
                                                              .filter(Predicate.not(String::isBlank))
                                                              .map(String::toUpperCase)
                                                              .orElseThrow());
         this.families = new HashMap<>();
-        this.newPage();
-    }
-
-    private
-    void newPage () throws IOException {
-        if (nonNull(this.page)) {
-            this.page.close();
-        }
-        this.page = new PDPageHelper(this.pdf, new PDPage(), this.title, this.date, ++this.pageNumber);
     }
 
     @NotNull
@@ -87,12 +85,16 @@ class PdfHelper implements LambdaFunctionHelper {
                     case DEATHDAY -> memberBuilder.deathday(Member.convertStringToDate(av.s()));
                     case EMAIL -> memberBuilder.email(av.s());
                     case ADDRESS -> {
-                        if (av.hasSs()) {
+                        if (!av.ss()
+                               .isEmpty())
+                        {
                             memberBuilder.address(av.ss());
                         }
                     }
                     case PHONES -> {
-                        if (av.hasM()) {
+                        if (!av.m()
+                               .isEmpty())
+                        {
                             memberBuilder.phones(Member.convertPhonesDdbMap(av.m()));
                         }
                     }
@@ -106,6 +108,37 @@ class PdfHelper implements LambdaFunctionHelper {
     }
 
     private
+    void newPage () throws IOException {
+        if (nonNull(this.page)) {
+            this.page.close();
+        }
+        this.page = new PDPageHelper(this.pdf, new PDPage(), this.title, this.date, ++this.pageNumber);
+    }
+
+    @Contract("-> new")
+    @NotNull
+    public
+    RequestBody getPdf () throws IOException {
+        this.newPage();
+
+        this.traverse(ROOT_MEMBER_ID);
+
+        final ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream();
+        this.pdf.save(pdfOutputStream);
+        final byte[] pdfData = pdfOutputStream.toByteArray();
+        return RequestBody.fromInputStream(new ByteArrayInputStream(pdfData), pdfData.length);
+    }
+
+    @Override
+    public
+    void close () throws IOException {
+        if (nonNull(this.page)) {
+            this.page.close();
+        }
+        this.pdf.close();
+    }
+
+    private
     void traverse (final @NotNull String id) throws IOException {
         final @NotNull Map<String, AttributeValue> family = this.retrieveFamily(id);
         final @NotNull Member member = this.retrieveMember(id);
@@ -116,11 +149,8 @@ class PdfHelper implements LambdaFunctionHelper {
 
         final @NotNull List<String> recursiveDescendants = new ArrayList<>();
 
-        final @Nullable List<String> descendantIds = ofNullable(family.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
-                                                                                                                             .map(AttributeValue::ss)
+        final @Nullable List<String> descendantIds = ofNullable(family.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
                                                                                                                              .filter(Predicate.not(List::isEmpty))
-                                                                                                                             .filter(l -> !l.stream()
-                                                                                                                                            .allMatch(String::isBlank))
                                                                                                                              .orElse(null);
 
         if (nonNull(descendantIds)) {
@@ -133,11 +163,8 @@ class PdfHelper implements LambdaFunctionHelper {
                 final @NotNull Member descendant = this.retrieveMember(descendantId);
 
 //          DEAD-END-DESCENDANTS ARE (A) NOT ADULTS & (B) DON'T HAVE DESCENDANTS
-                if (!descendant.isAdult() && ofNullable(descendantFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
-                                                                                                                               .map(AttributeValue::ss)
+                if (!descendant.isAdult() && ofNullable(descendantFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
                                                                                                                                .filter(Predicate.not(List::isEmpty))
-                                                                                                                               .filter(l -> !l.stream()
-                                                                                                                                              .allMatch(String::isBlank))
                                                                                                                                .isEmpty())
                 {
                     deadEndDescendants.add(descendant);
@@ -149,9 +176,8 @@ class PdfHelper implements LambdaFunctionHelper {
 
         this.addFamily(member, spouse, (deadEndDescendants.isEmpty())
                 ? null
-                : deadEndDescendants, ofNullable(this.retrieveFamily(this.rootMemberId)
-                                                     .get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(AttributeValue::hasSs)
-                                                                                                            .map(AttributeValue::ss)
+                : deadEndDescendants, ofNullable(this.retrieveFamily(ROOT_MEMBER_ID)
+                                                     .get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
                                                                                                             .filter(Predicate.not(List::isEmpty))
                                                                                                             .filter(ss -> ss.contains(id))
                                                                                                             .isPresent());
@@ -193,7 +219,7 @@ class PdfHelper implements LambdaFunctionHelper {
             try {
                 this.page.addBodyTextBlock(member, spouse, descendants, startOfSection);
             } catch (final PDPageHelper.NewPageException x) {
-                throw new RuntimeException(e);
+                throw new IOException(e);
             }
         }
     }

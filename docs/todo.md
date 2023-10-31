@@ -1,4 +1,4 @@
-## Oct 26 Updated
+## Oct 30
 
 ### Finish CognitoStack
 
@@ -6,12 +6,22 @@
 
 ### CDK
 
-- Domain Stack has static reference to A record for `example.com`
+- ==Domain Stack has static reference to A record for `example.com`==
 
 ### S3
 
-- Need S3 versioned bucket to store generated pdfs
-- Need GET_PDF API to facilitate generating 302 redirect-able signed s3 urls to access pdf
+- [x] Need S3 versioned bucket to store generated pdfs
+
+- [x] Need GET_PDF API to facilitate generating 302 redirect-able signed s3 urls to access pdf
+
+
+### PDF Realtime ~~vs Scheduled~~
+
+- Need cdk code for pdf generator lambda
+
+### Initialize Family Directory?
+
+- How should admins initialize a FamilyDirectory?
 
 ### DISPLAY API (MEMBER)
 
@@ -21,19 +31,15 @@
 
 ### DISPLAY API (FAMILY)
 
-- This is probably a stretch goal at this point, but would make the ui nicer
+- *This is probably a stretch goal at this point, but would make the ui nicer*
 
 ### UPDATE API
 
-- We should add an id field to the event so that way if changes potentially affect the key of the to-be-updated-member,
-  the request can still be processed
-- proxyable?
+- [x] We should add an id field to the event so that way if changes potentially affect the key of the to-be-updated-member, the request can still be processed
 
 ---
 
 ### Deferred Tasks
-
-### PDF Realtime vs Scheduled
 
 ### Changelog
 

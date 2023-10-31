@@ -10,9 +10,9 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.CertificateProps;
 import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
-import software.amazon.awscdk.services.route53.HostedZone;
-import software.amazon.awscdk.services.route53.HostedZoneAttributes;
-import software.amazon.awscdk.services.route53.IHostedZone;
+import software.amazon.awscdk.services.route53.IPublicHostedZone;
+import software.amazon.awscdk.services.route53.PublicHostedZone;
+import software.amazon.awscdk.services.route53.PublicHostedZoneAttributes;
 import software.amazon.awscdk.services.ssm.ParameterTier;
 import software.amazon.awscdk.services.ssm.StringParameter;
 import software.amazon.awscdk.services.ssm.StringParameterProps;
@@ -43,11 +43,11 @@ class FamilyDirectoryCognitoUsEastOneStack extends Stack {
             hostedZoneId = new SSMParameterReader(this, SSMParameterReader.SSM_PARAMETER_READER_RESOURCE_ID, FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME,
                                                   Region.of(FamilyDirectoryCdkApp.DEFAULT_REGION)).toString();
         }
-        final HostedZoneAttributes hostedZoneAttrs = HostedZoneAttributes.builder()
-                                                                         .hostedZoneId(hostedZoneId)
-                                                                         .zoneName(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
-                                                                         .build();
-        final IHostedZone hostedZone = HostedZone.fromHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
+        final PublicHostedZoneAttributes hostedZoneAttrs = PublicHostedZoneAttributes.builder()
+                                                                                     .hostedZoneId(hostedZoneId)
+                                                                                     .zoneName(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
+                                                                                     .build();
+        final IPublicHostedZone hostedZone = PublicHostedZone.fromPublicHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
 
         //  Cognito Certificate
         final CertificateProps cognitoCertificateProps = CertificateProps.builder()

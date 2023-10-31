@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
-import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,11 +20,15 @@ import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionProps;
 import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awscdk.services.route53.IHostedZone;
+import software.amazon.awscdk.services.s3.IBucket;
+import software.amazon.awscdk.services.ses.IEmailIdentity;
 import software.constructs.Construct;
 import static java.lang.System.getProperty;
 import static java.lang.System.getenv;
 import static java.nio.file.Paths.get;
 import static java.util.Collections.singletonList;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static software.amazon.awscdk.Fn.importValue;
@@ -47,7 +50,9 @@ class LambdaFunctionConstructUtility {
     }
 
     public static @NotNull
-    Map<LambdaFunctionModel, Function> constructFunctionMap (final @NotNull Construct scope, final @NotNull List<? extends LambdaFunctionModel> values, final @Nullable IUserPool userPool) {
+    Map<LambdaFunctionModel, Function> constructFunctionMap (final @NotNull Construct scope, final @NotNull List<? extends LambdaFunctionModel> values, final @Nullable IHostedZone hostedZone,
+                                                             final @Nullable IEmailIdentity emailIdentity, final @Nullable IUserPool userPool, final @Nullable IBucket pdfBucket)
+    {
         return values.stream()
                      .collect(Collectors.toUnmodifiableMap(f -> f, f -> {
                          final Function function = new Function(scope, f.functionName(), FunctionProps.builder()
@@ -65,8 +70,12 @@ class LambdaFunctionConstructUtility {
                                        case COGNITO_USER_POOL_ID -> ofNullable(userPool).map(IUserPool::getUserPoolId)
                                                                                         .ifPresent(id -> function.addEnvironment(env.name(), id));
                                        case ROOT_ID -> function.addEnvironment(env.name(), ROOT_ID);
-                                       case SES_EMAIL_IDENTITY_NAME -> function.addEnvironment(env.name(), importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_NAME_EXPORT_NAME));
-                                       case HOSTED_ZONE_NAME -> function.addEnvironment(env.name(), FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
+                                       case SES_EMAIL_IDENTITY_NAME -> ofNullable(emailIdentity).map(IEmailIdentity::getEmailIdentityName)
+                                                                                                .ifPresent(emailIdentityName -> function.addEnvironment(env.name(), emailIdentityName));
+                                       case HOSTED_ZONE_NAME -> ofNullable(hostedZone).map(IHostedZone::getZoneName)
+                                                                                      .ifPresent(hostedZoneName -> function.addEnvironment(env.name(), hostedZoneName));
+                                       case S3_PDF_BUCKET_NAME -> ofNullable(pdfBucket).map(IBucket::getBucketName)
+                                                                                       .ifPresent(name -> function.addEnvironment(env.name(), name));
                                        default -> {
                                        }
                                    }
@@ -99,7 +108,9 @@ class LambdaFunctionConstructUtility {
     }
 
     public static
-    void constructFunctionPermissions (final @NotNull Construct scope, final @NotNull IUserPool userPool, final @NotNull Map<? extends LambdaFunctionModel, Function> values) {
+    void constructFunctionPermissions (final @NotNull Construct scope, final @NotNull Map<? extends LambdaFunctionModel, Function> values, final @Nullable IEmailIdentity emailIdentity,
+                                       final @Nullable IUserPool userPool, final @Nullable IBucket pdfBucket)
+    {
         values.forEach((k, v) -> {
 //      Assign Ddb Permissions
             ofNullable(k.ddbActions()).ifPresent(map -> map.forEach((table, actions) -> v.addToRolePolicy(create().effect(ALLOW)
@@ -107,21 +118,33 @@ class LambdaFunctionConstructUtility {
                                                                                                                   .resources(singletonList("%s/*".formatted(importValue(table.arnExportName()))))
                                                                                                                   .build())));
 //      Assign Cognito Permissions
-            ofNullable(k.cognitoActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
-                                                                                          .actions(actions)
-                                                                                          .resources(singletonList(userPool.getUserPoolArn()))
-                                                                                          .build()));
+            ofNullable(userPool).map(IUserPool::getUserPoolArn)
+                                .ifPresent(userPoolArn -> ofNullable(k.cognitoActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
+                                                                                                                                        .actions(actions)
+                                                                                                                                        .resources(singletonList(userPoolArn))
+                                                                                                                                        .build())));
 
 //      Assign Ses Permissions
-            ofNullable(k.sesActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
-                                                                                      .actions(actions)
-                                                                                      .resources(singletonList(importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)))
-                                                                                      .build()));
+            if (nonNull(emailIdentity)) {
+                ofNullable(k.sesActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
+                                                                                          .actions(actions)
+                                                                                          .resources(singletonList(importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)))
+                                                                                          .build()));
+            }
+
+//      Assign S3 Permissions
+            ofNullable(pdfBucket).map(IBucket::getBucketArn)
+                                 .ifPresent(pdfBucketArn -> ofNullable(k.sssActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
+                                                                                                                                      .actions(actions)
+                                                                                                                                      .resources(singletonList(pdfBucketArn))
+                                                                                                                                      .build())));
         });
     }
 
     public static
-    void constructFunctionPermissions (final @NotNull Construct scope, final @NotNull IUserPool userPool, final @NotNull List<? extends LambdaFunctionModel> values) {
+    void constructFunctionPermissions (final @NotNull Construct scope, final @NotNull List<? extends LambdaFunctionModel> values, final @Nullable IEmailIdentity emailIdentity,
+                                       final @Nullable IUserPool userPool, final @Nullable IBucket pdfBucket)
+    {
         values.forEach(f -> {
             final IRole executionRole = Role.fromRoleArn(scope, f.roleArnExportName(), importValue(f.roleArnExportName()));
 
@@ -133,16 +156,26 @@ class LambdaFunctionConstructUtility {
                                                                                                                                    .build())));
 
 //      Assign Cognito Permissions
-            ofNullable(f.cognitoActions()).ifPresent(actions -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
-                                                                                                           .actions(actions)
-                                                                                                           .resources(singletonList(userPool.getUserPoolArn()))
-                                                                                                           .build()));
+            ofNullable(userPool).map(IUserPool::getUserPoolArn)
+                                .ifPresent(userPoolArn -> ofNullable(f.cognitoActions()).ifPresent(actions -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
+                                                                                                                                                         .actions(actions)
+                                                                                                                                                         .resources(singletonList(userPoolArn))
+                                                                                                                                                         .build())));
 //      Assign Ses Permissions
-            ofNullable(f.sesActions()).ifPresent(actions -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
-                                                                                                       .actions(actions)
-                                                                                                       .resources(
-                                                                                                               singletonList(importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)))
-                                                                                                       .build()));
+            if (nonNull(emailIdentity)) {
+                ofNullable(f.sesActions()).ifPresent(actions -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
+                                                                                                           .actions(actions)
+                                                                                                           .resources(singletonList(
+                                                                                                                   importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_ARN_EXPORT_NAME)))
+                                                                                                           .build()));
+            }
+
+//      Assign S3 Permissions
+            ofNullable(pdfBucket).map(IBucket::getBucketArn)
+                                 .ifPresent(pdfBucketArn -> ofNullable(f.sssActions()).ifPresent(actions -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
+                                                                                                                                                       .actions(actions)
+                                                                                                                                                       .resources(singletonList(pdfBucketArn))
+                                                                                                                                                       .build())));
         });
     }
 }

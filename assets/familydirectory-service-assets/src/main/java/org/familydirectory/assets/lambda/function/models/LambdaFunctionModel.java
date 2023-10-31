@@ -25,6 +25,9 @@ interface LambdaFunctionModel {
     @Nullable
     List<String> sesActions ();
 
+    @Nullable
+    List<String> sssActions ();
+
     default @NotNull
     String arnExportName () {
         return "%sArn".formatted(this.functionName());

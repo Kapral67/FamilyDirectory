@@ -167,8 +167,7 @@ class CreateHelper extends ApiHelper {
         } else if (!createEvent.isSpouse()) {
             this.logger.log("<MEMBER,`%s`> Creating Descendant".formatted(caller.memberId()), INFO);
             inputFamilyId = this.inputMemberId.toString();
-            final String descendantsUpdateExpression = (ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).filter(Predicate.not(AttributeValue::hasSs))
-                                                                                                                                      .map(AttributeValue::ss)
+            final String descendantsUpdateExpression = (ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
                                                                                                                                       .filter(Predicate.not(List::isEmpty))
                                                                                                                                       .isEmpty())
                     ? "SET %s = :descendants".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName())

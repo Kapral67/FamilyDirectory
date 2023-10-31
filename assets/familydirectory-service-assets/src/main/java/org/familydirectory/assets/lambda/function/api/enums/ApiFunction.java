@@ -24,6 +24,7 @@ enum ApiFunction implements LambdaFunctionModel {
                   Map.of(DdbTable.COGNITO, List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:UpdateItem"), DdbTable.MEMBER,
                          List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query")), List.of("cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"), singletonList("ses:SendEmail"),
                   singletonList(HttpMethod.DELETE), "delete"),
+    GET_PDF("GetPdf", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null, null, singletonList(HttpMethod.GET), "pdf"),
     UPDATE_MEMBER("UpdateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER,
                                          List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, singletonList(HttpMethod.PUT), "update");
 
@@ -94,6 +95,12 @@ enum ApiFunction implements LambdaFunctionModel {
     public final
     List<String> sesActions () {
         return this.sesActions;
+    }
+
+    @Override
+    public @Nullable
+    List<String> sssActions () {
+        return null;
     }
 
     @Override

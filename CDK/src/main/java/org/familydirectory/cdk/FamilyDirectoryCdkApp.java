@@ -7,6 +7,7 @@ import org.familydirectory.cdk.ddb.FamilyDirectoryDynamoDbStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.lambda.FamilyDirectoryLambdaStack;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
+import org.familydirectory.cdk.sss.FamilyDirectorySssStack;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
@@ -33,6 +34,7 @@ class FamilyDirectoryCdkApp {
     public static final String COGNITO_STACK_NAME = "FamilyDirectoryCognitoStack";
     public static final String COGNITO_US_EAST_1_STACK_NAME = "FamilyDirectoryCognitoUsEastOneStack";
     public static final String DDB_STACK_NAME = "FamilyDirectoryDynamoDbStack";
+    public static final String SSS_STACK_NAME = "FamilyDirectorySssStack";
     public static final String LAMBDA_STACK_NAME = "FamilyDirectoryLambdaStack";
     public static final String API_STACK_NAME = "FamilyDirectoryApiGatewayStack";
 
@@ -77,12 +79,20 @@ class FamilyDirectoryCdkApp {
         cognitoStack.addDependency(cognitoUsEastOneStack);
         cognitoStack.addDependency(dynamoDbStack);
 
+        final FamilyDirectorySssStack sssStack = new FamilyDirectorySssStack(app, SSS_STACK_NAME, StackProps.builder()
+                                                                                                            .env(DEFAULT_ENV)
+                                                                                                            .stackName(SSS_STACK_NAME)
+                                                                                                            .build());
+
         final FamilyDirectoryLambdaStack lambdaStack = new FamilyDirectoryLambdaStack(app, LAMBDA_STACK_NAME, StackProps.builder()
                                                                                                                         .env(DEFAULT_ENV)
                                                                                                                         .stackName(LAMBDA_STACK_NAME)
                                                                                                                         .build());
+        lambdaStack.addDependency(domainStack);
+        lambdaStack.addDependency(sesStack);
         lambdaStack.addDependency(dynamoDbStack);
         lambdaStack.addDependency(cognitoStack);
+        lambdaStack.addDependency(sssStack);
 
         final FamilyDirectoryApiGatewayStack apiGatewayStack = new FamilyDirectoryApiGatewayStack(app, API_STACK_NAME, StackProps.builder()
                                                                                                                                  .env(DEFAULT_ENV)

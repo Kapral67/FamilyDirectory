@@ -10,9 +10,9 @@ import static java.util.Arrays.asList;
 
 public
 enum DdbTable {
-    COGNITO("CognitoTableArn", asList(CognitoTableParameter.values())),
-    FAMILY("FamilyTableArn", asList(FamilyTableParameter.values())),
-    MEMBER("MemberTableArn", asList(MemberTableParameter.values()));
+    COGNITO("CognitoTableArn", asList(CognitoTableParameter.values()), false),
+    FAMILY("FamilyTableArn", asList(FamilyTableParameter.values()), false),
+    MEMBER("MemberTableArn", asList(MemberTableParameter.values()), true);
 
     @NotNull
     private final String arnExportName;
@@ -20,9 +20,12 @@ enum DdbTable {
     @NotNull
     private final List<? extends DdbTableParameter> parameters;
 
-    DdbTable (final @NotNull String arnExportName, final @NotNull List<? extends DdbTableParameter> parameters) {
+    private final boolean hasStream;
+
+    DdbTable (final @NotNull String arnExportName, final @NotNull List<? extends DdbTableParameter> parameters, final boolean hasStream) {
         this.arnExportName = arnExportName;
         this.parameters = parameters;
+        this.hasStream = hasStream;
     }
 
     @NotNull
@@ -35,5 +38,10 @@ enum DdbTable {
     public final
     List<? extends DdbTableParameter> parameters () {
         return this.parameters;
+    }
+
+    public final
+    boolean hasStream () {
+        return this.hasStream;
     }
 }

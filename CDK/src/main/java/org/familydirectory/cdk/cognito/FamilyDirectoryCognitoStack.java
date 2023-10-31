@@ -48,11 +48,13 @@ import software.amazon.awscdk.services.cognito.UserVerificationConfig;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
-import software.amazon.awscdk.services.route53.HostedZone;
-import software.amazon.awscdk.services.route53.HostedZoneAttributes;
-import software.amazon.awscdk.services.route53.IHostedZone;
+import software.amazon.awscdk.services.route53.IPublicHostedZone;
+import software.amazon.awscdk.services.route53.PublicHostedZone;
+import software.amazon.awscdk.services.route53.PublicHostedZoneAttributes;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.UserPoolDomainTarget;
+import software.amazon.awscdk.services.ses.EmailIdentity;
+import software.amazon.awscdk.services.ses.IEmailIdentity;
 import software.amazon.awscdk.services.ssm.IStringParameter;
 import software.amazon.awscdk.services.ssm.StringParameter;
 import software.amazon.awssdk.regions.Region;
@@ -63,6 +65,7 @@ import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.ofNullable;
 import static software.amazon.awscdk.Duration.days;
+import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider.COGNITO;
 import static software.amazon.awscdk.services.cognito.VerificationEmailStyle.LINK;
 
@@ -99,17 +102,19 @@ class FamilyDirectoryCognitoStack extends Stack {
     public
     FamilyDirectoryCognitoStack (final Construct scope, final String id, final StackProps stackProps) {
         super(scope, id, stackProps);
-
         final IStringParameter hostedZoneId = StringParameter.fromStringParameterName(this, FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME,
                                                                                       FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME);
-        final HostedZoneAttributes hostedZoneAttrs = HostedZoneAttributes.builder()
-                                                                         .hostedZoneId(hostedZoneId.getStringValue())
-                                                                         .zoneName(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
-                                                                         .build();
-        final IHostedZone hostedZone = HostedZone.fromHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
+        final PublicHostedZoneAttributes hostedZoneAttrs = PublicHostedZoneAttributes.builder()
+                                                                                     .hostedZoneId(hostedZoneId.getStringValue())
+                                                                                     .zoneName(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
+                                                                                     .build();
+        final IPublicHostedZone hostedZone = PublicHostedZone.fromPublicHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
+        final IEmailIdentity emailIdentity = EmailIdentity.fromEmailIdentityName(this, FamilyDirectorySesStack.SES_EMAIL_IDENTITY_RESOURCE_ID,
+                                                                                 importValue(FamilyDirectorySesStack.SES_EMAIL_IDENTITY_NAME_EXPORT_NAME));
 
 //  Cognito Trigger Lambda Functions
-        final Map<LambdaFunctionModel, Function> cognitoTriggerLambdaFunctions = LambdaFunctionConstructUtility.constructFunctionMap(this, Arrays.asList(TriggerFunction.values()), null);
+        final Map<LambdaFunctionModel, Function> cognitoTriggerLambdaFunctions = LambdaFunctionConstructUtility.constructFunctionMap(this, Arrays.asList(TriggerFunction.values()), hostedZone,
+                                                                                                                                     emailIdentity, null, null);
 
         final UserPoolProps userPoolProps = UserPoolProps.builder()
                                                          .accountRecovery(AccountRecovery.EMAIL_ONLY)

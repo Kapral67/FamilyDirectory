@@ -29,9 +29,9 @@ import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
-import software.amazon.awscdk.services.route53.HostedZone;
-import software.amazon.awscdk.services.route53.HostedZoneAttributes;
-import software.amazon.awscdk.services.route53.IHostedZone;
+import software.amazon.awscdk.services.route53.IPublicHostedZone;
+import software.amazon.awscdk.services.route53.PublicHostedZone;
+import software.amazon.awscdk.services.route53.PublicHostedZoneAttributes;
 import software.amazon.awscdk.services.route53.RecordTarget;
 import software.amazon.awscdk.services.route53.targets.ApiGatewayv2DomainProperties;
 import software.amazon.awscdk.services.ssm.IStringParameter;
@@ -62,11 +62,11 @@ class FamilyDirectoryApiGatewayStack extends Stack {
 
         final IStringParameter hostedZoneId = StringParameter.fromStringParameterName(this, FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME,
                                                                                       FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME);
-        final HostedZoneAttributes hostedZoneAttrs = HostedZoneAttributes.builder()
-                                                                         .hostedZoneId(hostedZoneId.getStringValue())
-                                                                         .zoneName(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
-                                                                         .build();
-        final IHostedZone hostedZone = HostedZone.fromHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
+        final PublicHostedZoneAttributes hostedZoneAttrs = PublicHostedZoneAttributes.builder()
+                                                                                     .hostedZoneId(hostedZoneId.getStringValue())
+                                                                                     .zoneName(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
+                                                                                     .build();
+        final IPublicHostedZone hostedZone = PublicHostedZone.fromPublicHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
 
 //  Api Certificate
         final CertificateProps apiCertificateProps = CertificateProps.builder()

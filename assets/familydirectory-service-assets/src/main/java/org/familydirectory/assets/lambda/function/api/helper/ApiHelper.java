@@ -37,7 +37,7 @@ class ApiHelper implements LambdaFunctionHelper {
                                              .orElseThrow(NullPointerException::new);
 
             this.getLogger()
-                .log("<COGNITO_SUB,`%s`> Invoked CreateMember Lambda".formatted(callerSub), INFO);
+                .log("<COGNITO_SUB,`%s`> Invoked".formatted(callerSub), INFO);
 
             final Map<String, AttributeValue> callerCognito = ofNullable(this.getDdbItem(callerSub, DdbTable.COGNITO)).orElseThrow(NullPointerException::new);
 

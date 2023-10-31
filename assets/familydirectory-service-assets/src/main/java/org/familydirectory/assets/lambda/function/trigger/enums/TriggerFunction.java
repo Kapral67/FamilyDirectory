@@ -62,6 +62,12 @@ enum TriggerFunction implements LambdaFunctionModel {
     }
 
     @Override
+    public @Nullable
+    List<String> sssActions () {
+        return null;
+    }
+
+    @Override
     @NotNull
     public final
     String functionName () {
