@@ -1,4 +1,4 @@
-package org.familydirectory.assets.lambda.function.pdf.helper;
+package org.familydirectory.assets.lambda.function.stream.helper;
 
 import java.io.Closeable;
 import java.io.IOException;

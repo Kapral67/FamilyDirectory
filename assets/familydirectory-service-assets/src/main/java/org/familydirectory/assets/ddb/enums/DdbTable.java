@@ -6,17 +6,17 @@ import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import static java.util.Arrays.asList;
 
 public
 enum DdbTable {
-    COGNITO("CognitoTableArn", asList(CognitoTableParameter.values()), false),
-    FAMILY("FamilyTableArn", asList(FamilyTableParameter.values()), false),
-    MEMBER("MemberTableArn", asList(MemberTableParameter.values()), true);
+    COGNITO("CognitoTable", asList(CognitoTableParameter.values()), false),
+    FAMILY("FamilyTable", asList(FamilyTableParameter.values()), false),
+    MEMBER("MemberTable", asList(MemberTableParameter.values()), true);
 
     @NotNull
     private final String arnExportName;
-
     @NotNull
     private final List<? extends DdbTableParameter> parameters;
 
@@ -31,7 +31,7 @@ enum DdbTable {
     @NotNull
     public final
     String arnExportName () {
-        return this.arnExportName;
+        return "%sArn".formatted(this.arnExportName);
     }
 
     @NotNull
@@ -43,5 +43,13 @@ enum DdbTable {
     public final
     boolean hasStream () {
         return this.hasStream;
+    }
+
+    @Nullable
+    public final
+    String streamArnExportName () {
+        return (this.hasStream)
+                ? "%sStreamArn".formatted(this.arnExportName)
+                : null;
     }
 }

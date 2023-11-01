@@ -14,10 +14,9 @@
 
 - [x] Need GET_PDF API to facilitate generating 302 redirect-able signed s3 urls to access pdf
 
-
 ### PDF Realtime ~~vs Scheduled~~
 
-- Need cdk code for pdf generator lambda
+- [x] Need cdk code for pdf generator lambda
 
 ### Initialize Family Directory?
 
@@ -27,7 +26,6 @@
 
 1. Cognito User Logs in
 2. Request is made to get their member info and returned as json
-3. This api should be proxyable (id can be a url parameter)
 
 ### DISPLAY API (FAMILY)
 
@@ -35,7 +33,8 @@
 
 ### UPDATE API
 
-- [x] We should add an id field to the event so that way if changes potentially affect the key of the to-be-updated-member, the request can still be processed
+- [x] We should add an id field to the event so that way if changes potentially affect the key of the
+  to-be-updated-member, the request can still be processed
 
 ---
 

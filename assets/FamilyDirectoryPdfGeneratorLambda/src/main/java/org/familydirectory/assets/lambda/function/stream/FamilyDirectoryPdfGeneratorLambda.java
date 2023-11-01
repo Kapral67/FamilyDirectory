@@ -1,10 +1,10 @@
-package org.familydirectory.assets.lambda.function.pdf;
+package org.familydirectory.assets.lambda.function.stream;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.logging.LogLevel;
-import org.familydirectory.assets.lambda.function.pdf.helper.PdfHelper;
+import org.familydirectory.assets.lambda.function.stream.helper.PdfHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.sync.RequestBody;

@@ -20,7 +20,6 @@ import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 import static software.amazon.awscdk.assertions.Match.objectLike;
 
 public
@@ -73,6 +72,10 @@ class FamilyDirectoryDynamoDbStackTest {
                                            .next()
                                            .getKey();
             template.hasOutput(ddbTable.arnExportName(), objectLike(Map.of("Value", singletonMap("Fn::GetAtt", List.of(tableId, "Arn")), "Export", singletonMap("Name", ddbTable.arnExportName()))));
+            if (ddbTable.hasStream()) {
+                template.hasOutput(requireNonNull(ddbTable.streamArnExportName()),
+                                   objectLike(Map.of("Value", singletonMap("Fn::GetAtt", List.of(tableId, "StreamArn")), "Export", singletonMap("Name", ddbTable.streamArnExportName()))));
+            }
         }
     }
 
@@ -82,7 +85,6 @@ class FamilyDirectoryDynamoDbStackTest {
         if (attr == AttributeType.STRING) {
             return "S";
         }
-        fail();
         throw new NotImplementedException();
     }
 }

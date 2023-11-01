@@ -12,6 +12,8 @@ public
 interface LambdaFunctionModel {
     Duration DEFAULT_TIMEOUT = seconds(60);
     Number DEFAULT_MEMORY_SIZE = 1024;
+    Number NEW_ACCOUNT_MAX_MEMORY_SIZE = 3008;
+    Number SINGLE_vCPU_MEMORY_SIZE = 1769;
 
     @NotNull
     String handler ();

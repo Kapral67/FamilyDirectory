@@ -18,15 +18,16 @@ public
 enum ApiFunction implements LambdaFunctionModel {
     //    GET_MEMBER("FamilyDirectoryGetMemberLambda", "%s.%s::handleRequest", of("dynamodb:Query", "dynamodb:GetItem"), "get"),
     CREATE_MEMBER("CreateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"), DdbTable.MEMBER,
-                                         List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, singletonList(HttpMethod.POST), "create"),
+                                         List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, singletonList(HttpMethod.POST), "create"),
 
     DELETE_MEMBER("DeleteMember",
                   Map.of(DdbTable.COGNITO, List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:UpdateItem"), DdbTable.MEMBER,
-                         List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query")), List.of("cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"), singletonList("ses:SendEmail"),
+                         List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query")), List.of("cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"), singletonList("ses:SendEmail"), null,
                   singletonList(HttpMethod.DELETE), "delete"),
-    GET_PDF("GetPdf", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null, null, singletonList(HttpMethod.GET), "pdf"),
+    GET_PDF("GetPdf", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null, null, singletonList("s3:GetObject"),
+            singletonList(HttpMethod.GET), "pdf"),
     UPDATE_MEMBER("UpdateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER,
-                                         List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, singletonList(HttpMethod.PUT), "update");
+                                         List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, singletonList(HttpMethod.PUT), "update");
 
     @NotNull
     private final String functionName;
@@ -36,18 +37,21 @@ enum ApiFunction implements LambdaFunctionModel {
     private final List<String> cognitoActions;
     @Nullable
     private final List<String> sesActions;
+    @Nullable
+    private final List<String> sssActions;
     @NotNull
     private final String endpoint;
     @NotNull
     private final List<HttpMethod> methods;
 
     ApiFunction (final @NotNull String functionName, final @Nullable Map<DdbTable, List<String>> ddbActions, final @Nullable List<String> cognitoActions, final @Nullable List<String> sesActions,
-                 final @NotNull List<HttpMethod> methods, final @NotNull String endpoint)
+                 final @Nullable List<String> sssActions, final @NotNull List<HttpMethod> methods, final @NotNull String endpoint)
     {
         this.functionName = "FamilyDirectory%sLambda".formatted(requireNonNull(functionName));
         this.ddbActions = ddbActions;
         this.cognitoActions = cognitoActions;
         this.sesActions = sesActions;
+        this.sssActions = sssActions;
         this.methods = requireNonNull(methods);
         this.endpoint = requireNonNull(endpoint);
     }
@@ -100,7 +104,7 @@ enum ApiFunction implements LambdaFunctionModel {
     @Override
     public @Nullable
     List<String> sssActions () {
-        return null;
+        return this.sssActions;
     }
 
     @Override

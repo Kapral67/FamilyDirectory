@@ -11,6 +11,7 @@ import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.dynamodb.TableProps;
 import software.constructs.Construct;
 import static java.lang.Boolean.TRUE;
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static software.amazon.awscdk.services.dynamodb.BillingMode.PAY_PER_REQUEST;
 import static software.amazon.awscdk.services.dynamodb.TableEncryption.AWS_MANAGED;
@@ -41,6 +42,12 @@ class FamilyDirectoryDynamoDbStack extends Stack {
                                                                         .value(table.getTableArn())
                                                                         .exportName(ddbtable.arnExportName())
                                                                         .build());
+            if (ddbtable.hasStream()) {
+                new CfnOutput(this, requireNonNull(ddbtable.streamArnExportName()), CfnOutputProps.builder()
+                                                                                                  .value(table.getTableStreamArn())
+                                                                                                  .exportName(ddbtable.streamArnExportName())
+                                                                                                  .build());
+            }
         }
     }
 }

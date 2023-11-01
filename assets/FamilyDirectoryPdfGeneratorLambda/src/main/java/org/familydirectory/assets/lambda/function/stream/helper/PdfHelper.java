@@ -1,4 +1,4 @@
-package org.familydirectory.assets.lambda.function.pdf.helper;
+package org.familydirectory.assets.lambda.function.stream.helper;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import java.io.ByteArrayInputStream;

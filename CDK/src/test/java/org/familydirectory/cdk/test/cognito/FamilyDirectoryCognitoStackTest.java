@@ -22,6 +22,7 @@ import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awssdk.regions.Region;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -100,37 +101,35 @@ class FamilyDirectoryCognitoStackTest {
 
         final Capture sesArnCapture = new Capture();
         template.hasResourceProperties("AWS::Cognito::UserPool", objectLike(
-                Map.ofEntries(Map.entry("AccountRecoverySetting", singletonMap("RecoveryMechanisms", singletonList(Map.of("Name", "verified_email", "Priority", 1)))),
-                              Map.entry("AdminCreateUserConfig", singletonMap("AllowAdminCreateUserOnly", !FamilyDirectoryCognitoStack.COGNITO_SELF_SIGN_UP_ENABLED)),
-                              Map.entry("AutoVerifiedAttributes", singletonList("email")), Map.entry("DeletionProtection", "ACTIVE"), Map.entry("EmailConfiguration", Map.of("ConfigurationSet",
-                                                                                                                                                                             FamilyDirectorySesStack.SES_CONFIGURATION_SET_NAME,
-                                                                                                                                                                             "From",
-                                                                                                                                                                             FamilyDirectoryCognitoStack.COGNITO_FROM_EMAIL_ADDRESS,
-                                                                                                                                                                             "ReplyToEmailAddress",
-                                                                                                                                                                             FamilyDirectoryCognitoStack.COGNITO_REPLY_TO_EMAIL_ADDRESS,
-                                                                                                                                                                             "SourceArn",
-                                                                                                                                                                             sesArnCapture)),
-                              Map.entry("LambdaConfig", Map.of("PostConfirmation", singletonMap("Fn::GetAtt", List.of(triggerIdMap.get(TriggerFunction.POST_CONFIRMATION), "Arn")), "PreSignUp",
-                                                               singletonMap("Fn::GetAtt", List.of(triggerIdMap.get(TriggerFunction.PRE_SIGN_UP), "Arn")))), Map.entry("MfaConfiguration", "OFF"),
-                              Map.entry("Policies", singletonMap("PasswordPolicy", Map.of("MinimumLength", FamilyDirectoryCognitoStack.COGNITO_MIN_PASSWORD_LENGTH, "RequireLowercase",
-                                                                                          FamilyDirectoryCognitoStack.COGNITO_REQUIRE_LOWERCASE_IN_PASSWORD, "RequireNumbers",
-                                                                                          FamilyDirectoryCognitoStack.COGNITO_REQUIRE_DIGITS_IN_PASSWORD, "RequireSymbols",
-                                                                                          FamilyDirectoryCognitoStack.COGNITO_REQUIRE_SYMBOLS_IN_PASSWORD, "TemporaryPasswordValidityDays",
-                                                                                          FamilyDirectoryCognitoStack.COGNITO_TEMPORARY_PASSWORD_VALIDITY_DAYS))), Map.entry("Schema", singletonList(
+                Map.ofEntries(entry("AccountRecoverySetting", singletonMap("RecoveryMechanisms", singletonList(Map.of("Name", "verified_email", "Priority", 1)))),
+                              entry("AdminCreateUserConfig", singletonMap("AllowAdminCreateUserOnly", !FamilyDirectoryCognitoStack.COGNITO_SELF_SIGN_UP_ENABLED)),
+                              entry("AutoVerifiedAttributes", singletonList("email")), entry("DeletionProtection", "ACTIVE"), entry("EmailConfiguration", Map.of("ConfigurationSet",
+                                                                                                                                                                 FamilyDirectorySesStack.SES_CONFIGURATION_SET_NAME,
+                                                                                                                                                                 "From",
+                                                                                                                                                                 FamilyDirectoryCognitoStack.COGNITO_FROM_EMAIL_ADDRESS,
+                                                                                                                                                                 "ReplyToEmailAddress",
+                                                                                                                                                                 FamilyDirectoryCognitoStack.COGNITO_REPLY_TO_EMAIL_ADDRESS,
+                                                                                                                                                                 "SourceArn", sesArnCapture)),
+                              entry("LambdaConfig", Map.of("PostConfirmation", singletonMap("Fn::GetAtt", List.of(triggerIdMap.get(TriggerFunction.POST_CONFIRMATION), "Arn")), "PreSignUp",
+                                                           singletonMap("Fn::GetAtt", List.of(triggerIdMap.get(TriggerFunction.PRE_SIGN_UP), "Arn")))), entry("MfaConfiguration", "OFF"),
+                              entry("Policies", singletonMap("PasswordPolicy", Map.of("MinimumLength", FamilyDirectoryCognitoStack.COGNITO_MIN_PASSWORD_LENGTH, "RequireLowercase",
+                                                                                      FamilyDirectoryCognitoStack.COGNITO_REQUIRE_LOWERCASE_IN_PASSWORD, "RequireNumbers",
+                                                                                      FamilyDirectoryCognitoStack.COGNITO_REQUIRE_DIGITS_IN_PASSWORD, "RequireSymbols",
+                                                                                      FamilyDirectoryCognitoStack.COGNITO_REQUIRE_SYMBOLS_IN_PASSWORD, "TemporaryPasswordValidityDays",
+                                                                                      FamilyDirectoryCognitoStack.COGNITO_TEMPORARY_PASSWORD_VALIDITY_DAYS))), entry("Schema", singletonList(
                                 Map.of("Mutable", FamilyDirectoryCognitoStack.COGNITO_EMAIL_MUTABLE_ATTRIBUTE, "Name", "email", "Required",
                                        FamilyDirectoryCognitoStack.COGNITO_EMAIL_REQUIRE_ATTRIBUTE))),
-                              Map.entry("UserAttributeUpdateSettings", singletonMap("AttributesRequireVerificationBeforeUpdate", singletonList("email"))),
-                              Map.entry("UserPoolAddOns", singletonMap("AdvancedSecurityMode", "OFF")), Map.entry("UsernameAttributes", singletonList("email")),
-                              Map.entry("UsernameConfiguration", singletonMap("CaseSensitive", FamilyDirectoryCognitoStack.COGNITO_SIGN_IN_CASE_SENSITIVE)), Map.entry("VerificationMessageTemplate",
-                                                                                                                                                                       Map.of("DefaultEmailOption",
-                                                                                                                                                                              "CONFIRM_WITH_LINK",
-                                                                                                                                                                              "EmailMessageByLink",
-                                                                                                                                                                              "Verify your account by" +
-                                                                                                                                                                              " clicking on {##Verify" +
-                                                                                                                                                                              " Email##}",
-                                                                                                                                                                              "EmailSubjectByLink",
-                                                                                                                                                                              "Verify your new " +
-                                                                                                                                                                              "account")))));
+                              entry("UserAttributeUpdateSettings", singletonMap("AttributesRequireVerificationBeforeUpdate", singletonList("email"))),
+                              entry("UserPoolAddOns", singletonMap("AdvancedSecurityMode", "OFF")), entry("UsernameAttributes", singletonList("email")),
+                              entry("UsernameConfiguration", singletonMap("CaseSensitive", FamilyDirectoryCognitoStack.COGNITO_SIGN_IN_CASE_SENSITIVE)), entry("VerificationMessageTemplate",
+                                                                                                                                                               Map.of("DefaultEmailOption",
+                                                                                                                                                                      "CONFIRM_WITH_LINK",
+                                                                                                                                                                      "EmailMessageByLink",
+                                                                                                                                                                      "Verify your account by" +
+                                                                                                                                                                      " clicking on {##Verify" +
+                                                                                                                                                                      " Email##}", "EmailSubjectByLink",
+                                                                                                                                                                      "Verify your new " +
+                                                                                                                                                                      "account")))));
         assertTrue(sesArnCapture.asObject()
                                 .toString()
                                 .contains("ses:%s:%s:identity/%s".formatted(FamilyDirectoryCdkApp.DEFAULT_REGION, FamilyDirectoryCdkApp.DEFAULT_ACCOUNT, FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)));
@@ -141,17 +140,18 @@ class FamilyDirectoryCognitoStackTest {
                            "SourceArn", singletonMap("Fn::GetAtt", List.of(userPoolIdCapture.asString(), "Arn")))));
         }
 
-        template.hasResourceProperties("AWS::Cognito::UserPoolClient", objectLike(
-                Map.ofEntries(Map.entry("AllowedOAuthFlows", singletonList("code")), Map.entry("AllowedOAuthFlowsUserPoolClient", true),
-                              Map.entry("AllowedOAuthScopes", List.of("email", "openid", "aws.cognito.signin.user.admin", "profile")),
-                              Map.entry("CallbackURLs", singletonList(FamilyDirectoryCognitoStack.COGNITO_SIGN_IN_REDIRECT_URI)),
-                              Map.entry("ExplicitAuthFlows", List.of("ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH")),
-                              Map.entry("GenerateSecret", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_GENERATE_SECRET), Map.entry("PreventUserExistenceErrors", "ENABLED"),
-                              Map.entry("ReadAttributes", List.of("email", "email_verified")), Map.entry("SupportedIdentityProviders",
-                                                                                                         FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_IDENTITY_PROVIDERS.stream()
-                                                                                                                                                                                .map(UserPoolClientIdentityProvider::getName)
-                                                                                                                                                                                .toList()),
-                              Map.entry("UserPoolId", singletonMap("Ref", userPoolIdCapture.asString())), Map.entry("WriteAttributes", singletonList("email")))));
+        template.hasResourceProperties("AWS::Cognito::UserPoolClient", objectLike(Map.ofEntries(entry("AllowedOAuthFlows", singletonList("code")), entry("AllowedOAuthFlowsUserPoolClient", true),
+                                                                                                entry("AllowedOAuthScopes", List.of("email", "openid", "aws.cognito.signin.user.admin", "profile")),
+                                                                                                entry("CallbackURLs", singletonList(FamilyDirectoryCognitoStack.COGNITO_SIGN_IN_REDIRECT_URI)),
+                                                                                                entry("ExplicitAuthFlows", List.of("ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH")),
+                                                                                                entry("GenerateSecret", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_GENERATE_SECRET),
+                                                                                                entry("PreventUserExistenceErrors", "ENABLED"),
+                                                                                                entry("ReadAttributes", List.of("email", "email_verified")), entry("SupportedIdentityProviders",
+                                                                                                                                                                   FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_IDENTITY_PROVIDERS.stream()
+                                                                                                                                                                                                                                          .map(UserPoolClientIdentityProvider::getName)
+                                                                                                                                                                                                                                          .toList()),
+                                                                                                entry("UserPoolId", singletonMap("Ref", userPoolIdCapture.asString())),
+                                                                                                entry("WriteAttributes", singletonList("email")))));
 
         final Map<String, Map<String, List<Map<String, String>>>> ssmReaderIamPolicy = singletonMap("PolicyDocument", singletonMap("Statement", singletonList(
                 Map.of("Action", "ssm:GetParameter", "Effect", "Allow", "Resource", "*"))));
