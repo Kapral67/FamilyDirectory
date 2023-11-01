@@ -15,11 +15,9 @@ function user_error {
 }
 
 function clean_maven_local {
-  local cur
-  cur="$(pwd)"
-  cd "$HOME/.m2/repository/org" || user_error "Maven Repository Not Existent In Default Location"
-  rm -rf familydirectory
-  cd "$cur" || script_error
+  local repo
+  repo="$(mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout)"
+  rm -rf "$repo/org/familydirectory"
   return 0
 }
 
