@@ -1,40 +1,20 @@
-## Oct 30
+## Nov 02
 
-### Finish CognitoStack
+### CognitoStack
 
-- Callback URLs, Logout URLs, etc.
+- [x] Callback URLs, Logout URLs, etc.
 
-### CDK
+#### OAuth2 Flow
 
-- ==Domain Stack has static reference to A record for `example.com`==
+- Needs rethinking, since we want to use authorization code flow, but doing so client-side might not even make sense
 
-### S3
+### DomainStack
 
-- [x] Need S3 versioned bucket to store generated pdfs
+- ==Has static reference to A record for `example.com`==
 
-- [x] Need GET_PDF API to facilitate generating 302 redirect-able signed s3 urls to access pdf
-
-### PDF Realtime ~~vs Scheduled~~
-
-- [x] Need cdk code for pdf generator lambda
-
-### Initialize Family Directory?
+### Admin Initialize Family Directory?
 
 - How should admins initialize a FamilyDirectory?
-
-### DISPLAY API (MEMBER)
-
-1. Cognito User Logs in
-2. Request is made to get their member info and returned as json
-
-### DISPLAY API (FAMILY)
-
-- *This is probably a stretch goal at this point, but would make the ui nicer*
-
-### UPDATE API
-
-- [x] We should add an id field to the event so that way if changes potentially affect the key of the
-  to-be-updated-member, the request can still be processed
 
 ---
 
