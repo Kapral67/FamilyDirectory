@@ -13,12 +13,13 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
+import software.amazon.awssdk.utils.SdkAutoCloseable;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonMap;
 import static java.util.Optional.ofNullable;
 
 public
-interface LambdaFunctionHelper {
+interface LambdaFunctionHelper extends SdkAutoCloseable {
     @NotNull
     LambdaLogger getLogger ();
 
@@ -49,4 +50,11 @@ interface LambdaFunctionHelper {
 
     @NotNull
     DynamoDbClient getDynamoDbClient ();
+
+    @Override
+    default
+    void close () {
+        this.getDynamoDbClient()
+            .close();
+    }
 }

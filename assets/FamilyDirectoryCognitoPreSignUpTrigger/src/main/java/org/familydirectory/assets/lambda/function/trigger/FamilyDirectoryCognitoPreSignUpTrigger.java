@@ -24,13 +24,11 @@ import static java.util.Optional.ofNullable;
 public
 class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUserPoolPreSignUpEvent, CognitoUserPoolPreSignUpEvent> {
 
-    private static final DynamoDbClient DDB_CLIENT = DynamoDbClient.create();
-
     @Override
     public final @NotNull
     CognitoUserPoolPreSignUpEvent handleRequest (final @NotNull CognitoUserPoolPreSignUpEvent event, final @NotNull Context context)
     {
-        try {
+        try (final DynamoDbClient dynamoDbClient = DynamoDbClient.create()) {
             final LambdaLogger logger = context.getLogger();
 
             final String email = ofNullable(event.getRequest()
@@ -48,7 +46,7 @@ class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUs
                                                                      .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(email)))
                                                                      .limit(2)
                                                                      .build();
-            final QueryResponse memberEmailQueryResponse = DDB_CLIENT.query(memberEmailQueryRequest);
+            final QueryResponse memberEmailQueryResponse = dynamoDbClient.query(memberEmailQueryRequest);
             if (memberEmailQueryResponse.items()
                                         .isEmpty())
             {
@@ -77,7 +75,7 @@ class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUs
                                                                        .expressionAttributeValues(singletonMap(":member", AttributeValue.fromS(memberId)))
                                                                        .limit(1)
                                                                        .build();
-            final QueryResponse cognitoMemberQueryResponse = DDB_CLIENT.query(cognitoMemberQueryRequest);
+            final QueryResponse cognitoMemberQueryResponse = dynamoDbClient.query(cognitoMemberQueryRequest);
             if (!cognitoMemberQueryResponse.items()
                                            .isEmpty())
             {

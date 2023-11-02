@@ -31,50 +31,45 @@ import static java.util.Optional.ofNullable;
 public
 class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<CognitoUserPoolPostConfirmationEvent, CognitoUserPoolPostConfirmationEvent> {
 
-    private static final DynamoDbClient DDB_CLIENT = DynamoDbClient.create();
-    private static final CognitoIdentityProviderClient COGNITO_CLIENT = CognitoIdentityProviderClient.create();
-
     @Override
     public final @NotNull
     CognitoUserPoolPostConfirmationEvent handleRequest (final @NotNull CognitoUserPoolPostConfirmationEvent event, final @NotNull Context context)
     {
-        try {
+        try (final CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create(); final DynamoDbClient dynamoDbClient = DynamoDbClient.create()) {
             final LambdaLogger logger = context.getLogger();
-            final String email;
-            final String sub;
-            email = ofNullable(event.getRequest()
-                                    .getUserAttributes()
-                                    .get("email")).filter(s -> s.contains("@"))
-                                                  .orElseThrow(() -> {
-                                                      logger.log("ERROR: Cognito <USER,`%s`> Email Not Found".formatted(event.getUserName()), ERROR);
-                                                      final IllegalStateException e = new IllegalStateException();
-                                                      adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), null, e);
-                                                      return e;
-                                                  });
-            sub = ofNullable(event.getRequest()
-                                  .getUserAttributes()
-                                  .get("sub")).filter(Predicate.not(String::isBlank))
-                                              .orElseThrow(() -> {
-                                                  logger.log("ERROR: Cognito <EMAIL,`%s`> Sub Not Found".formatted(email), ERROR);
-                                                  final IllegalStateException e = new IllegalStateException();
-                                                  adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
-                                                  return e;
-                                              });
+            final String email = ofNullable(event.getRequest()
+                                                 .getUserAttributes()
+                                                 .get("email")).filter(s -> s.contains("@"))
+                                                               .orElseThrow(() -> {
+                                                                   logger.log("ERROR: Cognito <USER,`%s`> Email Not Found".formatted(event.getUserName()), ERROR);
+                                                                   final IllegalStateException e = new IllegalStateException();
+                                                                   adminDisableUser(cognitoClient, logger, event.getUserPoolId(), event.getUserName(), null, e);
+                                                                   return e;
+                                                               });
+            final String sub = ofNullable(event.getRequest()
+                                               .getUserAttributes()
+                                               .get("sub")).filter(Predicate.not(String::isBlank))
+                                                           .orElseThrow(() -> {
+                                                               logger.log("ERROR: Cognito <EMAIL,`%s`> Sub Not Found".formatted(email), ERROR);
+                                                               final IllegalStateException e = new IllegalStateException();
+                                                               adminDisableUser(cognitoClient, logger, event.getUserPoolId(), event.getUserName(), email, e);
+                                                               return e;
+                                                           });
 
             //  Check if Entry in Cognito Ddb Already Exists
             try {
-                if (!DDB_CLIENT.getItem(GetItemRequest.builder()
-                                                      .tableName(DdbTable.COGNITO.name())
-                                                      .key(singletonMap(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(sub)))
-                                                      .build())
-                               .item()
-                               .isEmpty())
+                if (!dynamoDbClient.getItem(GetItemRequest.builder()
+                                                          .tableName(DdbTable.COGNITO.name())
+                                                          .key(singletonMap(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(sub)))
+                                                          .build())
+                                   .item()
+                                   .isEmpty())
                 {
                     //          If There Is a PreExisting Entry, Then The User is Just Changing Their Email For Cognito
                     return getValidEvent(event, email);
                 }
             } catch (final Throwable e) {
-                adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
+                adminDisableUser(cognitoClient, logger, event.getUserPoolId(), event.getUserName(), email, e);
                 LambdaUtils.logTrace(logger, e, ERROR);
                 throw e;
             }
@@ -87,13 +82,13 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                                                      .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(email)))
                                                                      .limit(2)
                                                                      .build();
-            final QueryResponse memberEmailQueryResponse = DDB_CLIENT.query(memberEmailQueryRequest);
+            final QueryResponse memberEmailQueryResponse = dynamoDbClient.query(memberEmailQueryRequest);
             if (memberEmailQueryResponse.items()
                                         .isEmpty())
             {
                 logger.log("ERROR: No Member Found for <EMAIL,`%s`>".formatted(email), ERROR);
                 final IllegalStateException e = new IllegalStateException();
-                adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
+                adminDisableUser(cognitoClient, logger, event.getUserPoolId(), event.getUserName(), email, e);
                 throw e;
             } else if (memberEmailQueryResponse.items()
                                                .size() > 1)
@@ -101,7 +96,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
             {
                 logger.log("ERROR: Multiple Members Found for <EMAIL,`%s`>".formatted(email), ERROR);
                 final IllegalStateException e = new IllegalStateException();
-                adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
+                adminDisableUser(cognitoClient, logger, event.getUserPoolId(), event.getUserName(), email, e);
                 throw e;
             }
             final String memberId = ofNullable(memberEmailQueryResponse.items()
@@ -112,13 +107,13 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                                                                                                      .orElseThrow();
             //  Map Cognito Sub -> Member Id
             try {
-                DDB_CLIENT.putItem(PutItemRequest.builder()
-                                                 .tableName(DdbTable.COGNITO.name())
-                                                 .item(Map.of(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(sub), CognitoTableParameter.MEMBER.jsonFieldName(),
-                                                              AttributeValue.fromS(memberId)))
-                                                 .build());
+                dynamoDbClient.putItem(PutItemRequest.builder()
+                                                     .tableName(DdbTable.COGNITO.name())
+                                                     .item(Map.of(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(sub), CognitoTableParameter.MEMBER.jsonFieldName(),
+                                                                  AttributeValue.fromS(memberId)))
+                                                     .build());
             } catch (final Throwable e) {
-                adminDisableUser(logger, event.getUserPoolId(), event.getUserName(), email, e);
+                adminDisableUser(cognitoClient, logger, event.getUserPoolId(), event.getUserName(), email, e);
                 LambdaUtils.logTrace(logger, e, ERROR);
                 throw e;
             }
@@ -147,13 +142,15 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
     }
 
     private static
-    void adminDisableUser (final @NotNull LambdaLogger logger, final @NotNull String userPoolId, final @NotNull String userName, final @Nullable String email, final @Nullable Throwable e) {
+    void adminDisableUser (final @NotNull CognitoIdentityProviderClient cognitoClient, final @NotNull LambdaLogger logger, final @NotNull String userPoolId, final @NotNull String userName,
+                           final @Nullable String email, final @Nullable Throwable e)
+    {
         try {
             try {
-                COGNITO_CLIENT.adminDisableUser(AdminDisableUserRequest.builder()
-                                                                       .userPoolId(userPoolId)
-                                                                       .username(userName)
-                                                                       .build());
+                cognitoClient.adminDisableUser(AdminDisableUserRequest.builder()
+                                                                      .userPoolId(userPoolId)
+                                                                      .username(userName)
+                                                                      .build());
             } catch (final Throwable x) {
                 logger.log("FATAL: Failed to Disable User <USERNAME,`%s`>".formatted(userName), FATAL);
                 throw x;

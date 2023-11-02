@@ -2,10 +2,9 @@ package org.familydirectory.cdk.apigateway;
 
 import java.util.List;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
+import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
-import software.amazon.awscdk.CfnOutput;
-import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -38,7 +37,6 @@ import software.amazon.awscdk.services.ssm.IStringParameter;
 import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
 import static software.amazon.awscdk.Fn.importValue;
@@ -47,14 +45,17 @@ public
 class FamilyDirectoryApiGatewayStack extends Stack {
     public static final String API_CERTIFICATE_RESOURCE_ID = "ApiCertificate";
     public static final String API_A_RECORD_RESOURCE_ID = "ApiARecord";
-    public static final String API_CERTIFICATE_NAME = "%s-%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME, API_CERTIFICATE_RESOURCE_ID);
-    public static final String API_CERTIFICATE_ARN_EXPORT_NAME = "%sArn".formatted(API_CERTIFICATE_RESOURCE_ID);
-    public static final String API_DOMAIN_NAME_RESOURCE_ID = "ApiDomainName";
     public static final String API_DOMAIN_NAME = "%s.%s".formatted(getenv("ORG_FAMILYDIRECTORY_API_SUBDOMAIN_NAME"), FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
+    public static final String API_CERTIFICATE_NAME = "%s-%s".formatted(API_DOMAIN_NAME, API_CERTIFICATE_RESOURCE_ID);
+    public static final String API_DOMAIN_NAME_RESOURCE_ID = "ApiDomainName";
     public static final String API_COGNITO_AUTHORIZER_RESOURCE_ID = "HttpUserPoolAuthorizer";
-    private static final String HTTP_API_RESOURCE_ID = "HttpApi";
-    private static final String SECURE_URL_PREFIX = "https://";
-    private static final Duration CORS_MAX_AGE = Duration.days(1);
+    public static final String HTTP_API_RESOURCE_ID = "HttpApi";
+    public static final Duration CORS_MAX_AGE = Duration.days(1);
+    public static final boolean HTTP_API_DISABLE_EXECUTE_API_ENDPOINT = true;
+    public static final boolean CORS_ALLOW_CREDENTIALS = false;
+    public static final List<String> CORS_ALLOW_ORIGIN = singletonList(FamilyDirectoryCdkApp.HTTPS_PREFIX + FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
+    public static final List<String> CORS_ALLOW_HEADERS = List.of("X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token");
+    public static final List<String> HTTP_API_ROUTE_AUTHORIZATION_SCOPES = List.of("openid", "email");
 
     public
     FamilyDirectoryApiGatewayStack (final Construct scope, final String id, final StackProps stackProps) {
@@ -75,10 +76,6 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                                      .validation(CertificateValidation.fromDns(hostedZone))
                                                                      .build();
         final Certificate apiCertificate = new Certificate(this, API_CERTIFICATE_RESOURCE_ID, apiCertificateProps);
-        new CfnOutput(this, API_CERTIFICATE_ARN_EXPORT_NAME, CfnOutputProps.builder()
-                                                                           .value(apiCertificate.getCertificateArn())
-                                                                           .exportName(API_CERTIFICATE_ARN_EXPORT_NAME)
-                                                                           .build());
 
 //  Api Domain
         final DomainNameProps apiDomainNameProps = DomainNameProps.builder()
@@ -98,17 +95,19 @@ class FamilyDirectoryApiGatewayStack extends Stack {
 
 //  Configure CORS options for httpApi
         final CorsPreflightOptions httpApiPropsCorsOptions = CorsPreflightOptions.builder()
-                                                                                 .allowCredentials(FALSE)
-                                                                                 .allowMethods(ApiFunction.getAllowedMethods())
-                                                                                 .allowOrigins(singletonList("%s*.%s".formatted(SECURE_URL_PREFIX, hostedZone.getZoneName())))
+                                                                                 .allowCredentials(CORS_ALLOW_CREDENTIALS)
+                                                                                 .allowMethods(ApiFunction.getAllowedMethods()
+                                                                                                          .stream()
+                                                                                                          .toList())
+                                                                                 .allowOrigins(CORS_ALLOW_ORIGIN)
                                                                                  .maxAge(CORS_MAX_AGE)
-                                                                                 .allowHeaders(List.of("X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token"))
+                                                                                 .allowHeaders(CORS_ALLOW_HEADERS)
                                                                                  .build();
 //  Configure HttpApi Options
         final HttpApiProps httpApiProps = HttpApiProps.builder()
                                                       .corsPreflight(httpApiPropsCorsOptions)
                                                       .createDefaultStage(FALSE)
-                                                      .disableExecuteApiEndpoint(TRUE)
+                                                      .disableExecuteApiEndpoint(HTTP_API_DISABLE_EXECUTE_API_ENDPOINT)
                                                       .build();
 //  Create HttpApi
         final HttpApi httpApi = new HttpApi(this, HTTP_API_RESOURCE_ID, httpApiProps);
@@ -129,13 +128,12 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                                                           Function.fromFunctionArn(this, func.functionName(), importValue(func.arnExportName())));
 //      Add Lambda as HttpIntegration to HttpApi
             httpApi.addRoutes(AddRoutesOptions.builder()
-                                              .authorizationScopes(List.of("openid", "email"))
+                                              .authorizationScopes(HTTP_API_ROUTE_AUTHORIZATION_SCOPES)
                                               .authorizer(userPoolAuthorizer)
                                               .path(func.endpoint())
                                               .methods(func.methods())
                                               .integration(httpLambdaIntegration)
                                               .build());
-            /** TODO: might need a {@link software.amazon.awscdk.CfnOutput} here */
         }
     }
 }

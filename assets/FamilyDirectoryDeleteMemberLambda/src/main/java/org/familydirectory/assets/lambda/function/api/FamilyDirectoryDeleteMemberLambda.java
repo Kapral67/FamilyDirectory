@@ -17,9 +17,10 @@ public
 class FamilyDirectoryDeleteMemberLambda implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
     @Override
     public final @NotNull
-    APIGatewayProxyResponseEvent handleRequest (final @NotNull APIGatewayProxyRequestEvent requestEvent, final @NotNull Context context) {
-        try {
-            final DeleteHelper deleteHelper = new DeleteHelper(context.getLogger(), requestEvent);
+    APIGatewayProxyResponseEvent handleRequest (final @NotNull APIGatewayProxyRequestEvent requestEvent, final @NotNull Context context)
+    {
+
+        try (final DeleteHelper deleteHelper = new DeleteHelper(context.getLogger(), requestEvent)) {
 
 //      Get Caller
             final ApiHelper.Caller caller = deleteHelper.getCaller();
@@ -37,13 +38,13 @@ class FamilyDirectoryDeleteMemberLambda implements RequestHandler<APIGatewayProx
 //      Delete Cognito Account & Notify User of Account Deletion
             deleteHelper.deleteCognitoAccountAndNotify(deleteEvent.ddbMemberId());
 
+            return new APIGatewayProxyResponseEvent().withStatusCode(SC_ACCEPTED);
+
         } catch (final ApiHelper.ResponseException e) {
             return e.getResponseEvent();
         } catch (final Throwable e) {
             LambdaUtils.logTrace(context.getLogger(), e, FATAL);
             return new APIGatewayProxyResponseEvent().withStatusCode(SC_INTERNAL_SERVER_ERROR);
         }
-
-        return new APIGatewayProxyResponseEvent().withStatusCode(SC_ACCEPTED);
     }
 }

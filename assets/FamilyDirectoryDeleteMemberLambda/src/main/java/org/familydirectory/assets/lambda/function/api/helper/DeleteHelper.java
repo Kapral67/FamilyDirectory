@@ -208,6 +208,13 @@ class DeleteHelper extends ApiHelper {
     }
 
     @Override
+    public
+    void close () {
+        super.close();
+        this.cognitoClient.close();
+    }
+
+    @Override
     public @NotNull
     APIGatewayProxyRequestEvent getRequestEvent () {
         return this.requestEvent;

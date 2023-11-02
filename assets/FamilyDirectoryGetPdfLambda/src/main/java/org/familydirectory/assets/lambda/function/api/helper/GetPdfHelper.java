@@ -64,4 +64,11 @@ class GetPdfHelper extends ApiHelper {
     DynamoDbClient getDynamoDbClient () {
         return this.dynamoDbClient;
     }
+
+    @Override
+    public
+    void close () {
+        super.close();
+        this.s3Presigner.close();
+    }
 }

@@ -3,7 +3,6 @@ package org.familydirectory.assets.lambda.function.stream.helper;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -15,9 +14,7 @@ import java.util.function.Predicate;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.familydirectory.assets.ddb.enums.DdbTable;
-import org.familydirectory.assets.ddb.enums.SuffixType;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
-import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
@@ -27,7 +24,6 @@ import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.s3.S3Client;
 import static java.lang.System.getenv;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -35,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 public final
-class PdfHelper implements LambdaFunctionHelper, Closeable {
+class PdfHelper implements LambdaFunctionHelper {
     private static final String ROOT_MEMBER_ID = getenv(LambdaUtils.EnvVar.ROOT_ID.name());
     @NotNull
     private final PDDocument pdf = new PDDocument();
@@ -43,8 +39,6 @@ class PdfHelper implements LambdaFunctionHelper, Closeable {
     private final LocalDate date = LocalDate.now();
     @NotNull
     private final DynamoDbClient dynamoDbClient = DynamoDbClient.create();
-    @NotNull
-    private final S3Client s3Client = S3Client.create();
     @NotNull
     private final LambdaLogger logger;
     @NotNull
@@ -74,37 +68,7 @@ class PdfHelper implements LambdaFunctionHelper, Closeable {
     private
     Member getMemberById (final @NotNull String id) {
         final Map<String, AttributeValue> memberMap = requireNonNull(this.getDdbItem(id, DdbTable.MEMBER));
-        final Member.Builder memberBuilder = Member.builder();
-        for (final MemberTableParameter param : MemberTableParameter.values()) {
-            ofNullable(memberMap.get(param.jsonFieldName())).ifPresent(av -> {
-                switch (param) {
-                    case FIRST_NAME -> memberBuilder.firstName(av.s());
-                    case MIDDLE_NAME -> memberBuilder.middleName(av.s());
-                    case LAST_NAME -> memberBuilder.lastName(av.s());
-                    case BIRTHDAY -> memberBuilder.birthday(Member.convertStringToDate(av.s()));
-                    case DEATHDAY -> memberBuilder.deathday(Member.convertStringToDate(av.s()));
-                    case EMAIL -> memberBuilder.email(av.s());
-                    case ADDRESS -> {
-                        if (!av.ss()
-                               .isEmpty())
-                        {
-                            memberBuilder.address(av.ss());
-                        }
-                    }
-                    case PHONES -> {
-                        if (!av.m()
-                               .isEmpty())
-                        {
-                            memberBuilder.phones(Member.convertPhonesDdbMap(av.m()));
-                        }
-                    }
-                    case SUFFIX -> memberBuilder.suffix(SuffixType.forValue(av.s()));
-                    default -> {
-                    }
-                }
-            });
-        }
-        return memberBuilder.build();
+        return Member.convertDdbMap(memberMap);
     }
 
     private
@@ -127,15 +91,6 @@ class PdfHelper implements LambdaFunctionHelper, Closeable {
         this.pdf.save(pdfOutputStream);
         final byte[] pdfData = pdfOutputStream.toByteArray();
         return RequestBody.fromInputStream(new ByteArrayInputStream(pdfData), pdfData.length);
-    }
-
-    @Override
-    public
-    void close () throws IOException {
-        if (nonNull(this.page)) {
-            this.page.close();
-        }
-        this.pdf.close();
     }
 
     private
@@ -234,5 +189,28 @@ class PdfHelper implements LambdaFunctionHelper, Closeable {
     public @NotNull
     DynamoDbClient getDynamoDbClient () {
         return this.dynamoDbClient;
+    }
+
+    @Override
+    public
+    void close () {
+        LambdaFunctionHelper.super.close();
+        IOException suppressed = null;
+        if (nonNull(this.page)) {
+            try {
+                this.page.close();
+            } catch (final IOException e) {
+                suppressed = e;
+            }
+        }
+        try {
+            this.pdf.close();
+        } catch (final IOException e) {
+            final RuntimeException unchecked = new RuntimeException(e);
+            if (nonNull(suppressed)) {
+                unchecked.addSuppressed(suppressed);
+            }
+            throw unchecked;
+        }
     }
 }

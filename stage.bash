@@ -97,6 +97,9 @@ mvn package
 cd "$STAGE_DIR/assets/FamilyDirectoryDeleteMemberLambda" || script_error
 mvn package
 
+cd "$STAGE_DIR/assets/FamilyDirectoryGetMemberLambda" || script_error
+mvn package
+
 cd "$STAGE_DIR/assets/FamilyDirectoryGetPdfLambda" || script_error
 mvn package
 

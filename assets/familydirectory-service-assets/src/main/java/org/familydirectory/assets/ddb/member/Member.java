@@ -9,16 +9,19 @@ import java.util.Map;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
+import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberModel;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.ddb.utils.LocalDateDeserializer;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
 import static java.time.LocalDate.now;
 import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.apache.commons.text.WordUtils.capitalizeFully;
 
@@ -28,39 +31,31 @@ class Member extends MemberModel {
     @JsonProperty("firstName")
     @NotNull
     private final String firstName;
-
     @JsonProperty("middleName")
     @Nullable
     private final String middleName;
-
     @JsonProperty("lastName")
     @NotNull
     private final String lastName;
-
     @JsonProperty("birthday")
     @JsonFormat(shape = STRING, pattern = DdbUtils.DATE_FORMAT_STRING)
     @JsonDeserialize(using = LocalDateDeserializer.class)
     @NotNull
     private final LocalDate birthday;
-
     @JsonProperty("email")
     @Nullable
     private final String email;
-
     @JsonProperty("deathday")
     @JsonFormat(shape = STRING, pattern = DdbUtils.DATE_FORMAT_STRING)
     @JsonDeserialize(using = LocalDateDeserializer.class)
     @Nullable
     private final LocalDate deathday;
-
     @JsonProperty("phones")
     @Nullable
     private final Map<PhoneType, String> phones;
-
     @JsonProperty("address")
     @Nullable
     private final List<String> address;
-
     @JsonProperty("suffix")
     @Nullable
     private final SuffixType suffix;
@@ -79,6 +74,42 @@ class Member extends MemberModel {
         this.phones = phones;
         this.address = address;
         this.suffix = suffix;
+    }
+
+    @NotNull
+    public static
+    Member convertDdbMap (final @NotNull Map<String, AttributeValue> memberMap) {
+        final Member.Builder memberBuilder = Member.builder();
+        for (final MemberTableParameter param : MemberTableParameter.values()) {
+            ofNullable(memberMap.get(param.jsonFieldName())).ifPresent(av -> {
+                switch (param) {
+                    case FIRST_NAME -> memberBuilder.firstName(av.s());
+                    case MIDDLE_NAME -> memberBuilder.middleName(av.s());
+                    case LAST_NAME -> memberBuilder.lastName(av.s());
+                    case BIRTHDAY -> memberBuilder.birthday(Member.convertStringToDate(av.s()));
+                    case DEATHDAY -> memberBuilder.deathday(Member.convertStringToDate(av.s()));
+                    case EMAIL -> memberBuilder.email(av.s());
+                    case ADDRESS -> {
+                        if (!av.ss()
+                               .isEmpty())
+                        {
+                            memberBuilder.address(av.ss());
+                        }
+                    }
+                    case PHONES -> {
+                        if (!av.m()
+                               .isEmpty())
+                        {
+                            memberBuilder.phones(Member.convertPhonesDdbMap(av.m()));
+                        }
+                    }
+                    case SUFFIX -> memberBuilder.suffix(SuffixType.forValue(av.s()));
+                    default -> {
+                    }
+                }
+            });
+        }
+        return memberBuilder.build();
     }
 
     @Contract(" -> new")

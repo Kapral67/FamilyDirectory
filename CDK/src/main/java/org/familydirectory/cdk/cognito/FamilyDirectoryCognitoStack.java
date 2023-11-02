@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
+import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.customresource.SSMParameterReader;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
@@ -81,7 +82,6 @@ class FamilyDirectoryCognitoStack extends Stack {
     public static final String COGNITO_FROM_EMAIL_ADDRESS = "no-reply@%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
     public static final String COGNITO_REPLY_TO_EMAIL_ADDRESS = getenv("ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS");
     public static final String COGNITO_SIGN_IN_URL_EXPORT_NAME = "CognitoSignInUrl";
-    public static final String COGNITO_SIGN_IN_REDIRECT_URI = "https://example.com";
     public static final List<UserPoolClientIdentityProvider> COGNITO_USER_POOL_CLIENT_IDENTITY_PROVIDERS = singletonList(COGNITO);
     public static final Number COGNITO_MIN_PASSWORD_LENGTH = 8;
     public static final boolean COGNITO_REQUIRE_LOWERCASE_IN_PASSWORD = true;
@@ -178,9 +178,8 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                                     .build())
                                                                                  .generateSecret(COGNITO_USER_POOL_CLIENT_GENERATE_SECRET)
                                                                                  .oAuth(OAuthSettings.builder()
-                                                                                                     .callbackUrls(singletonList(COGNITO_SIGN_IN_REDIRECT_URI))
-                                                                                                     // TODO: ADD LOGOUT URLS
-//                                                                                                   .logoutUrls(singletonList(""))
+                                                                                                     .callbackUrls(singletonList(FamilyDirectoryCdkApp.HTTPS_PREFIX + hostedZone.getZoneName()))
+                                                                                                     .logoutUrls(singletonList(FamilyDirectoryCdkApp.HTTPS_PREFIX + hostedZone.getZoneName()))
                                                                                                      .flows(OAuthFlows.builder()
                                                                                                                       .authorizationCodeGrant(TRUE)
                                                                                                                       .build())
@@ -234,9 +233,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                              .build();
         new ARecord(this, COGNITO_A_RECORD_RESOURCE_ID, cognitoARecordProps);
         final String userPoolSignInUrl = userPoolDomain.signInUrl(userPoolClient, SignInUrlOptions.builder()
-                                                                                                  // TODO: CHANGE TO VIEW URL WHEN FRONTEND EXISTS
-//                                                                                                  .redirectUri(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
-                                                                                                  .redirectUri(COGNITO_SIGN_IN_REDIRECT_URI)
+                                                                                                  .redirectUri(FamilyDirectoryCdkApp.HTTPS_PREFIX + hostedZone.getZoneName())
                                                                                                   .build());
         new CfnOutput(this, COGNITO_SIGN_IN_URL_EXPORT_NAME, CfnOutputProps.builder()
                                                                            .value(userPoolSignInUrl)

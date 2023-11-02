@@ -21,8 +21,7 @@ class FamilyDirectoryCreateMemberLambda implements RequestHandler<APIGatewayProx
     public final @NotNull
     APIGatewayProxyResponseEvent handleRequest (final @NotNull APIGatewayProxyRequestEvent event, final @NotNull Context context)
     {
-        try {
-            final CreateHelper createHelper = new CreateHelper(context.getLogger(), event);
+        try (final CreateHelper createHelper = new CreateHelper(context.getLogger(), event)) {
 
 //      Get Caller
             final ApiHelper.Caller caller = createHelper.getCaller();
@@ -37,13 +36,13 @@ class FamilyDirectoryCreateMemberLambda implements RequestHandler<APIGatewayProx
             createHelper.getDynamoDbClient()
                         .transactWriteItems(transaction);
 
+            return new APIGatewayProxyResponseEvent().withStatusCode(SC_CREATED);
+
         } catch (final ApiHelper.ResponseException e) {
             return e.getResponseEvent();
         } catch (final Throwable e) {
             LambdaUtils.logTrace(context.getLogger(), e, FATAL);
             return new APIGatewayProxyResponseEvent().withStatusCode(SC_INTERNAL_SERVER_ERROR);
         }
-
-        return new APIGatewayProxyResponseEvent().withStatusCode(SC_CREATED);
     }
 }

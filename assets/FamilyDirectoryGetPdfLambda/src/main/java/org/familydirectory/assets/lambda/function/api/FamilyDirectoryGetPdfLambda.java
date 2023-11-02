@@ -17,13 +17,14 @@ public
 class FamilyDirectoryGetPdfLambda implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
     @Override
     public final @NotNull
-    APIGatewayProxyResponseEvent handleRequest (final @NotNull APIGatewayProxyRequestEvent requestEvent, final @NotNull Context context) {
-        try {
-            final GetPdfHelper pdfHelper = new GetPdfHelper(context.getLogger(), requestEvent);
+    APIGatewayProxyResponseEvent handleRequest (final @NotNull APIGatewayProxyRequestEvent requestEvent, final @NotNull Context context)
+    {
+        try (final GetPdfHelper pdfHelper = new GetPdfHelper(context.getLogger(), requestEvent)) {
 
             return new APIGatewayProxyResponseEvent().withStatusCode(SC_MOVED_TEMPORARILY)
                                                      .withHeaders(singletonMap("Location", pdfHelper.getPresignedPdfUrl()
                                                                                                     .toExternalForm()));
+
         } catch (final ApiHelper.ResponseException e) {
             return e.getResponseEvent();
         } catch (final Throwable e) {

@@ -14,7 +14,6 @@ import static java.lang.System.getenv;
 
 public
 class FamilyDirectoryPdfGeneratorLambda implements RequestHandler<DynamodbEvent, Void> {
-    private static final S3Client S3_CLIENT = S3Client.create();
 
     @Override
     public
@@ -36,8 +35,9 @@ class FamilyDirectoryPdfGeneratorLambda implements RequestHandler<DynamodbEvent,
                                                                    .key(pdfKey)
                                                                    .contentType("application/pdf")
                                                                    .build();
-
-            S3_CLIENT.putObject(pdfPutRequest, pdfRequestBody);
+            try (final S3Client s3Client = S3Client.create()) {
+                s3Client.putObject(pdfPutRequest, pdfRequestBody);
+            }
 
             return null;
 

@@ -38,6 +38,8 @@ class FamilyDirectoryCdkApp {
     public static final String LAMBDA_STACK_NAME = "FamilyDirectoryLambdaStack";
     public static final String API_STACK_NAME = "FamilyDirectoryApiGatewayStack";
 
+    public static final String HTTPS_PREFIX = "https://";
+
     private
     FamilyDirectoryCdkApp () {
         super();

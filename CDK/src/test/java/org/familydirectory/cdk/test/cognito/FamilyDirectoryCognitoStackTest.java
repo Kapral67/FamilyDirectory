@@ -81,7 +81,8 @@ class FamilyDirectoryCognitoStackTest {
                                                                                                                                                                 singletonMap("Ref",
                                                                                                                                                                              userPoolClientIdCapture.asString()),
                                                                                                                                                                 "&response_type=code&redirect_uri=%s".formatted(
-                                                                                                                                                                        FamilyDirectoryCognitoStack.COGNITO_SIGN_IN_REDIRECT_URI)))),
+                                                                                                                                                                        FamilyDirectoryCdkApp.HTTPS_PREFIX +
+                                                                                                                                                                        FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)))),
                                                                                                           "Export",
                                                                                                           singletonMap("Name", FamilyDirectoryCognitoStack.COGNITO_SIGN_IN_URL_EXPORT_NAME))));
 
@@ -142,8 +143,11 @@ class FamilyDirectoryCognitoStackTest {
 
         template.hasResourceProperties("AWS::Cognito::UserPoolClient", objectLike(Map.ofEntries(entry("AllowedOAuthFlows", singletonList("code")), entry("AllowedOAuthFlowsUserPoolClient", true),
                                                                                                 entry("AllowedOAuthScopes", List.of("email", "openid", "aws.cognito.signin.user.admin", "profile")),
-                                                                                                entry("CallbackURLs", singletonList(FamilyDirectoryCognitoStack.COGNITO_SIGN_IN_REDIRECT_URI)),
+                                                                                                entry("CallbackURLs",
+                                                                                                      singletonList(FamilyDirectoryCdkApp.HTTPS_PREFIX + FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)),
                                                                                                 entry("ExplicitAuthFlows", List.of("ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH")),
+                                                                                                entry("LogoutURLs",
+                                                                                                      singletonList(FamilyDirectoryCdkApp.HTTPS_PREFIX + FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)),
                                                                                                 entry("GenerateSecret", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_GENERATE_SECRET),
                                                                                                 entry("PreventUserExistenceErrors", "ENABLED"),
                                                                                                 entry("ReadAttributes", List.of("email", "email_verified")), entry("SupportedIdentityProviders",

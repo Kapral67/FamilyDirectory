@@ -3,7 +3,8 @@ package org.familydirectory.assets.lambda.function.api.enums;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.jetbrains.annotations.NotNull;
@@ -16,14 +17,14 @@ import static java.util.Objects.requireNonNull;
 
 public
 enum ApiFunction implements LambdaFunctionModel {
-    //    GET_MEMBER("FamilyDirectoryGetMemberLambda", "%s.%s::handleRequest", of("dynamodb:Query", "dynamodb:GetItem"), "get"),
     CREATE_MEMBER("CreateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"), DdbTable.MEMBER,
                                          List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, singletonList(HttpMethod.POST), "create"),
-
     DELETE_MEMBER("DeleteMember",
                   Map.of(DdbTable.COGNITO, List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:UpdateItem"), DdbTable.MEMBER,
                          List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query")), List.of("cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"), singletonList("ses:SendEmail"), null,
                   singletonList(HttpMethod.DELETE), "delete"),
+    GET_MEMBER("GetMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null,
+               null, null, singletonList(HttpMethod.GET), "get"),
     GET_PDF("GetPdf", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null, null, singletonList("s3:GetObject"),
             singletonList(HttpMethod.GET), "pdf"),
     UPDATE_MEMBER("UpdateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER,
@@ -58,13 +59,12 @@ enum ApiFunction implements LambdaFunctionModel {
 
     @NotNull
     public static
-    List<CorsHttpMethod> getAllowedMethods () {
+    Set<CorsHttpMethod> getAllowedMethods () {
         return Arrays.stream(values())
                      .flatMap(f -> f.methods.stream())
-                     .distinct()
                      .map(m -> CorsHttpMethod.valueOf(m.name()))
-                     .flatMap(m -> Stream.concat(Stream.of(m), Stream.of(CorsHttpMethod.OPTIONS)))
-                     .toList();
+//  FIXME:           .flatMap(m -> Stream.concat(Stream.of(m), Stream.of(CorsHttpMethod.OPTIONS)))
+                     .collect(Collectors.toUnmodifiableSet());
     }
 
     @NotNull
