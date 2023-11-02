@@ -77,9 +77,10 @@ class CreateHelper extends ApiHelper {
         final QueryRequest keyRequest = QueryRequest.builder()
                                                     .tableName(DdbTable.MEMBER.name())
                                                     .indexName(requireNonNull(MemberTableParameter.KEY.gsiProps()).getIndexName())
-                                                    .keyConditionExpression("%s = :key".formatted(MemberTableParameter.KEY.gsiProps()
-                                                                                                                          .getPartitionKey()
-                                                                                                                          .getName()))
+                                                    .keyConditionExpression("#key = :key")
+                                                    .expressionAttributeNames(singletonMap("#key", MemberTableParameter.KEY.gsiProps()
+                                                                                                                           .getPartitionKey()
+                                                                                                                           .getName()))
                                                     .expressionAttributeValues(singletonMap(":key", AttributeValue.fromS(memberKey)))
                                                     .limit(1)
                                                     .build();

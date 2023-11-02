@@ -65,7 +65,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                    .item()
                                    .isEmpty())
                 {
-                    //          If There Is a PreExisting Entry, Then The User is Just Changing Their Email For Cognito
+//              If There Is a PreExisting Entry, Then The User is Just Changing Their Email For Cognito
                     return getValidEvent(event, email);
                 }
             } catch (final Throwable e) {

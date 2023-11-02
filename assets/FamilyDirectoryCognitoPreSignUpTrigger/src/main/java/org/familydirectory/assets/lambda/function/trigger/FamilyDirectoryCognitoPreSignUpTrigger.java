@@ -71,8 +71,9 @@ class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUs
             final QueryRequest cognitoMemberQueryRequest = QueryRequest.builder()
                                                                        .tableName(DdbTable.COGNITO.name())
                                                                        .indexName(requireNonNull(CognitoTableParameter.MEMBER.gsiProps()).getIndexName())
-                                                                       .keyConditionExpression("%s = :memberId".formatted(CognitoTableParameter.MEMBER.jsonFieldName()))
-                                                                       .expressionAttributeValues(singletonMap(":memberId", AttributeValue.fromS(memberId)))
+                                                                       .keyConditionExpression("#member = :member")
+                                                                       .expressionAttributeNames(singletonMap("#member", CognitoTableParameter.MEMBER.jsonFieldName()))
+                                                                       .expressionAttributeValues(singletonMap(":member", AttributeValue.fromS(memberId)))
                                                                        .limit(1)
                                                                        .build();
             final QueryResponse cognitoMemberQueryResponse = dynamoDbClient.query(cognitoMemberQueryRequest);

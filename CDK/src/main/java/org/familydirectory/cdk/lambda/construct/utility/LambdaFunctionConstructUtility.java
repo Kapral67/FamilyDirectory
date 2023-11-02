@@ -139,7 +139,7 @@ class LambdaFunctionConstructUtility {
             ofNullable(pdfBucket).map(IBucket::getBucketArn)
                                  .ifPresent(pdfBucketArn -> ofNullable(k.sssActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
                                                                                                                                       .actions(actions)
-                                                                                                                                      .resources(singletonList(pdfBucketArn))
+                                                                                                                                      .resources(singletonList("%s/*".formatted(pdfBucketArn)))
                                                                                                                                       .build())));
         });
     }
@@ -152,11 +152,13 @@ class LambdaFunctionConstructUtility {
             final IRole executionRole = Role.fromRoleArn(scope, f.roleArnExportName(), importValue(f.roleArnExportName()));
 
 //      Assign Ddb Permissions
-            ofNullable(f.ddbActions()).ifPresent(map -> map.forEach((table, actions) -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
-                                                                                                                                   .actions(actions)
-                                                                                                                                   .resources(singletonList(
-                                                                                                                                           "%s/*".formatted(importValue(table.arnExportName()))))
-                                                                                                                                   .build())));
+            ofNullable(f.ddbActions()).ifPresent(map -> map.forEach((table, actions) -> {
+                final String tableArn = importValue(table.arnExportName());
+                executionRole.addToPrincipalPolicy(create().effect(ALLOW)
+                                                           .actions(actions)
+                                                           .resources(List.of(tableArn, "%s/index/*".formatted(tableArn)))
+                                                           .build());
+            }));
 
 //      Assign Cognito Permissions
             ofNullable(userPool).map(IUserPool::getUserPoolArn)
@@ -177,7 +179,8 @@ class LambdaFunctionConstructUtility {
             ofNullable(pdfBucket).map(IBucket::getBucketArn)
                                  .ifPresent(pdfBucketArn -> ofNullable(f.sssActions()).ifPresent(actions -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
                                                                                                                                                        .actions(actions)
-                                                                                                                                                       .resources(singletonList(pdfBucketArn))
+                                                                                                                                                       .resources(singletonList(
+                                                                                                                                                               "%s/*".formatted(pdfBucketArn)))
                                                                                                                                                        .build())));
         });
     }
