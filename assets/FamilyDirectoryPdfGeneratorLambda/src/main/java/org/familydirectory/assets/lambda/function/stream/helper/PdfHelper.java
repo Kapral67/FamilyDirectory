@@ -84,8 +84,8 @@ class PdfHelper implements LambdaFunctionHelper {
     public
     RequestBody getPdf () throws IOException {
         this.newPage();
-
         this.traverse(ROOT_MEMBER_ID);
+        this.page.close();
 
         final ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream();
         this.pdf.save(pdfOutputStream);
@@ -195,22 +195,10 @@ class PdfHelper implements LambdaFunctionHelper {
     public
     void close () {
         LambdaFunctionHelper.super.close();
-        IOException suppressed = null;
-        if (nonNull(this.page)) {
-            try {
-                this.page.close();
-            } catch (final IOException e) {
-                suppressed = e;
-            }
-        }
         try {
             this.pdf.close();
         } catch (final IOException e) {
-            final RuntimeException unchecked = new RuntimeException(e);
-            if (nonNull(suppressed)) {
-                unchecked.addSuppressed(suppressed);
-            }
-            throw unchecked;
+            throw new RuntimeException(e);
         }
     }
 }

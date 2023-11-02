@@ -113,10 +113,13 @@ class LambdaFunctionConstructUtility {
     {
         values.forEach((k, v) -> {
 //      Assign Ddb Permissions
-            ofNullable(k.ddbActions()).ifPresent(map -> map.forEach((table, actions) -> v.addToRolePolicy(create().effect(ALLOW)
-                                                                                                                  .actions(actions)
-                                                                                                                  .resources(singletonList("%s/*".formatted(importValue(table.arnExportName()))))
-                                                                                                                  .build())));
+            ofNullable(k.ddbActions()).ifPresent(map -> map.forEach((table, actions) -> {
+                final String tableArn = importValue(table.arnExportName());
+                v.addToRolePolicy(create().effect(ALLOW)
+                                          .actions(actions)
+                                          .resources(List.of(tableArn, "%s/index/*".formatted(tableArn)))
+                                          .build());
+            }));
 //      Assign Cognito Permissions
             ofNullable(userPool).map(IUserPool::getUserPoolArn)
                                 .ifPresent(userPoolArn -> ofNullable(k.cognitoActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
