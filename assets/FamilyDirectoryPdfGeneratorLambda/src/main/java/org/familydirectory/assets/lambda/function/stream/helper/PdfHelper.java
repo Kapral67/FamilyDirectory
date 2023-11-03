@@ -55,13 +55,24 @@ class PdfHelper implements LambdaFunctionHelper {
         super();
         this.logger = requireNonNull(logger);
         this.members = new HashMap<>();
-        this.members.put(ROOT_MEMBER_ID, this.getMemberById(ROOT_MEMBER_ID));
-        this.title = "%s FAMILY DIRECTORY".formatted(Optional.of(this.members.get(ROOT_MEMBER_ID)
-                                                                             .getLastName())
+        this.title = "%s FAMILY DIRECTORY".formatted(Optional.of(this.retrieveMember(ROOT_MEMBER_ID)
+                                                                     .getLastName())
                                                              .filter(Predicate.not(String::isBlank))
                                                              .map(String::toUpperCase)
                                                              .orElseThrow());
         this.families = new HashMap<>();
+    }
+
+    @Contract("null -> null; !null -> !null")
+    private @Nullable
+    Member retrieveMember (final @Nullable String id) {
+        if (isNull(id)) {
+            return null;
+        }
+        if (!this.members.containsKey(id)) {
+            this.members.put(id, this.getMemberById(id));
+        }
+        return this.members.get(id);
     }
 
     @NotNull
@@ -140,18 +151,6 @@ class PdfHelper implements LambdaFunctionHelper {
         for (final String recursiveDescendant : recursiveDescendants) {
             this.traverse(recursiveDescendant);
         }
-    }
-
-    @Contract("null -> null; !null -> !null")
-    private @Nullable
-    Member retrieveMember (final @Nullable String id) {
-        if (isNull(id)) {
-            return null;
-        }
-        if (!this.members.containsKey(id)) {
-            this.members.put(id, this.getMemberById(id));
-        }
-        return this.members.get(id);
     }
 
     private @NotNull
