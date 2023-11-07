@@ -65,37 +65,15 @@ class CreateHelper extends ApiHelper {
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
         }
 
-        this.validateMemberIsUnique(createEvent.member()
-                                               .getKey(), caller.memberId(), createEvent.member()
-                                                                                        .getEmail());
+        this.validateMemberEmailIsUnique(caller.memberId(), createEvent.member()
+                                                                       .getEmail());
 
         return createEvent;
     }
 
     private
-    void validateMemberIsUnique (final @NotNull String memberKey, final @NotNull String callerMemberId, final @Nullable String memberEmail) {
-        final QueryRequest keyRequest = QueryRequest.builder()
-                                                    .tableName(DdbTable.MEMBER.name())
-                                                    .indexName(requireNonNull(MemberTableParameter.KEY.gsiProps()).getIndexName())
-                                                    .keyConditionExpression("#key = :key")
-                                                    .expressionAttributeNames(singletonMap("#key", MemberTableParameter.KEY.gsiProps()
-                                                                                                                           .getPartitionKey()
-                                                                                                                           .getName()))
-                                                    .expressionAttributeValues(singletonMap(":key", AttributeValue.fromS(memberKey)))
-                                                    .limit(1)
-                                                    .build();
-        final QueryResponse keyResponse = this.dynamoDbClient.query(keyRequest);
-        if (!keyResponse.items()
-                        .isEmpty())
-        {
-            final String keyMemberId = keyResponse.items()
-                                                  .iterator()
-                                                  .next()
-                                                  .get(MemberTableParameter.ID.jsonFieldName())
-                                                  .s();
-            this.logger.log("<MEMBER,`%s`> Requested Create for Existing <MEMBER,`%s`> Using <KEY,`%s`>".formatted(callerMemberId, keyMemberId, memberKey), WARN);
-            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT));
-        } else if (nonNull(memberEmail) && !memberEmail.isBlank()) {
+    void validateMemberEmailIsUnique (final @NotNull String callerMemberId, final @Nullable String memberEmail) {
+        if (nonNull(memberEmail) && !memberEmail.isBlank()) {
             final QueryRequest emailRequest = QueryRequest.builder()
                                                           .tableName(DdbTable.MEMBER.name())
                                                           .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())
@@ -210,8 +188,6 @@ class CreateHelper extends ApiHelper {
         for (final MemberTableParameter field : MemberTableParameter.values()) {
             switch (field) {
                 case ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(this.inputMemberId.toString()));
-                case KEY -> member.put(field.jsonFieldName(), AttributeValue.fromS(createEvent.member()
-                                                                                              .getKey()));
                 case FIRST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(createEvent.member()
                                                                                                      .getFirstName()));
                 case MIDDLE_NAME -> ofNullable(createEvent.member()

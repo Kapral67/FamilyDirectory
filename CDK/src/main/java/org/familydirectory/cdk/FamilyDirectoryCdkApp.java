@@ -1,5 +1,6 @@
 package org.familydirectory.cdk;
 
+import org.familydirectory.cdk.amplify.FamilyDirectoryAmplifyStack;
 import org.familydirectory.cdk.apigateway.FamilyDirectoryApiGatewayStack;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoUsEastOneStack;
@@ -37,6 +38,7 @@ class FamilyDirectoryCdkApp {
     public static final String SSS_STACK_NAME = "FamilyDirectorySssStack";
     public static final String LAMBDA_STACK_NAME = "FamilyDirectoryLambdaStack";
     public static final String API_STACK_NAME = "FamilyDirectoryApiGatewayStack";
+    public static final String AMPLIFY_STACK_NAME = "FamilyDirectoryAmplifyStack";
 
     public static final String HTTPS_PREFIX = "https://";
 
@@ -103,6 +105,15 @@ class FamilyDirectoryCdkApp {
         apiGatewayStack.addDependency(domainStack);
         apiGatewayStack.addDependency(cognitoStack);
         apiGatewayStack.addDependency(lambdaStack);
+
+        final FamilyDirectoryAmplifyStack amplifyStack = new FamilyDirectoryAmplifyStack(app, AMPLIFY_STACK_NAME, StackProps.builder()
+                                                                                                                            .env(DEFAULT_ENV)
+                                                                                                                            .stackName(AMPLIFY_STACK_NAME)
+                                                                                                                            .build());
+        amplifyStack.addDependency(domainStack);
+        amplifyStack.addDependency(dynamoDbStack);
+        amplifyStack.addDependency(cognitoStack);
+        amplifyStack.addDependency(apiGatewayStack);
 
         app.synth();
     }

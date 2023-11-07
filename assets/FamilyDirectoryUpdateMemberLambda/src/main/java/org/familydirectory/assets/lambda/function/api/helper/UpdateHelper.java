@@ -149,9 +149,6 @@ class UpdateHelper extends ApiHelper {
         for (final MemberTableParameter field : MemberTableParameter.values()) {
             switch (field) {
                 case ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbMemberId()));
-                case KEY -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
-                                                                                               .member()
-                                                                                               .getKey()));
                 case FIRST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
                                                                                                       .member()
                                                                                                       .getFirstName()));

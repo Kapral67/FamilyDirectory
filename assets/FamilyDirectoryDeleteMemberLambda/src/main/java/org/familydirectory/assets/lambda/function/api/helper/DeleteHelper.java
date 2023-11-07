@@ -29,17 +29,16 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import software.amazon.awssdk.services.dynamodb.model.Update;
-import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_FORBIDDEN;
-import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 
 public final
@@ -69,35 +68,13 @@ class DeleteHelper extends ApiHelper {
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
         }
 
-        final QueryResponse response = this.dynamoDbClient.query(QueryRequest.builder()
-                                                                             .tableName(DdbTable.MEMBER.name())
-                                                                             .indexName(requireNonNull(MemberTableParameter.KEY.gsiProps()).getIndexName())
-                                                                             .keyConditionExpression("#key = :key")
-                                                                             .expressionAttributeNames(singletonMap("#key", MemberTableParameter.KEY.gsiProps()
-                                                                                                                                                    .getPartitionKey()
-                                                                                                                                                    .getName()))
-                                                                             .expressionAttributeValues(singletonMap(":key", AttributeValue.fromS(deleteEvent.member()
-                                                                                                                                                             .getKey())))
-                                                                             .limit(2)
-                                                                             .build());
+        final Map<String, AttributeValue> ddbMemberMap = this.getDdbItem(deleteEvent.id(), DdbTable.MEMBER);
 
-        if (response.items()
-                    .isEmpty())
-        {
-            this.logger.log("<MEMBER,`%s`> Requested Delete to Non-Existent Member <KEY,`%s`>".formatted(caller.memberId(), deleteEvent.member()
-                                                                                                                                       .getKey()), WARN);
+        if (isNull(ddbMemberMap)) {
+            this.logger.log("<MEMBER,`%s`> Requested Delete to Non-Existent Member <ID,`%s`>".formatted(caller.memberId(), deleteEvent.id()), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_NOT_FOUND));
-        } else if (response.items()
-                           .size() > 1)
-        {
-            this.logger.log("<MEMBER,`%s`> Requested Delete to Ambiguous <KEY,`%s`> Referencing Multiple Members".formatted(caller.memberId(), deleteEvent.member()
-                                                                                                                                                          .getKey()), ERROR);
-            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_INTERNAL_SERVER_ERROR));
         }
-
-        final Map<String, AttributeValue> ddbMemberMap = response.items()
-                                                                 .iterator()
-                                                                 .next();
+        
         return new EventWrapper(deleteEvent, ddbMemberMap.get(MemberTableParameter.ID.jsonFieldName())
                                                          .s(), ddbMemberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
                                                                            .s());

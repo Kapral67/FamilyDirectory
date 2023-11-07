@@ -34,17 +34,32 @@
 
         - Should be the subdomain of `ORG_FAMILY_DIRECTORY_HOSTED_ZONE_NAME` where emails are sent from (e.g. `support`)
 
-    6. `ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID`
+    6. `ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME`
 
+        - The name of your repository on GitHub containing the UI components
+        - **==TODO==** *Add Fork Instructions*
+
+    7. `ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER`
+
+        - Your GitHub Username
+
+    8. `ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OAUTH_TOKEN`
+
+        - Fine-grained GitHub Token that ONLY gives access to `${ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER}/${ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME}` and only allows read/write permissions for repository hooks
+        - **==TODO==** *Add More Detailed Instructions*
+        - **==TODO==** *Add Disclaimer About How This Token Is Used*
+
+    9. `ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID`
+    
         - The `ROOT MEMBER` of this FamilyDirectory must be known and so an Environment Variable is set for it.
         - A good value for this variable is `"00000000-0000-0000-0000-000000000000"`
-
-    7. `CDK_DEFAULT_ACCOUNT`
-
+    
+    10. `CDK_DEFAULT_ACCOUNT`
+    
         - The AWS Account Id
-
-    8. `CDK_DEFAULT_REGION`
-
+    
+    11. `CDK_DEFAULT_REGION`
+    
         - The AWS Region
 
 3. Now is a good time to bootstrap you're aws account for cdk if you haven't already
@@ -69,7 +84,7 @@
 
     1. First, deploy the `FamilyDirectoryDomainStack` solely (e.g. `cdk deploy FamilyDirectoryDomainStack`)
 
-        - Before moving forward, login to the aws console and navigate to Route53
+        - Before moving forward, login to the aws console and navigate to Route53, click on Hosted Zones in the right side-bar, then click on the Hosted Zone
 
         - Here, you need to copy the NS records for `${ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME}` and apply them at your
           registrar
@@ -82,20 +97,15 @@
                   when using Cloudflare as the Nameserver for my root domain. For these purposes, Cloudflare is free if
                   you already own the root domain.*
 
-        - Wait Until DNS Propagates, Then Continue
-
-    2. Now, deploy the `FamilyDirectorySesStack` solely (e.g. `cdk deploy FamilyDirectorySesStack`)
-
-        - Since the domain used for SES is attached to the HostedZone defined in `FamilyDirectoryDomainStack`, DNS
-          records are created automatically
+        - You will also need to set a temporary A record for `${ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME}` in your hosted zone's record table select **Create record** button and leave the record name blank, make sure Record type is **A** and set the TTL to something short like 300 seconds. The routing policy should be **Simple routing** and the Value of the record can be anything (this is a dummy record so that Route53 allows us to attach A records to subdomains and is overwritten by the `FamilyDirectoryAmplifyStack`). You can use the value `93.184.216.34` (which is the A record value of `example.com` at the time of writing)
 
         - Wait Until DNS Propagates, Then Continue
 
-    3. Now, deploy the `FamilyDirectoryCognitoStack`, this stack should automatically deploy
-       the `FamilyDirectoryCognitoUsEastOneStack` and the `FamilyDirectoryDynamodbStack`, as it depends on these stacks
-
-        - After this stack deploys, you'll have to wait around an hour, but then you can view your Cognito page
-          (
-          see [Step 3](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-add-custom-domain.html#cognito-user-pools-add-custom-domain-console-step-3))
+    2. Now, deploy the `FamilyDirectoryApiGatewayStack`
+        - This stack should cause all stacks except `FamilyDirectoryAmplifyStack` to deploy along with because they are all dependents of this stack.
+        - Since there lots of artifacts being deployed and dns validation occurring on some stacks, this will take awhile
+    
+    3. **==TODO==** *Need Instructions for adding Root Member to Database before deploying `FamilyDirectoryAmplifyStack`*
+    
 
 ***TODO** Finish Deployment Order*

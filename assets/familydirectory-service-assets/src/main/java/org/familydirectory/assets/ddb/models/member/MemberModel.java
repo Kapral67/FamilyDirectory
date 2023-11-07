@@ -17,7 +17,6 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Collectors.toUnmodifiableMap;
-import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
 
 public abstract
 class MemberModel {
@@ -78,11 +77,6 @@ class MemberModel {
 
     public abstract @Nullable
     LocalDate getDeathday ();
-
-    public @NotNull
-    String getKey () {
-        return sha256Hex("%s %s".formatted(this.getFullName(), this.getBirthdayString()));
-    }
 
     public @NotNull
     String getBirthdayString () {

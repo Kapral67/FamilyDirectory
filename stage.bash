@@ -29,6 +29,9 @@ function verify_project_env_vars {
   local sub
   local auth
   local mail
+  local repo_name
+  local repo_owner
+  local repo_token
   local account
   local region
   local root
@@ -56,6 +59,21 @@ function verify_project_env_vars {
   mail="ORG_FAMILYDIRECTORY_SES_MAIL_FROM_SUBDOMAIN_NAME"
   if [ -z "${!mail}" ]; then
     empty_env_var $mail
+  fi
+
+  repo_name="ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME"
+  if [ -z "${!repo_name}" ]; then
+    empty_env_var $repo_name
+  fi
+
+  repo_owner="ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER"
+  if [ -z "${!repo_owner}" ]; then
+    empty_env_var $repo_owner
+  fi
+
+  repo_token="ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OAUTH_TOKEN"
+  if [ -z "${!repo_token}" ]; then
+    empty_env_var $repo_token
   fi
 
   root="ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID"

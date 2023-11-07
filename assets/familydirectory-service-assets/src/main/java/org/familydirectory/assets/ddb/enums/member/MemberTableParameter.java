@@ -12,14 +12,6 @@ import static software.amazon.awscdk.services.dynamodb.ProjectionType.KEYS_ONLY;
 public
 enum MemberTableParameter implements DdbTableParameter {
     ID(DdbType.STR, DdbTableParameter.PK.getName(), null),
-    KEY(DdbType.STR, "key", GlobalSecondaryIndexProps.builder()
-                                                     .indexName("MemberKey")
-                                                     .partitionKey(Attribute.builder()
-                                                                            .name("key")
-                                                                            .type(STRING)
-                                                                            .build())
-                                                     .projectionType(KEYS_ONLY)
-                                                     .build()),
     FIRST_NAME(DdbType.STR, "firstName", null),
     MIDDLE_NAME(DdbType.STR, "middleName", null),
     LAST_NAME(DdbType.STR, "lastName", null),

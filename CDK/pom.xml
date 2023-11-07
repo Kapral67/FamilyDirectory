@@ -110,5 +110,11 @@
             <version>${cdk-alpha.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>amplify-alpha</artifactId>
+            <version>${cdk-alpha.version}</version>
+        </dependency>
+
     </dependencies>
 </project>

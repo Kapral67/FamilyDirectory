@@ -21,7 +21,7 @@ enum ApiFunction implements LambdaFunctionModel {
                                          List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, singletonList(HttpMethod.POST), "create"),
     DELETE_MEMBER("DeleteMember",
                   Map.of(DdbTable.COGNITO, List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:UpdateItem"), DdbTable.MEMBER,
-                         List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query")), List.of("cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"), singletonList("ses:SendEmail"), null,
+                         List.of("dynamodb:DeleteItem", "dynamodb:GetItem")), List.of("cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"), singletonList("ses:SendEmail"), null,
                   singletonList(HttpMethod.DELETE), "delete"),
     GET_MEMBER("GetMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null,
                null, null, singletonList(HttpMethod.GET), "get"),
