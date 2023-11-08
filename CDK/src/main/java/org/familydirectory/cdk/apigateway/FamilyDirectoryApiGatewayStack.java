@@ -143,8 +143,9 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                               .build());
 
 //      TODO: More Programmatic Solution Available Once [this issue](https://github.com/aws/aws-cdk/issues/23301) is resolved
+//      Parts of Execute-Api Arn: https://docs.aws.amazon.com/apigateway/latest/developerguide/arn-format-reference.html#apigateway-execute-api-arns
             final String sourceArn = "arn:aws:execute-api:%s:%s:%s/*/*%s".formatted(FamilyDirectoryCdkApp.DEFAULT_REGION, FamilyDirectoryCdkApp.DEFAULT_ACCOUNT, httpApi.getApiId(), func.endpoint());
-            
+
             new CfnPermission(this, "Allow%sInvoke%s".formatted(HTTP_API_RESOURCE_ID, func.name()), CfnPermissionProps.builder()
                                                                                                                       .action("lambda:InvokeFunction")
                                                                                                                       .functionName(function.getFunctionArn())

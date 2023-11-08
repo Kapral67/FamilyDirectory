@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.assertions.Template;
+import software.amazon.awscdk.services.s3.HttpMethods;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,6 +34,16 @@ class FamilyDirectorySssStackTest {
                                                                                                                                                                        "ServerSideEncryptionByDefault",
                                                                                                                                                                        singletonMap("SSEAlgorithm",
                                                                                                                                                                                     "AES256")))),
+                                                                                                                                                  "CorsConfiguration", singletonMap("CorsRules",
+                                                                                                                                                                                    singletonList(
+                                                                                                                                                                                            Map.of("AllowedHeaders",
+                                                                                                                                                                                                   FamilyDirectorySssStack.S3_PDF_BUCKET_CORS_ALLOWED_HEADERS,
+                                                                                                                                                                                                   "AllowedMethods",
+                                                                                                                                                                                                   FamilyDirectorySssStack.S3_PDF_BUCKET_CORS_ALLOWED_METHODS.stream()
+                                                                                                                                                                                                                                                             .map(HttpMethods::name)
+                                                                                                                                                                                                                                                             .toList(),
+                                                                                                                                                                                                   "AllowedOrigins",
+                                                                                                                                                                                                   FamilyDirectorySssStack.S3_PDF_BUCKET_CORS_ALLOWED_ORIGINS))),
                                                                                                                                                   "OwnershipControls", singletonMap("Rules",
                                                                                                                                                                                     singletonList(
                                                                                                                                                                                             singletonMap(
