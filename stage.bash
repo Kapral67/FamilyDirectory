@@ -16,7 +16,8 @@ function user_error {
 
 function clean_maven_local {
   local repo
-  repo="$(mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout)"
+  repo="$(mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout)" \
+    || user_error "Maven (mvn) is either not installed or improperly configured"
   rm -rf "$repo/org/familydirectory"
   return 0
 }
@@ -100,6 +101,7 @@ STAGE_DIR="$(pwd)"
 
 # service assets
 cd "$STAGE_DIR/assets/familydirectory-service-assets" || script_error
+rm -rf .mvn
 ./gradlew build
 ./gradlew publish
 clean_maven_local
@@ -107,34 +109,44 @@ clean_maven_local
 # LAMBDA FUNCTIONS
 ## API
 cd "$STAGE_DIR/assets/FamilyDirectoryCreateMemberLambda" || script_error
+rm -rf target
 mvn package
 
 cd "$STAGE_DIR/assets/FamilyDirectoryUpdateMemberLambda" || script_error
+rm -rf target
 mvn package
 
 cd "$STAGE_DIR/assets/FamilyDirectoryDeleteMemberLambda" || script_error
+rm -rf target
 mvn package
 
 cd "$STAGE_DIR/assets/FamilyDirectoryGetMemberLambda" || script_error
+rm -rf target
 mvn package
 
 cd "$STAGE_DIR/assets/FamilyDirectoryGetPdfLambda" || script_error
+rm -rf target
 mvn package
 
 ## COGNITO
 cd "$STAGE_DIR/assets/FamilyDirectoryCognitoPreSignUpTrigger" || script_error
+rm -rf target
 mvn package
 
 cd "$STAGE_DIR/assets/FamilyDirectoryCognitoPostConfirmationTrigger" || script_error
+rm -rf target
 mvn package
 
 ## PDF
 cd "$STAGE_DIR/assets/FamilyDirectoryPdfGeneratorLambda" || script_error
+rm -rf target
 mvn package
 
 # CDK
 cd "$STAGE_DIR/CDK" || script_error
+rm -rf target
 mvn package
+rm -rf cdk.out
 
 # Return to current directory
 cd "$CURRENT_DIR" || script_error

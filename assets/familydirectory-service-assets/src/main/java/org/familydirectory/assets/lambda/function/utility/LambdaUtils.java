@@ -49,7 +49,7 @@ enum LambdaUtils {
 
     public static
     void logTrace (final @NotNull LambdaLogger logger, final @NotNull Throwable e, final @NotNull LogLevel logLevel) {
-        logger.log(e.getMessage(), logLevel);
+        ofNullable(e.getMessage()).ifPresent(msg -> logger.log(msg, logLevel));
         ofNullable(e.getCause()).ifPresent(t -> logger.log(t.getMessage(), DEBUG));
         ofNullable(e.getSuppressed()).ifPresent(suppressed -> Arrays.stream(suppressed)
                                                                     .forEach(t -> logger.log(t.getMessage(), DEBUG)));

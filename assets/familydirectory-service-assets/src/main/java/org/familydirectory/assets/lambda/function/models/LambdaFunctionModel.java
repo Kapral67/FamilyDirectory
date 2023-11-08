@@ -10,10 +10,9 @@ import static software.amazon.awscdk.Duration.seconds;
 
 public
 interface LambdaFunctionModel {
-    Duration DEFAULT_TIMEOUT = seconds(60);
-    Number DEFAULT_MEMORY_SIZE = 1024;
+    Duration DEFAULT_TIMEOUT = seconds(30);
     Number NEW_ACCOUNT_MAX_MEMORY_SIZE = 3008;
-    Number SINGLE_vCPU_MEMORY_SIZE = 1769;
+    Number DEFAULT_MEMORY_SIZE = NEW_ACCOUNT_MAX_MEMORY_SIZE;
 
     @NotNull
     String handler ();

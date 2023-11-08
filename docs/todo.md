@@ -1,20 +1,24 @@
-## Nov 02
+## Nov 07
 
 ### CognitoStack
 
 - [x] Callback URLs, Logout URLs, etc.
 
-#### OAuth2 Flow
-
-- Needs rethinking, since we want to use authorization code flow, but doing so client-side might not even make sense
-
-### DomainStack
-
-- ==Has static reference to A record for `example.com`==
-
 ### Admin Initialize Family Directory?
 
 - How should admins initialize a FamilyDirectory?
+
+### AmplifyStack
+
+- [ ] Needs Unit Testing
+
+### ApiGatewayStack
+
+- [ ] Needs Additional Unit Testing
+
+### README
+
+- [ ] Needs Update in Deployment Steps so that LambdaStack may be deployed with DDB Streams enabled
 
 ---
 

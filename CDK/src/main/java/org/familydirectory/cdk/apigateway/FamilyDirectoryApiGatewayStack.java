@@ -10,11 +10,13 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.apigatewayv2.alpha.AddRoutesOptions;
 import software.amazon.awscdk.services.apigatewayv2.alpha.CorsPreflightOptions;
+import software.amazon.awscdk.services.apigatewayv2.alpha.DomainMappingOptions;
 import software.amazon.awscdk.services.apigatewayv2.alpha.DomainName;
 import software.amazon.awscdk.services.apigatewayv2.alpha.DomainNameProps;
 import software.amazon.awscdk.services.apigatewayv2.alpha.EndpointType;
 import software.amazon.awscdk.services.apigatewayv2.alpha.HttpApi;
 import software.amazon.awscdk.services.apigatewayv2.alpha.HttpApiProps;
+import software.amazon.awscdk.services.apigatewayv2.alpha.HttpStageOptions;
 import software.amazon.awscdk.services.apigatewayv2.alpha.SecurityPolicy;
 import software.amazon.awscdk.services.apigatewayv2.authorizers.alpha.HttpUserPoolAuthorizer;
 import software.amazon.awscdk.services.apigatewayv2.authorizers.alpha.HttpUserPoolAuthorizerProps;
@@ -25,7 +27,10 @@ import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
 import software.amazon.awscdk.services.cognito.IUserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
+import software.amazon.awscdk.services.lambda.CfnPermission;
+import software.amazon.awscdk.services.lambda.CfnPermissionProps;
 import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
 import software.amazon.awscdk.services.route53.IPublicHostedZone;
@@ -56,6 +61,8 @@ class FamilyDirectoryApiGatewayStack extends Stack {
     public static final List<String> CORS_ALLOW_ORIGIN = singletonList(FamilyDirectoryCdkApp.HTTPS_PREFIX + FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
     public static final List<String> CORS_ALLOW_HEADERS = List.of("X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token");
     public static final List<String> HTTP_API_ROUTE_AUTHORIZATION_SCOPES = List.of("openid", "email");
+    public static final String HTTP_API_PUBLIC_STAGE_ID = "Prod";
+    public static final boolean HTTP_API_PUBLIC_STAGE_AUTO_DEPLOY = true;
 
     public
     FamilyDirectoryApiGatewayStack (final Construct scope, final String id, final StackProps stackProps) {
@@ -124,8 +131,8 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                                                      httpUserPoolAuthorizerProps);
 
         for (final ApiFunction func : ApiFunction.values()) {
-            final HttpLambdaIntegration httpLambdaIntegration = new HttpLambdaIntegration(func.httpIntegrationId(),
-                                                                                          Function.fromFunctionArn(this, func.functionName(), importValue(func.arnExportName())));
+            final IFunction function = Function.fromFunctionArn(this, func.functionName(), importValue(func.arnExportName()));
+            final HttpLambdaIntegration httpLambdaIntegration = new HttpLambdaIntegration(func.httpIntegrationId(), function);
 //      Add Lambda as HttpIntegration to HttpApi
             httpApi.addRoutes(AddRoutesOptions.builder()
                                               .authorizationScopes(HTTP_API_ROUTE_AUTHORIZATION_SCOPES)
@@ -134,6 +141,24 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                               .methods(func.methods())
                                               .integration(httpLambdaIntegration)
                                               .build());
+
+//      TODO: More Programmatic Solution Available Once [this issue](https://github.com/aws/aws-cdk/issues/23301) is resolved
+            final String sourceArn = "arn:aws:execute-api:%s:%s:%s/*/*%s".formatted(FamilyDirectoryCdkApp.DEFAULT_REGION, FamilyDirectoryCdkApp.DEFAULT_ACCOUNT, httpApi.getApiId(), func.endpoint());
+            
+            new CfnPermission(this, "Allow%sInvoke%s".formatted(HTTP_API_RESOURCE_ID, func.name()), CfnPermissionProps.builder()
+                                                                                                                      .action("lambda:InvokeFunction")
+                                                                                                                      .functionName(function.getFunctionArn())
+                                                                                                                      .principal("apigateway.amazonaws.com")
+                                                                                                                      .sourceArn(sourceArn)
+                                                                                                                      .build());
         }
+
+        httpApi.addStage(HTTP_API_PUBLIC_STAGE_ID, HttpStageOptions.builder()
+                                                                   .stageName(HTTP_API_PUBLIC_STAGE_ID)
+                                                                   .autoDeploy(HTTP_API_PUBLIC_STAGE_AUTO_DEPLOY)
+                                                                   .domainMapping(DomainMappingOptions.builder()
+                                                                                                      .domainName(apiDomainName)
+                                                                                                      .build())
+                                                                   .build());
     }
 }

@@ -44,8 +44,6 @@ class FamilyDirectoryAmplifyStack extends Stack {
     public static final boolean AMPLIFY_APP_AUTO_BRANCH_DELETE = false;
     public static final String REACT_APP_REDIRECT_URI = "%s%s".formatted(FamilyDirectoryCdkApp.HTTPS_PREFIX, FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
     public static final String REACT_APP_API_DOMAIN = "%s%s".formatted(FamilyDirectoryCdkApp.HTTPS_PREFIX, FamilyDirectoryApiGatewayStack.API_DOMAIN_NAME);
-    public static final String REACT_APP_AUTH_DOMAIN = "%s%s".formatted(FamilyDirectoryCdkApp.HTTPS_PREFIX, FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME);
-    public static final String AMPLIFY_ROOT_BRANCH_RESOURCE_ID = "AmplifyGitHubRootBranch";
     public static final String AMPLIFY_ROOT_BRANCH_NAME = "main";
     public static final boolean AMPLIFY_ROOT_BRANCH_PULL_REQUEST_PREVIEW = false;
     public static final String AMPLIFY_REPOSITORY_OWNER = getenv("ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER");
@@ -89,10 +87,11 @@ class FamilyDirectoryAmplifyStack extends Stack {
                                           .autoBranchDeletion(AMPLIFY_APP_AUTO_BRANCH_DELETE)
 //                                        TODO: Disable BasicAuth once stable
                                           .basicAuth(devAuth)
-                                          .environmentVariables(
-                                                  Map.of("REACT_APP_REDIRECT_URI", REACT_APP_REDIRECT_URI, "REACT_APP_API_DOMAIN", REACT_APP_API_DOMAIN, "REACT_APP_AUTH_DOMAIN", REACT_APP_AUTH_DOMAIN,
-                                                         "REACT_APP_CLIENT_ID", importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME), "REACT_APP_SURNAME",
-                                                         rootMemberSurname))
+                                          .environmentVariables(Map.of("REACT_APP_REDIRECT_URI", REACT_APP_REDIRECT_URI, "REACT_APP_API_DOMAIN", REACT_APP_API_DOMAIN, "REACT_APP_AUTH_DOMAIN",
+                                                                       FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME, "REACT_APP_CLIENT_ID",
+                                                                       importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME), "REACT_APP_SURNAME", rootMemberSurname,
+                                                                       "REACT_APP_AWS_REGION", FamilyDirectoryCdkApp.DEFAULT_REGION, "REACT_APP_USER_POOL_ID",
+                                                                       importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)))
                                           .platform(Platform.WEB)
                                           .sourceCodeProvider(GitHubSourceCodeProvider.Builder.create()
                                                                                               .owner(AMPLIFY_REPOSITORY_OWNER)

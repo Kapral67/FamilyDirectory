@@ -12,9 +12,9 @@ import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
-import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 
@@ -25,11 +25,12 @@ class ApiHelper implements LambdaFunctionHelper {
         final Map<String, AttributeValue> caller;
         final String callerMemberId, callerFamilyId;
         try {
+            // https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html#http-api-develop-integrations-lambda.proxy-format
             @SuppressWarnings("unchecked")
-            final Map<String, Object> callerClaims = (Map<String, Object>) requireNonNull(this.getRequestEvent()
-                                                                                              .getRequestContext()
-                                                                                              .getAuthorizer()
-                                                                                              .get("claims"));
+            final Map<String, Object> callerClaims = ((Map<String, Object>) ((Map<String, Object>) this.getRequestEvent()
+                                                                                                       .getRequestContext()
+                                                                                                       .getAuthorizer()
+                                                                                                       .get("jwt")).get("claims"));
             final String callerSub = Optional.of(callerClaims)
                                              .map(map -> map.get("sub"))
                                              .map(Object::toString)
@@ -51,6 +52,9 @@ class ApiHelper implements LambdaFunctionHelper {
 
         } catch (final NullPointerException | ClassCastException e) {
             LambdaUtils.logTrace(this.getLogger(), e, ERROR);
+            this.getLogger()
+                .log(this.getRequestEvent()
+                         .toString(), DEBUG);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_UNAUTHORIZED));
         }
 

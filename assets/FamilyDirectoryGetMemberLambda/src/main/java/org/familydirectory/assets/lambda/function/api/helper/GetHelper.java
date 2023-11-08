@@ -63,8 +63,8 @@ class GetHelper extends ApiHelper {
         final Map<String, Object> memberResponseBody = new HashMap<>();
         for (final MemberTableParameter param : MemberTableParameter.values()) {
             switch (param) {
-                case ID, KEY, FAMILY_ID -> memberResponseBody.put(param.jsonFieldName(), memberMap.get(param.jsonFieldName())
-                                                                                                  .s());
+                case ID, FAMILY_ID -> memberResponseBody.put(param.jsonFieldName(), memberMap.get(param.jsonFieldName())
+                                                                                             .s());
                 case FIRST_NAME -> memberResponseBody.put(param.jsonFieldName(), member.getFirstName());
                 case MIDDLE_NAME -> ofNullable(member.getMiddleName()).ifPresent(s -> memberResponseBody.put(param.jsonFieldName(), s));
                 case LAST_NAME -> memberResponseBody.put(param.jsonFieldName(), member.getLastName());
