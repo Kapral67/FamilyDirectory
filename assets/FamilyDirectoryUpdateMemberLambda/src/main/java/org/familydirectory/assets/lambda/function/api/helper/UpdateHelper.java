@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
@@ -71,13 +70,11 @@ class UpdateHelper extends ApiHelper {
         final String ddbFamilyId = ddbMemberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
                                                .s();
         final String ddbMemberEmail = ofNullable(ddbMemberMap.get(MemberTableParameter.EMAIL.jsonFieldName())).map(AttributeValue::s)
-                                                                                                              .filter(s -> s.contains("@"))
                                                                                                               .orElse(null);
-        final String updateMemberEmail = ofNullable(updateEvent.member()
-                                                               .getEmail()).filter(s -> s.contains("@"))
-                                                                           .orElse(null);
+        final String updateMemberEmail = updateEvent.member()
+                                                    .getEmail();
 
-        if (nonNull(updateMemberEmail) && !Objects.equals(ddbMemberEmail, updateMemberEmail)) {
+        if (nonNull(updateMemberEmail) && !updateMemberEmail.equals(ddbMemberEmail)) {
             final QueryRequest emailRequest = QueryRequest.builder()
                                                           .tableName(DdbTable.MEMBER.name())
                                                           .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())

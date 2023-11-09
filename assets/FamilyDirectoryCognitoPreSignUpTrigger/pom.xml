@@ -81,6 +81,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.familydirectory.assets</groupId>
             <artifactId>familydirectory-service-assets</artifactId>
             <version>${project.version}</version>

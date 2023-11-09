@@ -24,6 +24,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.Delete;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
@@ -74,7 +75,7 @@ class DeleteHelper extends ApiHelper {
             this.logger.log("<MEMBER,`%s`> Requested Delete to Non-Existent Member <ID,`%s`>".formatted(caller.memberId(), deleteEvent.id()), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_NOT_FOUND));
         }
-        
+
         return new EventWrapper(deleteEvent, ddbMemberMap.get(MemberTableParameter.ID.jsonFieldName())
                                                          .s(), ddbMemberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
                                                                            .s());
@@ -138,6 +139,13 @@ class DeleteHelper extends ApiHelper {
                                                                                     .get(CognitoTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
                                                                                                                                    .filter(Predicate.not(String::isBlank))
                                                                                                                                    .orElseThrow();
+
+            this.dynamoDbClient.deleteItem(DeleteItemRequest.builder()
+                                                            .tableName(DdbTable.COGNITO.name())
+                                                            .key(singletonMap(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(ddbMemberCognitoSub)))
+                                                            .build());
+            this.logger.log("COGNITO Table Entry Deleted for <MEMBER,`%s`>: <COGNITO_SUB,`%s`>".formatted(ddbMemberId, ddbMemberCognitoSub), INFO);
+
             final ListUsersRequest listUsersRequest = ListUsersRequest.builder()
                                                                       .filter("sub = \"%s\"".formatted(ddbMemberCognitoSub))
                                                                       .limit(1)

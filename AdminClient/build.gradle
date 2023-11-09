@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'org.familydirectory.sdk.adminclient'
+version = '0.1'
+
+compileJava {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url "${project.projectDir}/../assets/familydirectory-service-assets/.mvn"
+    }
+}
+
+dependencies {
+    implementation 'org.familydirectory.assets:familydirectory-service-assets:0.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
+    implementation 'org.jetbrains:annotations:24.0.0'
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
+    implementation 'org.slf4j:slf4j-nop:2.0.9'
+    implementation 'software.amazon.awscdk:aws-cdk-lib:2.104.0'
+    implementation platform('software.amazon.awssdk:bom:2.21.17')
+    implementation 'software.amazon.awssdk:dynamodb-enhanced'
+    implementation 'software.amazon.awssdk:cognitoidentityprovider'
+    implementation 'software.amazon.awssdk:sesv2'
+}
+
+application {
+    mainClass = 'org.familydirectory.sdk.adminclient.AdminClient'
+}
+
+run {
+    standardInput = System.in
+}

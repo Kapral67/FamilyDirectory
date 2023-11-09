@@ -102,9 +102,13 @@ STAGE_DIR="$(pwd)"
 # service assets
 cd "$STAGE_DIR/assets/familydirectory-service-assets" || script_error
 rm -rf .mvn
-./gradlew build
+./gradlew clean build
 ./gradlew publish
 clean_maven_local
+
+# ADMIN CLIENT
+cd "$STAGE_DIR/AdminClient" || script_error
+./gradlew clean build
 
 # LAMBDA FUNCTIONS
 ## API

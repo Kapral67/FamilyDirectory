@@ -6,6 +6,12 @@ updates:
       interval: "daily"
     target-branch: "main"
 
+  - package-ecosystem: "gradle"
+    directory: "/AdminClient"
+    schedule:
+      interval: "daily"
+    target-branch: "main"
+
   - package-ecosystem: "maven"
     directory: "/CDK"
     schedule:

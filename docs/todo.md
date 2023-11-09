@@ -1,12 +1,4 @@
-## Nov 07
-
-### CognitoStack
-
-- [x] Callback URLs, Logout URLs, etc.
-
-### Admin Initialize Family Directory?
-
-- How should admins initialize a FamilyDirectory?
+## Nov 09
 
 ### AmplifyStack
 
@@ -19,6 +11,10 @@
 ### README
 
 - [ ] Needs Update in Deployment Steps so that LambdaStack may be deployed with DDB Streams enabled
+
+### AdminClient
+
+- [ ] Maybe create script or alias for `./gradlew -q --console plain run`?
 
 ---
 

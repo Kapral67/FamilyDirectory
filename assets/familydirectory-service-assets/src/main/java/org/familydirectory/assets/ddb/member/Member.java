@@ -28,6 +28,7 @@ import static org.apache.commons.text.WordUtils.capitalizeFully;
 @JsonDeserialize(builder = Member.Builder.class)
 public final
 class Member extends MemberModel {
+    public static final int REQ_NON_NULL_ADDRESS_SIZE = 2;
     @JsonProperty("firstName")
     @NotNull
     private final String firstName;
@@ -217,10 +218,11 @@ class Member extends MemberModel {
             this.checkBuildStatus();
             if (this.isFirstNameSet) {
                 throw new IllegalStateException("First Name already set");
-            } else if (requireNonNull(firstName).isBlank()) {
-                throw new IllegalArgumentException("First Name cannot be blank");
             }
-            this.firstName = capitalizeFully(firstName.replaceAll(DdbUtils.NAME_VALIDATOR_REGEX, ""), '-');
+            this.firstName = capitalizeFully(requireNonNull(firstName).replaceAll(DdbUtils.NAME_VALIDATOR_REGEX, ""), '-', '_').replace("_", "");
+            if (this.firstName.isBlank() || this.firstName.matches(DdbUtils.NAME_SPECIAL_CHAR_REGEX)) {
+                throw new IllegalArgumentException("Invalid First Name");
+            }
             this.isFirstNameSet = true;
             return this;
         }
@@ -238,11 +240,14 @@ class Member extends MemberModel {
             this.checkBuildStatus();
             if (this.isMiddleNameSet) {
                 throw new IllegalStateException("Middle Name already set");
-            } else if (isNull(middleName) || middleName.isBlank()) {
+            } else if (isNull(middleName)) {
                 this.isMiddleNameSet = true;
                 return this;
             }
-            this.middleName = capitalizeFully(middleName.replaceAll(DdbUtils.NAME_VALIDATOR_REGEX, ""), '-');
+            this.middleName = capitalizeFully(middleName.replaceAll(DdbUtils.NAME_VALIDATOR_REGEX, ""), '-', '_').replace("_", "");
+            if (this.middleName.isBlank() || this.middleName.matches(DdbUtils.NAME_SPECIAL_CHAR_REGEX)) {
+                this.middleName = null;
+            }
             this.isMiddleNameSet = true;
             return this;
         }
@@ -253,10 +258,11 @@ class Member extends MemberModel {
             this.checkBuildStatus();
             if (this.isLastNameSet) {
                 throw new IllegalStateException("Last Name already set");
-            } else if (requireNonNull(lastName).isBlank()) {
-                throw new IllegalArgumentException("Last Name cannot be blank");
             }
-            this.lastName = capitalizeFully(lastName.replaceAll(DdbUtils.NAME_VALIDATOR_REGEX, ""), '-');
+            this.lastName = capitalizeFully(requireNonNull(lastName).replaceAll(DdbUtils.NAME_VALIDATOR_REGEX, ""), '-', '_').replace("_", "");
+            if (this.lastName.isBlank() || this.lastName.matches(DdbUtils.NAME_SPECIAL_CHAR_REGEX)) {
+                throw new IllegalArgumentException("Invalid Last Name");
+            }
             this.isLastNameSet = true;
             return this;
         }
@@ -355,7 +361,7 @@ class Member extends MemberModel {
             } else if (isNull(address)) {
                 this.isAddressSet = true;
                 return this;
-            } else if (address.size() != 2) {
+            } else if (address.size() != REQ_NON_NULL_ADDRESS_SIZE) {
                 throw new IllegalArgumentException("Address Must Be Exactly Two Lines");
             }
             address.forEach(s -> {

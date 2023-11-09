@@ -22,7 +22,8 @@ enum DdbUtils {
     public static final PhoneNumberUtil PHONE_NUMBER_UTIL = PhoneNumberUtil.getInstance();
     public static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     public static final int AGE_OF_MAJORITY = 18;
-    public static final String NAME_VALIDATOR_REGEX = "[^A-Za-z'-_]";
+    public static final String NAME_VALIDATOR_REGEX = "[^A-Za-z\\-'_]+";
+    public static final String NAME_SPECIAL_CHAR_REGEX = "['\\-]+";
 
     public static @NotNull
     String normalizePhoneNumber (final @NotNull String uncheckedPhoneNumber) {
