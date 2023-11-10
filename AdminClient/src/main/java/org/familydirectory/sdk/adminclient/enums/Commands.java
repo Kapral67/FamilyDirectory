@@ -12,7 +12,8 @@ public
 enum Commands {
     CREATE(Arrays.asList(CreateOptions.values())),
     UPDATE(null),
-    DELETE(null);
+    DELETE(null),
+    EXIT(null);
 
     @Nullable
     private final List<Enum<?>> options;

@@ -2,16 +2,16 @@ package org.familydirectory.sdk.adminclient.events.delete;
 
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Scanner;
-import java.util.UUID;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
+import org.familydirectory.sdk.adminclient.events.model.MemberRecord;
+import org.familydirectory.sdk.adminclient.utility.MemberPicker;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
@@ -39,7 +39,6 @@ import software.amazon.awssdk.services.sesv2.model.SendEmailRequest;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
@@ -48,13 +47,11 @@ class DeleteEvent implements EventHelper {
     private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
     private final @NotNull CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create();
     private final @NotNull Scanner scanner;
-    private final @NotNull UUID memberId;
 
     public
-    DeleteEvent (final @NotNull Scanner scanner, final @NotNull UUID memberId) {
+    DeleteEvent (final @NotNull Scanner scanner) {
         super();
         this.scanner = requireNonNull(scanner);
-        this.memberId = requireNonNull(memberId);
     }
 
     @Override
@@ -66,18 +63,20 @@ class DeleteEvent implements EventHelper {
     @Override
     public
     void execute () {
-        final Map<String, AttributeValue> memberMap = this.getDdbItem(this.memberId.toString(), DdbTable.MEMBER);
-        if (isNull(memberMap)) {
-            throw new NoSuchElementException("Member Not Found");
+        if (MemberPicker.getEntries()
+                        .isEmpty())
+        {
+            throw new IllegalStateException("No Members Exist to Update");
         }
-        final String familyId = memberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
-                                         .s();
+        final MemberRecord memberRecord = this.getExistingMember("Please Select Existing Member to DELETE:");
+
         final List<TransactWriteItem> transactionItems;
-        if (this.memberId.toString()
-                         .equals(familyId))
+        if (memberRecord.id()
+                        .equals(memberRecord.familyId()))
         {
             // NATIVE
-            final Map<String, AttributeValue> familyMap = requireNonNull(this.getDdbItem(familyId, DdbTable.FAMILY));
+            final Map<String, AttributeValue> familyMap = requireNonNull(this.getDdbItem(memberRecord.familyId()
+                                                                                                     .toString(), DdbTable.FAMILY));
             ofNullable(familyMap.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
                                                                                   .filter(Predicate.not(String::isBlank))
                                                                                   .ifPresent(spouse -> {
@@ -92,11 +91,13 @@ class DeleteEvent implements EventHelper {
                                                                                        });
             final Delete deleteFamily = Delete.builder()
                                               .tableName(DdbTable.FAMILY.name())
-                                              .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(familyId)))
+                                              .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(memberRecord.familyId()
+                                                                                                                                          .toString())))
                                               .build();
             final Delete deleteMember = Delete.builder()
                                               .tableName(DdbTable.MEMBER.name())
-                                              .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(this.memberId.toString())))
+                                              .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(memberRecord.id()
+                                                                                                                                          .toString())))
                                               .build();
             transactionItems = List.of(TransactWriteItem.builder()
                                                         .delete(deleteFamily)
@@ -107,12 +108,14 @@ class DeleteEvent implements EventHelper {
             // NATURALIZED
             final Update update = Update.builder()
                                         .tableName(DdbTable.FAMILY.name())
-                                        .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(familyId)))
+                                        .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(memberRecord.familyId()
+                                                                                                                                    .toString())))
                                         .updateExpression("REMOVE %s".formatted(FamilyTableParameter.SPOUSE.jsonFieldName()))
                                         .build();
             final Delete delete = Delete.builder()
                                         .tableName(DdbTable.MEMBER.name())
-                                        .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(this.memberId.toString())))
+                                        .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(memberRecord.id()
+                                                                                                                                    .toString())))
                                         .build();
             transactionItems = List.of(TransactWriteItem.builder()
                                                         .update(update)
@@ -124,11 +127,13 @@ class DeleteEvent implements EventHelper {
         this.dynamoDbClient.transactWriteItems(TransactWriteItemsRequest.builder()
                                                                         .transactItems(transactionItems)
                                                                         .build());
-        this.deleteCognitoAccountAndNotify();
+        MemberPicker.removeEntry(memberRecord);
+        this.deleteCognitoAccountAndNotify(memberRecord.id()
+                                                       .toString());
     }
 
     private
-    void deleteCognitoAccountAndNotify () {
+    void deleteCognitoAccountAndNotify (final @NotNull String memberId) {
         final String userPoolId = this.getUserPoolId();
         final QueryRequest cognitoMemberQueryRequest = QueryRequest.builder()
                                                                    .tableName(DdbTable.COGNITO.name())
@@ -137,7 +142,7 @@ class DeleteEvent implements EventHelper {
                                                                    .expressionAttributeNames(singletonMap("#memberId", CognitoTableParameter.MEMBER.gsiProps()
                                                                                                                                                    .getPartitionKey()
                                                                                                                                                    .getName()))
-                                                                   .expressionAttributeValues(singletonMap(":memberId", AttributeValue.fromS(this.memberId.toString())))
+                                                                   .expressionAttributeValues(singletonMap(":memberId", AttributeValue.fromS(memberId)))
                                                                    .limit(1)
                                                                    .build();
         final QueryResponse cognitoMemberQueryResponse = this.dynamoDbClient.query(cognitoMemberQueryRequest);
