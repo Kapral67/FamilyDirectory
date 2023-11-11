@@ -66,7 +66,7 @@ class DeleteEvent implements EventHelper {
         if (MemberPicker.getEntries()
                         .isEmpty())
         {
-            throw new IllegalStateException("No Members Exist to Update");
+            throw new IllegalStateException("No Members Exist to Delete");
         }
         final MemberRecord memberRecord = this.getExistingMember("Please Select Existing Member to DELETE:");
 
