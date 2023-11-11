@@ -13,6 +13,7 @@ enum Commands {
     CREATE(Arrays.asList(CreateOptions.values())),
     UPDATE(null),
     DELETE(null),
+    TOGGLE_PDF_GENERATOR(null),
     EXIT(null);
 
     @Nullable

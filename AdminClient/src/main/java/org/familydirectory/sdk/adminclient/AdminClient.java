@@ -1,29 +1,22 @@
 package org.familydirectory.sdk.adminclient;
 
+import io.leego.banana.Ansi;
+import io.leego.banana.BananaUtils;
+import io.leego.banana.Font;
 import java.util.Scanner;
 import org.familydirectory.sdk.adminclient.enums.Commands;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.familydirectory.sdk.adminclient.events.create.CreateEvent;
 import org.familydirectory.sdk.adminclient.events.delete.DeleteEvent;
+import org.familydirectory.sdk.adminclient.events.model.Executable;
+import org.familydirectory.sdk.adminclient.events.stream.TogglePdfGeneratorEvent;
 import org.familydirectory.sdk.adminclient.events.update.UpdateEvent;
+import org.familydirectory.sdk.adminclient.utility.Logger;
+import static java.util.Objects.isNull;
 
 public final
 class AdminClient {
-    private static final String BANNER_HEADER = """
-                                                                                                                                                                     \s
-                                                ███████╗ █████╗ ███╗   ███╗██╗██╗  ██╗   ██╗    ██████╗ ██╗██████╗ ███████╗ ██████╗████████╗ ██████╗ ██████╗ ██╗   ██╗
-                                                ██╔════╝██╔══██╗████╗ ████║██║██║  ╚██╗ ██╔╝    ██╔══██╗██║██╔══██╗██╔════╝██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗╚██╗ ██╔╝
-                                                █████╗  ███████║██╔████╔██║██║██║   ╚████╔╝     ██║  ██║██║██████╔╝█████╗  ██║        ██║   ██║   ██║██████╔╝ ╚████╔╝\s
-                                                ██╔══╝  ██╔══██║██║╚██╔╝██║██║██║    ╚██╔╝      ██║  ██║██║██╔══██╗██╔══╝  ██║        ██║   ██║   ██║██╔══██╗  ╚██╔╝ \s
-                                                ██║     ██║  ██║██║ ╚═╝ ██║██║███████╗██║       ██████╔╝██║██║  ██║███████╗╚██████╗   ██║   ╚██████╔╝██║  ██║   ██║  \s
-                                                ╚═╝     ╚═╝  ╚═╝╚═╝     ╚═╝╚═╝╚══════╝╚═╝       ╚═════╝ ╚═╝╚═╝  ╚═╝╚══════╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝   ╚═╝  \s
-                                                 █████╗ ██████╗ ███╗   ███╗██╗███╗   ██╗     ██████╗██╗     ██╗███████╗███╗   ██╗████████╗                           \s
-                                                ██╔══██╗██╔══██╗████╗ ████║██║████╗  ██║    ██╔════╝██║     ██║██╔════╝████╗  ██║╚══██╔══╝                           \s
-                                                ███████║██║  ██║██╔████╔██║██║██╔██╗ ██║    ██║     ██║     ██║█████╗  ██╔██╗ ██║   ██║                              \s
-                                                ██╔══██║██║  ██║██║╚██╔╝██║██║██║╚██╗██║    ██║     ██║     ██║██╔══╝  ██║╚██╗██║   ██║                              \s
-                                                ██║  ██║██████╔╝██║ ╚═╝ ██║██║██║ ╚████║    ╚██████╗███████╗██║███████╗██║ ╚████║   ██║                              \s
-                                                ╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝     ╚═════╝╚══════╝╚═╝╚══════╝╚═╝  ╚═══╝   ╚═╝                              \s
-                                                                                                                                                                     \s""";
+    private static final String BANNER_HEADER = "FamilyDirectory%nAdmin Client".formatted();
 
     private
     AdminClient () {
@@ -33,19 +26,26 @@ class AdminClient {
     public static
     void main (final String[] args) {
         try (final Scanner scanner = new Scanner(System.in)) {
-            System.out.println(BANNER_HEADER);
+            System.out.println(BananaUtils.bananansi(BANNER_HEADER, Font.ANSI_SHADOW, Ansi.PURPLE));
+            Logger.info("When Prompted With Numbered Lists, Please Press a Number and then Press Enter");
+            System.out.println();
             while (true) {
                 int ordinal = -1;
                 final Commands command;
                 while (ordinal < 0 || ordinal >= Commands.values().length) {
-                    System.out.println("Please Choose Your Command:");
+                    Logger.custom("Please Choose A Command:", Ansi.BOLD, Ansi.BLUE);
                     for (final Commands cmd : Commands.values()) {
-                        System.out.printf("%d) %s%n", cmd.ordinal(), cmd.name());
+                        Logger.custom("%d) %s".formatted(cmd.ordinal(), cmd.name()));
                     }
-                    ordinal = scanner.nextInt();
-                    scanner.nextLine();
+                    final String token = scanner.nextLine()
+                                                .trim();
+                    try {
+                        ordinal = Integer.parseInt(token);
+                    } catch (final NumberFormatException e) {
+                        ordinal = -1;
+                    }
                     if (ordinal < 0 || ordinal >= Commands.values().length) {
-                        System.err.println("[ERROR] Invalid Command");
+                        Logger.error("Invalid Command");
                     }
                     System.out.println();
                 }
@@ -58,44 +58,42 @@ class AdminClient {
                     ordinal = -1;
                     while (ordinal < 0 || ordinal >= command.options()
                                                             .size()) {
-                        System.out.println("Please Choose An Option:");
+                        Logger.custom("Please Choose An Option:", Ansi.BOLD, Ansi.BLUE);
                         command.options()
-                               .forEach(e -> System.out.printf("%d) %s%n", e.ordinal(), e.name()));
-                        ordinal = scanner.nextInt();
-                        scanner.nextLine();
+                               .forEach(e -> Logger.custom("%d) %s".formatted(e.ordinal(), e.name())));
+                        final String token = scanner.nextLine()
+                                                    .trim();
+                        try {
+                            ordinal = Integer.parseInt(token);
+                        } catch (final NumberFormatException e) {
+                            ordinal = -1;
+                        }
                         if (ordinal < 0 || ordinal >= command.options()
                                                              .size())
                         {
-                            System.err.println("[ERROR] Invalid Option");
+                            Logger.error("Invalid Option");
                         }
                         System.out.println();
                     }
                 }
 
-                switch (command) {
-                    case CREATE -> {
-                        try (final CreateEvent createEvent = new CreateEvent(scanner, CreateOptions.values()[ordinal])) {
-                            createEvent.execute();
-                        }
-                    }
-                    case UPDATE -> {
-                        try (final UpdateEvent updateEvent = new UpdateEvent(scanner)) {
-                            updateEvent.execute();
-                        }
-                    }
-                    case DELETE -> {
-                        try (final DeleteEvent deleteEvent = new DeleteEvent(scanner)) {
-                            deleteEvent.execute();
-                        }
-                    }
-                    case EXIT -> {
+                try (final Executable exec = switch (command) {
+                    case CREATE -> new CreateEvent(scanner, CreateOptions.values()[ordinal]);
+                    case UPDATE -> new UpdateEvent(scanner);
+                    case DELETE -> new DeleteEvent(scanner);
+                    case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent();
+                    case EXIT -> null;
+                })
+                {
+                    if (isNull(exec)) {
                         return;
                     }
-                    default -> throw new IllegalStateException("Unhandled Command: %s".formatted(command.name()));
+                    exec.execute();
                 }
             }
         } catch (final Throwable e) {
-            System.err.printf("[ERROR] %s%n", e.getMessage());
+            Logger.error(e.getMessage());
         }
     }
+
 }

@@ -1,6 +1,7 @@
 package org.familydirectory.sdk.adminclient.events.model;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import io.leego.banana.Ansi;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.familydirectory.assets.ddb.enums.SuffixType;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
+import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.MemberPicker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,7 +28,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 public
-interface EventHelper extends LambdaFunctionHelper {
+interface EventHelper extends LambdaFunctionHelper, Executable {
     String ROOT_ID = getenv("ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID");
 
     @NotNull
@@ -67,10 +69,9 @@ interface EventHelper extends LambdaFunctionHelper {
 
     @Override
     @NotNull
-    @Deprecated
     default
     LambdaLogger getLogger () {
-        throw new UnsupportedOperationException("Admin Client Does Not Implement LambdaLogger");
+        return new Logger();
     }
 
     @Override
@@ -85,7 +86,10 @@ interface EventHelper extends LambdaFunctionHelper {
     default
     MemberRecord buildMemberRecord (final @NotNull UUID memberId, final @NotNull UUID familyId) {
         final Member.Builder memberBuilder = Member.builder();
-        System.out.println("Please Standby to Build This Member...");
+        Logger.info("Please Standby to Build This Member...");
+        Logger.info("[Required] attributes will error if skipped");
+        Logger.info("[Optional] attributes can be skipped by pressing Enter");
+        System.out.println();
         boolean breakLoop = false;
         for (final MemberTableParameter param : MemberTableParameter.values()) {
             if (breakLoop) {
@@ -93,23 +97,32 @@ interface EventHelper extends LambdaFunctionHelper {
             }
             switch (param) {
                 case FIRST_NAME -> {
-                    System.out.printf("[Required] Please Enter %s:%n", param.jsonFieldName());
+                    Logger.warn("%s may contain A-Z a-z - _ or '".formatted(param.jsonFieldName()));
+                    Logger.info("_ & - characters result in the immediate succeeding character being capitalized");
+                    Logger.info("_ characters are removed, useful for names like McDonald (input: mc_donald)");
+                    Logger.custom("[Required] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     memberBuilder.firstName(this.scanner()
                                                 .nextLine());
                     System.out.println();
                 }
                 case MIDDLE_NAME -> {
-                    System.out.printf("[Optional (Enter to skip)] Please Enter %s:%n", param.jsonFieldName());
+                    Logger.warn("%s may contain A-Z a-z - _ or '".formatted(param.jsonFieldName()));
+                    Logger.info("_ & - characters result in the immediate succeeding character being capitalized");
+                    Logger.info("_ characters are removed, useful for names like McDonald (input: mc_donald)");
+                    Logger.custom("[Optional] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     final String middleName = this.scanner()
                                                   .nextLine()
                                                   .trim();
                     if (!middleName.isEmpty()) {
                         memberBuilder.middleName(middleName);
+                        System.out.println();
                     }
-                    System.out.println();
                 }
                 case LAST_NAME -> {
-                    System.out.printf("[Required] Please Enter %s:%n", param.jsonFieldName());
+                    Logger.warn("%s may contain A-Z a-z - _ or '".formatted(param.jsonFieldName()));
+                    Logger.info("_ & - characters result in the immediate succeeding character being capitalized");
+                    Logger.info("_ characters are removed, useful for names like McDonald (input: mc_donald)");
+                    Logger.custom("[Required] Please Enter %s:%n".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     memberBuilder.lastName(this.scanner()
                                                .nextLine());
                     System.out.println();
@@ -117,71 +130,82 @@ interface EventHelper extends LambdaFunctionHelper {
                 case SUFFIX -> {
                     int ordinal = -1;
                     final SuffixType suffix;
-                    while (ordinal < 0 || ordinal > SuffixType.values().length) {
-                        System.out.println("[Optional] Please Choose A Suffix:");
+                    while (ordinal < 0 || ordinal >= SuffixType.values().length) {
+                        Logger.custom("[Optional] Please Choose A Suffix:", Ansi.BOLD, Ansi.BLUE);
                         for (final SuffixType sfx : SuffixType.values()) {
-                            System.out.printf("%d) %s%n", sfx.ordinal(), sfx.name());
+                            Logger.custom("%d) %s".formatted(sfx.ordinal(), sfx.name()));
                         }
-                        System.out.printf("%d) Skip%n", SuffixType.values().length);
-                        ordinal = this.scanner()
-                                      .nextInt();
-                        this.scanner()
-                            .nextLine();
-                        if (ordinal < 0 || ordinal > SuffixType.values().length) {
-                            System.err.println("[ERROR] Invalid Suffix");
+                        final String token = this.scanner()
+                                                 .nextLine()
+                                                 .trim();
+                        try {
+                            ordinal = Integer.parseInt(token);
+                        } catch (final NumberFormatException e) {
+                            if (!token.isEmpty()) {
+                                ordinal = -1;
+                            } else {
+                                break;
+                            }
                         }
-                        System.out.println();
-                    }
-                    if (ordinal != SuffixType.values().length) {
-                        memberBuilder.suffix(SuffixType.values()[ordinal]);
+                        if (ordinal < 0 || ordinal >= SuffixType.values().length) {
+                            Logger.error("Invalid Suffix");
+                            System.out.println();
+                        } else {
+                            memberBuilder.suffix(SuffixType.values()[ordinal]);
+                            System.out.println();
+                            break;
+                        }
                     }
                 }
                 case BIRTHDAY -> {
-                    System.out.printf("[Required (Format is yyyy-MM-dd, e.g. 1970-12-31 -> Dec. 31, 1970)] Please Enter %s:%n", param.jsonFieldName());
+                    Logger.warn("%s must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)".formatted(param.jsonFieldName()));
+                    Logger.custom("[Required] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     memberBuilder.birthday(Member.convertStringToDate(this.scanner()
                                                                           .nextLine()
                                                                           .trim()));
                     System.out.println();
                 }
                 case DEATHDAY -> {
-                    System.out.printf("[Optional (Enter to skip) (Format is yyyy-MM-dd, e.g. 1970-12-31 -> Dec. 31, 1970)] Please Enter %s:%n", param.jsonFieldName());
+                    Logger.warn("%s must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)".formatted(param.jsonFieldName()));
+                    Logger.custom("[Optional] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     final String deathDay = this.scanner()
                                                 .nextLine()
                                                 .trim();
                     if (!deathDay.isEmpty()) {
                         memberBuilder.deathday(Member.convertStringToDate(deathDay));
+                        System.out.println();
                         breakLoop = true;
                     }
-                    System.out.println();
                 }
                 case EMAIL -> {
-                    System.out.printf("[Optional (Enter to skip)] Please Enter %s:%n", param.jsonFieldName());
+                    Logger.custom("[Optional] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     final String email = this.scanner()
                                              .nextLine()
                                              .trim();
                     if (!email.isEmpty()) {
                         memberBuilder.email(email);
+                        System.out.println();
                     }
-                    System.out.println();
                 }
                 case PHONES -> {
-                    System.out.printf("[Optional (y/N)] Add %s to this Member?%n", param.jsonFieldName());
+                    Logger.custom("[Optional] Add %s to this Member? (y/N)".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     final String addPhone = this.scanner()
                                                 .nextLine()
                                                 .trim();
                     System.out.println();
                     if (addPhone.equalsIgnoreCase("y")) {
-                        System.out.printf("Phone Numbers:%n\tFor US numbers:%n\t\t- Do Not Include + or Country Code%n\tFor International numbers:%n\t\t- + and Country Code are required%n%n");
+                        Logger.warn("For US numbers: Do Not Include + or Country Code");
+                        Logger.warn("For International numbers: + and Country Code are required");
                         final Map<PhoneType, String> phones = new HashMap<>();
                         for (final PhoneType phoneType : PhoneType.values()) {
-                            System.out.printf("[Optional (Enter to skip)] Please Enter %s Phone Number:%n", phoneType.name());
+                            Logger.custom("[Optional] Please Enter %s Phone Number:".formatted(phoneType.name()), Ansi.BOLD, Ansi.BLUE);
                             final String phone = this.scanner()
                                                      .nextLine()
                                                      .trim();
                             if (!phone.isEmpty()) {
                                 phones.put(phoneType, phone);
+                                System.out.println();
                             }
-                            System.out.println();
                         }
                         if (!phones.isEmpty()) {
                             memberBuilder.phones(phones);
@@ -191,14 +215,18 @@ interface EventHelper extends LambdaFunctionHelper {
                 case ADDRESS -> {
                     final List<String> addressLines = new ArrayList<>();
                     for (int i = 1; i <= Member.REQ_NON_NULL_ADDRESS_SIZE; ++i) {
-                        System.out.printf("[Optional (Enter to skip)] Please Enter %s line %d:%n", param.jsonFieldName(), i);
+                        if (i == 1) {
+                            Logger.custom("[Optional] Please Enter %s line %d:".formatted(param.jsonFieldName(), i), Ansi.BOLD, Ansi.BLUE);
+                        } else {
+                            Logger.custom("[Required] Please Enter %s line %d:".formatted(param.jsonFieldName(), i), Ansi.BOLD, Ansi.BLUE);
+                        }
                         final String addressLineText = this.scanner()
                                                            .nextLine()
                                                            .trim();
-                        System.out.println();
                         if (addressLineText.isEmpty()) {
                             break;
                         }
+                        System.out.println();
                         addressLines.add(addressLineText);
                     }
                     if (!addressLines.isEmpty()) {
@@ -223,18 +251,22 @@ interface EventHelper extends LambdaFunctionHelper {
                                                        .toList();
         int index = -1;
         while (index < 0 || index >= records.size()) {
-            System.out.println(requireNonNull(message));
+            Logger.custom(requireNonNull(message), Ansi.BOLD, Ansi.BLUE);
             for (int i = 0; i < records.size(); ++i) {
-                System.out.printf("%d) %s%n", i, records.get(i)
-                                                        .member()
-                                                        .getFullName());
+                Logger.custom("%d) %s".formatted(i, records.get(i)
+                                                           .member()
+                                                           .getFullName()));
             }
-            index = this.scanner()
-                        .nextInt();
-            this.scanner()
-                .nextLine();
+            final String token = this.scanner()
+                                     .nextLine()
+                                     .trim();
+            try {
+                index = Integer.parseInt(token);
+            } catch (final NumberFormatException e) {
+                index = -1;
+            }
             if (index < 0 || index >= records.size()) {
-                System.err.println("[ERROR] Invalid Member");
+                Logger.error("Invalid Member");
             }
             System.out.println();
         }
@@ -268,6 +300,4 @@ interface EventHelper extends LambdaFunctionHelper {
             }
         }
     }
-
-    void execute ();
 }

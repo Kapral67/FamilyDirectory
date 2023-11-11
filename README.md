@@ -3,15 +3,42 @@
 ### Steps to Deploy
 
 1. Your AWS account and region info must be stored in
-   an [aws configuration/credential file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
+   an [aws configuration & credential file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 
-    - The easiest way to do this is to use [aws cli](https://aws.amazon.com/cli/)
+    - The Account & Region must match the environment variables you set for `CDK_DEFAULT_ACCOUNT` & `CDK_DEFAULT_REGION`
+      in Step 2
+
+    - The easiest way to get the access key and secret key for your credential file:
+
+        1. Go to AWS Console and Find IAM Service
+        2. Access management -> Users, then Create user
+        3. This user does not need access to the AWS Management Console
+        4. When setting permissions, Attach policies directly
+        5. Add the `AdministratorAccess` Policy
+        6. Once the User is created, go to their Security credentials tab and Create an access key
+        7. Disable this access key after deployment, or after performing actions with the `AdminClient`
+
+    - The easiest way to create the credential and config file is to use [aws cli](https://aws.amazon.com/cli/)
       or [aws toolkit plugin for IntelliJ](https://plugins.jetbrains.com/plugin/11349-aws-toolkit)
+
+        - The config file at a location like `~/.aws/config` should look like (replace `us-east-1` with whatever your
+          desired region and remember to set the `CDK_DEFAULT_REGION` Environment variable to this as well):
+        ```
+      [default]
+		region = us-east-1
+		output = json
+        ```
+
+        - The credential file at a location like `~/.aws/credentials` should look like:
+        ```
+      [default]
+		aws_access_key_id = YOUR_ACCESS_KEY_HERE
+		aws_secret_access_key = YOUR_SECRET_KEY_HERE
+        ```
 
 2. Next you need to define the following environment variables:
 
     1. `ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME`
-
         - Should be a Fully-Qualified-Domain-Name (e.g. `example.com`, `aws.example.com`, etc.) whose DNS should be
           controlled by Route53
 
@@ -45,22 +72,26 @@
 
     8. `ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OAUTH_TOKEN`
 
-        - Fine-grained GitHub Token that ONLY gives access to `${ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER}/${ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME}` and only allows read/write permissions for repository hooks
+        - Fine-grained GitHub Token that ONLY gives access
+          to `${ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER}/${ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME}` and only
+          allows read/write permissions for repository hooks
         - **==TODO==** *Add More Detailed Instructions*
         - **==TODO==** *Add Disclaimer About How This Token Is Used*
 
     9. `ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID`
-    
+
         - The `ROOT MEMBER` of this FamilyDirectory must be known and so an Environment Variable is set for it.
         - A good value for this variable is `"00000000-0000-0000-0000-000000000000"`
-    
+
     10. `CDK_DEFAULT_ACCOUNT`
-    
+
         - The AWS Account Id
-    
+        - In AWS Console, at the top right, click the drop-down to see your Account ID
+            - Set this environment variable to that number excluding any dashes
+
     11. `CDK_DEFAULT_REGION`
-    
-        - The AWS Region
+
+        - The AWS Region (See Step 1)
 
 3. Now is a good time to bootstrap you're aws account for cdk if you haven't already
 
@@ -84,7 +115,8 @@
 
     1. First, deploy the `FamilyDirectoryDomainStack` solely (e.g. `cdk deploy FamilyDirectoryDomainStack`)
 
-        - Before moving forward, login to the aws console and navigate to Route53, click on Hosted Zones in the right side-bar, then click on the Hosted Zone
+        - Before moving forward, login to the aws console and navigate to Route53, click on Hosted Zones in the right
+          sidebar, then click on the Hosted Zone
 
         - Here, you need to copy the NS records for `${ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME}` and apply them at your
           registrar
@@ -97,15 +129,22 @@
                   when using Cloudflare as the Nameserver for my root domain. For these purposes, Cloudflare is free if
                   you already own the root domain.*
 
-        - You will also need to set a temporary A record for `${ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME}` in your hosted zone's record table select **Create record** button and leave the record name blank, make sure Record type is **A** and set the TTL to something short like 300 seconds. The routing policy should be **Simple routing** and the Value of the record can be anything (this is a dummy record so that Route53 allows us to attach A records to subdomains and is overwritten by the `FamilyDirectoryAmplifyStack`). You can use the value `93.184.216.34` (which is the A record value of `example.com` at the time of writing)
+        - You will also need to set a temporary A record for `${ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME}` in your hosted
+          zone's record table select **Create record** button and leave the record name blank, make sure Record type is
+          **A** and set the TTL to something short like 300 seconds. The routing policy should be **Simple routing** and
+          the Value of the record can be anything (this is a dummy record so that Route53 allows us to attach A records
+          to subdomains and is overwritten by the `FamilyDirectoryAmplifyStack`). You can use the
+          value `93.184.216.34` (which is the A record value of `example.com` at the time of writing)
 
         - Wait Until DNS Propagates, Then Continue
 
     2. Now, deploy the `FamilyDirectoryApiGatewayStack`
-        - This stack should cause all stacks except `FamilyDirectoryAmplifyStack` to deploy along with because they are all dependents of this stack.
-        - Since there lots of artifacts being deployed and dns validation occurring on some stacks, this will take awhile
-    
-    3. **==TODO==** *Need Instructions for adding Root Member to Database before deploying `FamilyDirectoryAmplifyStack`*
-    
+        - This stack should cause all stacks except `FamilyDirectoryAmplifyStack` to deploy along with because they are
+          all dependents of this stack.
+        - Since there lots of artifacts being deployed and dns validation occurring on some stacks, this will take
+          a while
+
+    3. **==TODO==** *Need Instructions for adding Root Member to Database before
+       deploying `FamilyDirectoryAmplifyStack`*
 
 ***TODO** Finish Deployment Order*

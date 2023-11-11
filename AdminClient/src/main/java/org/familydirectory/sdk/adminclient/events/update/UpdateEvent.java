@@ -4,6 +4,7 @@ import java.util.Scanner;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.events.model.MemberRecord;
+import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.MemberPicker;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -37,7 +38,7 @@ class UpdateEvent implements EventHelper {
             throw new IllegalStateException("No Members Exist to Update");
         }
         final MemberRecord ddbMemberRecord = this.getExistingMember("Please Select Existing Member to UPDATE:");
-        System.out.println("WARNING: Any [Optional] attributes unspecified are removed if currently present.");
+        Logger.warn("Any [Optional] attributes unspecified are removed if currently present.");
         final MemberRecord memberRecord = this.buildMemberRecord(ddbMemberRecord.id(), ddbMemberRecord.familyId());
         {
             final String updateMemberEmail = memberRecord.member()

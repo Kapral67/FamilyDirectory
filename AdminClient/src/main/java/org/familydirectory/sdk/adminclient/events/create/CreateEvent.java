@@ -11,6 +11,7 @@ import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.events.model.MemberRecord;
+import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.MemberPicker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -61,7 +62,7 @@ class CreateEvent implements EventHelper {
                 if (nonNull(this.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
                     throw new IllegalStateException("ROOT Member Already Exists");
                 }
-                System.out.println("ROOT Creation Event is for Creating the Oldest Native Member in the Family Directory.");
+                Logger.info("ROOT Creation Event is for Creating the Oldest Native Member in the Family Directory.");
                 id = UUID.fromString(ROOT_ID);
                 memberRecord = this.buildMemberRecord(id, id);
             }
@@ -71,7 +72,7 @@ class CreateEvent implements EventHelper {
                 {
                     throw new IllegalStateException("ROOT Member Must Exist");
                 }
-                System.out.println("SPOUSE Creation Events are for Creating Non-Native Members.");
+                Logger.info("SPOUSE Creation Events are for Creating Non-Native Members.");
                 final MemberRecord nativeSpouse = this.getExistingMember("To Create a SPOUSE for an Existing Member, Please Select the Existing Member:");
                 id = nativeSpouse.familyId();
                 final Map<String, AttributeValue> family = requireNonNull(this.getDdbItem(id.toString(), DdbTable.FAMILY));
@@ -89,7 +90,7 @@ class CreateEvent implements EventHelper {
                 {
                     throw new IllegalStateException("ROOT Member Must Exist");
                 }
-                System.out.println("DESCENDANT Creation Events are for Creating Native Members.");
+                Logger.info("DESCENDANT Creation Events are for Creating Native Members.");
                 final MemberRecord parent = this.getExistingMember("To Create a DESCENDANT, Please Select any Parent of this DESCENDANT:");
                 id = parent.familyId();
                 final UUID descendantId = UUID.randomUUID();
@@ -111,29 +112,25 @@ class CreateEvent implements EventHelper {
         final List<TransactWriteItem> transactionItems = new ArrayList<>();
 
         switch (this.createOption) {
-            case ROOT -> {
-                transactionItems.add(TransactWriteItem.builder()
-                                                      .put(Put.builder()
-                                                              .tableName(DdbTable.FAMILY.name())
-                                                              .item(Map.of(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(memberRecord.id()
-                                                                                                                                                     .toString()),
-                                                                           FamilyTableParameter.ANCESTOR.jsonFieldName(), AttributeValue.fromS(memberRecord.familyId()
-                                                                                                                                                           .toString())))
-                                                              .build())
-                                                      .build());
-            }
-            case SPOUSE -> {
-                transactionItems.add(TransactWriteItem.builder()
-                                                      .update(Update.builder()
-                                                                    .tableName(DdbTable.FAMILY.name())
-                                                                    .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(memberRecord.familyId()
-                                                                                                                                                                .toString())))
-                                                                    .updateExpression("SET %s = :spouseKey".formatted(FamilyTableParameter.SPOUSE.jsonFieldName()))
-                                                                    .expressionAttributeValues(singletonMap(":spouseKey", AttributeValue.fromS(memberRecord.id()
-                                                                                                                                                           .toString())))
-                                                                    .build())
-                                                      .build());
-            }
+            case ROOT -> transactionItems.add(TransactWriteItem.builder()
+                                                               .put(Put.builder()
+                                                                       .tableName(DdbTable.FAMILY.name())
+                                                                       .item(Map.of(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(memberRecord.id()
+                                                                                                                                                              .toString()),
+                                                                                    FamilyTableParameter.ANCESTOR.jsonFieldName(), AttributeValue.fromS(memberRecord.familyId()
+                                                                                                                                                                    .toString())))
+                                                                       .build())
+                                                               .build());
+            case SPOUSE -> transactionItems.add(TransactWriteItem.builder()
+                                                                 .update(Update.builder()
+                                                                               .tableName(DdbTable.FAMILY.name())
+                                                                               .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(memberRecord.familyId()
+                                                                                                                                                                           .toString())))
+                                                                               .updateExpression("SET %s = :spouseKey".formatted(FamilyTableParameter.SPOUSE.jsonFieldName()))
+                                                                               .expressionAttributeValues(singletonMap(":spouseKey", AttributeValue.fromS(memberRecord.id()
+                                                                                                                                                                      .toString())))
+                                                                               .build())
+                                                                 .build());
             case DESCENDANT -> {
                 final Map<String, AttributeValue> ancestorMap = requireNonNull(this.getDdbItem(requireNonNull(ancestorId).toString(), DdbTable.FAMILY));
                 final String descendantsUpdateExpression = (ofNullable(ancestorMap.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)

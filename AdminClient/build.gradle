@@ -29,6 +29,8 @@ dependencies {
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:sesv2'
+    implementation 'software.amazon.awssdk:lambda'
+    implementation 'io.leego:banana:2.1.0'
 }
 
 application {
