@@ -66,6 +66,8 @@ package-lock.json
 
 # misc
 bin/
+AdminClient
+!AdminClient/
 
 # research files
 *[pP]layground*

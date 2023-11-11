@@ -14,7 +14,7 @@
 
 ### AdminClient
 
-- [ ] Maybe create script or alias for `./gradlew -q --console plain run`?
+- [x] Maybe create script or alias for `./gradlew -q --console plain run`?
 
 ---
 

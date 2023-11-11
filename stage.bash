@@ -109,6 +109,8 @@ clean_maven_local
 # ADMIN CLIENT
 cd "$STAGE_DIR/AdminClient" || script_error
 ./gradlew clean build
+echo -e "#!/usr/bin/env bash\n$(pwd)/gradlew -q --console plain run" > "$(pwd)/AdminClient"
+chmod +x "$(pwd)/AdminClient"
 
 # LAMBDA FUNCTIONS
 ## API
