@@ -150,7 +150,7 @@ class CreateHelper extends ApiHelper {
                                                                                                                                       .filter(Predicate.not(List::isEmpty))
                                                                                                                                       .isEmpty())
                     ? "SET %s = :descendants".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName())
-                    : "SET %s = list_append(%s, :descendants)".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName(), FamilyTableParameter.DESCENDANTS.jsonFieldName());
+                    : "ADD %s :descendants".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName());
             transactionItems.add(TransactWriteItem.builder()
                                                   .update(Update.builder()
                                                                 .tableName(DdbTable.FAMILY.name())
