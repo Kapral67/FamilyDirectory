@@ -81,7 +81,7 @@ class AdminClient {
                     case CREATE -> new CreateEvent(scanner, CreateOptions.values()[ordinal]);
                     case UPDATE -> new UpdateEvent(scanner);
                     case DELETE -> new DeleteEvent(scanner);
-                    case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent();
+                    case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(scanner);
                     case EXIT -> null;
                 })
                 {
