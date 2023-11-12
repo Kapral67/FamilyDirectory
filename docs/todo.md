@@ -1,4 +1,4 @@
-## Nov 09
+## Nov 12
 
 ### AmplifyStack
 
@@ -10,7 +10,8 @@
 
 ### README
 
-- [ ] Needs Update in Deployment Steps so that LambdaStack may be deployed with DDB Streams enabled
+- [ ] Finish TODOs
+- [ ] Add Instructions for AdminClient
 
 ### AdminClient
 
@@ -28,3 +29,9 @@
         - apis would acquire this lock at the end of their function
         - generating functions would acquire this lock at the start of their function
     - **Look into DDB Streams**
+
+### PDFs
+
+- Birthday Views
+    - By Standard Family Traversal
+    - By Month
