@@ -73,7 +73,7 @@ enum StreamFunction implements LambdaFunctionModel {
     @Override
     public @NotNull
     Duration timeout () {
-        return minutes(15);
+        return minutes(5);
     }
 
     @Override
