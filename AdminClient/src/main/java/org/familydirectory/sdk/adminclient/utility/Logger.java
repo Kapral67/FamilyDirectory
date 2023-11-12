@@ -5,9 +5,7 @@ import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import io.leego.banana.Ansi;
 import io.leego.banana.BananaUtils;
 import io.leego.banana.Font;
-import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.isNull;
@@ -15,8 +13,6 @@ import static java.util.Objects.nonNull;
 
 public final
 class Logger implements LambdaLogger {
-    private static final Set<LogLevel> ERROR_LEVELS = Set.of(LogLevel.FATAL, LogLevel.ERROR, LogLevel.WARN);
-
     public
     Logger () {
         super();
@@ -31,9 +27,6 @@ class Logger implements LambdaLogger {
     void custom (final @NotNull LogLevel logLevel, final @Nullable String message, final Ansi... styles)
     {
         final StringBuilder sb = new StringBuilder();
-        final PrintStream printStream = ERROR_LEVELS.contains(logLevel)
-                ? System.err
-                : System.out;
         if (!logLevel.equals(LogLevel.UNDEFINED)) {
             sb.append("[%s] ".formatted(logLevel.name()));
         }
@@ -41,7 +34,7 @@ class Logger implements LambdaLogger {
             sb.append("%s".formatted(message));
         }
         if (!sb.isEmpty()) {
-            printStream.println(BananaUtils.bananansi(sb.toString(), Font.TERM, styles));
+            System.out.println(BananaUtils.bananansi(sb.toString(), Font.TERM, styles));
         }
     }
 

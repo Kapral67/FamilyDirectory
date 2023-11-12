@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+ORG_FAMILYDIRECTORY_VERSION=0.1
+
 function cerr {
   echo "$@" 1>&2
 }
@@ -109,8 +111,9 @@ clean_maven_local
 # ADMIN CLIENT
 cd "$STAGE_DIR/AdminClient" || script_error
 ./gradlew clean build
-echo -e "#!/usr/bin/env bash\n$(pwd)/gradlew -q --console plain run" > "$(pwd)/AdminClient"
-chmod +x "$(pwd)/AdminClient"
+./gradlew distTar
+tar xf "build/distributions/AdminClient-$ORG_FAMILYDIRECTORY_VERSION.tar" -C build/distributions
+ln -s "$STAGE_DIR/AdminClient/build/distributions/AdminClient-$ORG_FAMILYDIRECTORY_VERSION/bin/AdminClient" AdminClient
 
 # LAMBDA FUNCTIONS
 ## API
