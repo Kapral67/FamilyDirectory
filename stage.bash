@@ -113,6 +113,7 @@ cd "$STAGE_DIR/AdminClient" || script_error
 ./gradlew clean build
 ./gradlew distTar
 tar xf "build/distributions/AdminClient-$ORG_FAMILYDIRECTORY_VERSION.tar" -C build/distributions
+rm -f AdminClient
 ln -s "$STAGE_DIR/AdminClient/build/distributions/AdminClient-$ORG_FAMILYDIRECTORY_VERSION/bin/AdminClient" AdminClient
 
 # LAMBDA FUNCTIONS

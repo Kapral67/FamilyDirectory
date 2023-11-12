@@ -6,6 +6,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,8 @@ import static java.util.Optional.ofNullable;
 public final
 class PdfHelper implements LambdaFunctionHelper {
     private static final String ROOT_MEMBER_ID = getenv(LambdaUtils.EnvVar.ROOT_ID.name());
+    private static final Comparator<Map.Entry<String, Member>> DESCENDANT_COMPARATOR = Comparator.comparing(entry -> entry.getValue()
+                                                                                                                          .getBirthday());
     @NotNull
     private final PDDocument pdf = new PDDocument();
     @NotNull
@@ -112,30 +115,28 @@ class PdfHelper implements LambdaFunctionHelper {
                                                                                                                                .filter(Predicate.not(String::isBlank))
                                                                                                                                .orElse(null));
         final @NotNull List<Member> deadEndDescendants = new ArrayList<>();
+        final @NotNull List<String> recursiveDescendantIds = new ArrayList<>();
+        final @NotNull List<Map.Entry<String, Member>> descendants = new ArrayList<>();
+        ofNullable(family.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
+                                                                                .filter(Predicate.not(List::isEmpty))
+                                                                                .ifPresent(ss -> ss.stream()
+                                                                                                   .filter(Predicate.not(String::isBlank))
+                                                                                                   .forEach(s -> descendants.add(Map.entry(s, this.retrieveMember(s)))));
 
-        final @NotNull List<String> recursiveDescendants = new ArrayList<>();
-
-        final @Nullable List<String> descendantIds = ofNullable(family.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
-                                                                                                                             .filter(Predicate.not(List::isEmpty))
-                                                                                                                             .orElse(null);
-
-        if (nonNull(descendantIds)) {
-            for (final String descendantId : descendantIds) {
-                if (descendantId.isBlank()) {
-                    continue;
-                }
-
-                final @NotNull Map<String, AttributeValue> descendantFamily = this.retrieveFamily(descendantId);
-                final @NotNull Member descendant = this.retrieveMember(descendantId);
+        if (!descendants.isEmpty()) {
+            descendants.sort(DESCENDANT_COMPARATOR);
+            for (final Map.Entry<String, Member> descendant : descendants) {
+                final @NotNull Map<String, AttributeValue> descendantFamily = this.retrieveFamily(descendant.getKey());
 
 //          DEAD-END-DESCENDANTS ARE (A) NOT ADULTS & (B) DON'T HAVE DESCENDANTS
-                if (!descendant.isAdult() && ofNullable(descendantFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
+                if (!descendant.getValue()
+                               .isAdult() && ofNullable(descendantFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
                                                                                                                                .filter(Predicate.not(List::isEmpty))
                                                                                                                                .isEmpty())
                 {
-                    deadEndDescendants.add(descendant);
+                    deadEndDescendants.add(descendant.getValue());
                 } else {
-                    recursiveDescendants.add(descendantId);
+                    recursiveDescendantIds.add(descendant.getKey());
                 }
             }
         }
@@ -148,7 +149,7 @@ class PdfHelper implements LambdaFunctionHelper {
                                                                                                             .filter(ss -> ss.contains(id))
                                                                                                             .isPresent());
 
-        for (final String recursiveDescendant : recursiveDescendants) {
+        for (final String recursiveDescendant : recursiveDescendantIds) {
             this.traverse(recursiveDescendant);
         }
     }
