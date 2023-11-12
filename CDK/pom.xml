@@ -13,8 +13,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cdk.version>2.106.0</cdk.version>
-        <cdk-alpha.version>2.106.0-alpha.0</cdk-alpha.version>
+        <cdk.version>2.105.0</cdk.version>
+        <cdk-alpha.version>2.105.0-alpha.0</cdk-alpha.version>
         <constructs.version>10.3.0</constructs.version>
         <junit.version>5.10.1</junit.version>
     </properties>
