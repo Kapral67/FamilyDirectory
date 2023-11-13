@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import java.util.Map;
 import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.familydirectory.assets.lambda.function.api.helper.GetHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
@@ -24,6 +25,7 @@ class FamilyDirectoryGetMemberLambda implements RequestHandler<APIGatewayProxyRe
             final ApiHelper.Caller caller = getHelper.getCaller();
 
             return new APIGatewayProxyResponseEvent().withStatusCode(SC_OK)
+                                                     .withHeaders(Map.of("Content-Type", "application/json"))
                                                      .withBody(getHelper.getResponseBody(caller));
 
         } catch (final ApiHelper.ResponseException e) {

@@ -5,6 +5,8 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,62 +43,84 @@ class GetHelper extends ApiHelper {
     @NotNull
     public
     String getResponseBody (final @NotNull Caller caller) throws JsonProcessingException {
+        final Map<String, Object> responseBodyMap = new HashMap<>();
         final String queryStringId = ofNullable(this.requestEvent.getQueryStringParameters()).map(m -> m.get(DdbTableParameter.PK.getName()))
                                                                                              .orElse(null);
-        final @NotNull Member member;
         final @NotNull Map<String, AttributeValue> memberMap;
         final @NotNull Map<String, AttributeValue> family;
         if (isNull(queryStringId) || queryStringId.isBlank()) {
             memberMap = caller.attributeMap();
-            member = Member.convertDdbMap(memberMap);
             family = requireNonNull(this.getDdbItem(caller.familyId(), DdbTable.FAMILY));
         } else {
             memberMap = ofNullable(this.getDdbItem(queryStringId, DdbTable.MEMBER)).orElseThrow(() -> {
                 this.logger.log("<MEMBER,`%s`> Requested <MEMBER,`%s`> NOT FOUND".formatted(caller.memberId(), queryStringId), WARN);
                 return new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_NOT_FOUND));
             });
-            member = Member.convertDdbMap(memberMap);
             family = requireNonNull(this.getDdbItem(memberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
                                                              .s(), DdbTable.FAMILY));
         }
+        responseBodyMap.put("ancestor", family.get(FamilyTableParameter.ANCESTOR.jsonFieldName())
+                                              .s());
+        responseBodyMap.put("member", this.getResponseObject(memberMap));
 
-        final Map<String, Object> memberResponseBody = new HashMap<>();
-        for (final MemberTableParameter param : MemberTableParameter.values()) {
-            switch (param) {
-                case ID, FAMILY_ID -> memberResponseBody.put(param.jsonFieldName(), memberMap.get(param.jsonFieldName())
-                                                                                             .s());
-                case FIRST_NAME -> memberResponseBody.put(param.jsonFieldName(), member.getFirstName());
-                case MIDDLE_NAME -> ofNullable(member.getMiddleName()).ifPresent(s -> memberResponseBody.put(param.jsonFieldName(), s));
-                case LAST_NAME -> memberResponseBody.put(param.jsonFieldName(), member.getLastName());
-                case SUFFIX -> ofNullable(member.getSuffix()).ifPresent(t -> memberResponseBody.put(param.jsonFieldName(), t.value()));
-                case BIRTHDAY -> memberResponseBody.put(param.jsonFieldName(), member.getBirthdayString());
-                case DEATHDAY -> ofNullable(member.getDeathdayString()).ifPresent(s -> memberResponseBody.put(param.jsonFieldName(), s));
-                case EMAIL -> ofNullable(member.getEmail()).ifPresent(s -> memberResponseBody.put(param.jsonFieldName(), s));
-                case PHONES -> ofNullable(member.getPhones()).ifPresent(m -> memberResponseBody.put(param.jsonFieldName(), m.entrySet()
-                                                                                                                            .stream()
-                                                                                                                            .collect(Collectors.toUnmodifiableMap(entry -> entry.getKey()
-                                                                                                                                                                                .getJson(),
-                                                                                                                                                                  Map.Entry::getValue))));
-                case ADDRESS -> ofNullable(member.getAddress()).ifPresent(l -> memberResponseBody.put(param.jsonFieldName(), l));
-                default -> this.logger.log("MemberTableParameter `%s` Not Handled in GET_MEMBER".formatted(param.name()), WARN);
-            }
-        }
-
-        final Map<String, Object> familyResponseBody = new HashMap<>();
         for (final FamilyTableParameter param : FamilyTableParameter.values()) {
             switch (param) {
-                case ID, ANCESTOR -> familyResponseBody.put(param.jsonFieldName(), family.get(param.jsonFieldName())
-                                                                                         .s());
+                case ID, ANCESTOR -> {
+                }
                 case SPOUSE -> ofNullable(family.get(param.jsonFieldName())).map(AttributeValue::s)
-                                                                            .ifPresent(s -> familyResponseBody.put(param.jsonFieldName(), s));
+                                                                            .ifPresent(s -> responseBodyMap.put(param.jsonFieldName(),
+                                                                                                                this.getResponseObject(requireNonNull(this.getDdbItem(s, DdbTable.MEMBER)))));
                 case DESCENDANTS -> ofNullable(family.get(param.jsonFieldName())).map(AttributeValue::ss)
                                                                                  .filter(Predicate.not(List::isEmpty))
-                                                                                 .ifPresent(l -> familyResponseBody.put(param.jsonFieldName(), l));
+                                                                                 .ifPresent(l -> responseBodyMap.put(param.jsonFieldName(), this.getDescendantsObject(l)));
                 default -> this.logger.log("FamilyTableParameter `%s` Not Handled in GET_MEMBER".formatted(param.name()), WARN);
             }
         }
 
-        return new ObjectMapper().writeValueAsString(Map.of("member", memberResponseBody, "family", familyResponseBody));
+        return new ObjectMapper().writeValueAsString(responseBodyMap);
+    }
+
+    @NotNull
+    private
+    Map<String, Object> getResponseObject (final @NotNull Map<String, AttributeValue> memberMap) {
+        final Map<String, Object> responseObject = new HashMap<>();
+        final Member member = Member.convertDdbMap(memberMap);
+        for (final MemberTableParameter param : MemberTableParameter.values()) {
+            switch (param) {
+                case ID, FAMILY_ID -> responseObject.put(param.jsonFieldName(), memberMap.get(param.jsonFieldName())
+                                                                                         .s());
+                case FIRST_NAME -> responseObject.put(param.jsonFieldName(), member.getFirstName());
+                case MIDDLE_NAME -> ofNullable(member.getMiddleName()).ifPresent(s -> responseObject.put(param.jsonFieldName(), s));
+                case LAST_NAME -> responseObject.put(param.jsonFieldName(), member.getLastName());
+                case SUFFIX -> ofNullable(member.getSuffix()).ifPresent(t -> responseObject.put(param.jsonFieldName(), t.value()));
+                case BIRTHDAY -> responseObject.put(param.jsonFieldName(), member.getBirthdayString());
+                case DEATHDAY -> ofNullable(member.getDeathdayString()).ifPresent(s -> responseObject.put(param.jsonFieldName(), s));
+                case EMAIL -> ofNullable(member.getEmail()).ifPresent(s -> responseObject.put(param.jsonFieldName(), s));
+                case PHONES -> ofNullable(member.getPhones()).ifPresent(m -> responseObject.put(param.jsonFieldName(), m.entrySet()
+                                                                                                                        .stream()
+                                                                                                                        .collect(Collectors.toUnmodifiableMap(entry -> entry.getKey()
+                                                                                                                                                                            .getJson(),
+                                                                                                                                                              Map.Entry::getValue))));
+                case ADDRESS -> ofNullable(member.getAddress()).ifPresent(l -> responseObject.put(param.jsonFieldName(), l));
+                default -> this.logger.log("MemberTableParameter `%s` Not Handled in GET_MEMBER".formatted(param.name()), WARN);
+            }
+        }
+        return responseObject;
+    }
+
+    @NotNull
+    private
+    List<Map<String, Object>> getDescendantsObject (final @NotNull List<String> descendantIds) {
+        final Comparator<Map<String, AttributeValue>> comparator = Comparator.comparing(entry -> Member.convertStringToDate(entry.get(MemberTableParameter.BIRTHDAY.jsonFieldName())
+                                                                                                                                 .s()));
+        final List<Map<String, AttributeValue>> descendantDdbMap = new ArrayList<>();
+        descendantIds.stream()
+                     .filter(Predicate.not(String::isBlank))
+                     .forEach(s -> descendantDdbMap.add(requireNonNull(this.getDdbItem(s, DdbTable.MEMBER))));
+        descendantDdbMap.sort(comparator);
+        final List<Map<String, Object>> descendantsObject = new ArrayList<>();
+        descendantDdbMap.forEach(ddb -> descendantsObject.add(this.getResponseObject(ddb)));
+        return descendantsObject;
     }
 
     @Override
