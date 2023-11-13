@@ -60,7 +60,7 @@ class GetHelper extends ApiHelper {
                                                              .s(), DdbTable.FAMILY));
         }
         final Map<String, Object> memberObject = this.getResponseObject(memberMap);
-        
+
         responseBodyMap.put("ancestor", family.get(FamilyTableParameter.ANCESTOR.jsonFieldName())
                                               .s());
         responseBodyMap.put("member", memberObject);
@@ -88,7 +88,7 @@ class GetHelper extends ApiHelper {
             }
         }
 
-        return new ObjectMapper().writeValueAsString(responseBodyMap);
+        return this.objectMapper.writeValueAsString(responseBodyMap);
     }
 
     @NotNull
