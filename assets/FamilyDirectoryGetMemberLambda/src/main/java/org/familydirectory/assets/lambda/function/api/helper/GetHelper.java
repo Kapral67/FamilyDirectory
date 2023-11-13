@@ -59,17 +59,28 @@ class GetHelper extends ApiHelper {
             family = requireNonNull(this.getDdbItem(memberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
                                                              .s(), DdbTable.FAMILY));
         }
+        final Map<String, Object> memberObject = this.getResponseObject(memberMap);
+        
         responseBodyMap.put("ancestor", family.get(FamilyTableParameter.ANCESTOR.jsonFieldName())
                                               .s());
-        responseBodyMap.put("member", this.getResponseObject(memberMap));
+        responseBodyMap.put("member", memberObject);
 
         for (final FamilyTableParameter param : FamilyTableParameter.values()) {
             switch (param) {
                 case ID, ANCESTOR -> {
                 }
-                case SPOUSE -> ofNullable(family.get(param.jsonFieldName())).map(AttributeValue::s)
-                                                                            .ifPresent(s -> responseBodyMap.put(param.jsonFieldName(),
-                                                                                                                this.getResponseObject(requireNonNull(this.getDdbItem(s, DdbTable.MEMBER)))));
+                case SPOUSE -> {
+                    if (memberObject.get(MemberTableParameter.ID.jsonFieldName())
+                                    .equals(memberObject.get(MemberTableParameter.FAMILY_ID.jsonFieldName())))
+                    {
+                        ofNullable(family.get(param.jsonFieldName())).map(AttributeValue::s)
+                                                                     .ifPresent(s -> responseBodyMap.put(param.jsonFieldName(),
+                                                                                                         this.getResponseObject(requireNonNull(this.getDdbItem(s, DdbTable.MEMBER)))));
+                    } else {
+                        responseBodyMap.put(param.jsonFieldName(), this.getResponseObject(requireNonNull(this.getDdbItem(family.get(FamilyTableParameter.ID.jsonFieldName())
+                                                                                                                               .s(), DdbTable.MEMBER))));
+                    }
+                }
                 case DESCENDANTS -> ofNullable(family.get(param.jsonFieldName())).map(AttributeValue::ss)
                                                                                  .filter(Predicate.not(List::isEmpty))
                                                                                  .ifPresent(l -> responseBodyMap.put(param.jsonFieldName(), this.getDescendantsObject(l)));
