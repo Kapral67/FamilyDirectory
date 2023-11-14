@@ -63,9 +63,7 @@ class DeleteEvent implements EventHelper {
     @Override
     public
     void execute () {
-        if (MemberPicker.getEntries()
-                        .isEmpty())
-        {
+        if (MemberPicker.isEmpty()) {
             throw new IllegalStateException("No Members Exist to Delete");
         }
         final MemberRecord memberRecord = this.getExistingMember("Please Select Existing Member to DELETE:");
@@ -99,11 +97,34 @@ class DeleteEvent implements EventHelper {
                                               .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(memberRecord.id()
                                                                                                                                           .toString())))
                                               .build();
+
+            final String ancestorId = familyMap.get(FamilyTableParameter.ANCESTOR.jsonFieldName())
+                                               .s();
+            final List<String> ancestorFamilyDescendantsList = ofNullable(this.getDdbItem(ancestorId, DdbTable.FAMILY)).map(m -> m.get(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
+                                                                                                                       .map(AttributeValue::ss)
+                                                                                                                       .filter(Predicate.not(List::isEmpty))
+                                                                                                                       .filter(l -> l.contains(memberRecord.id()
+                                                                                                                                                           .toString()))
+                                                                                                                       .orElseThrow();
+
+            final Update.Builder updateAncestorFamilyBuilder = Update.builder()
+                                                                     .tableName(DdbTable.FAMILY.name())
+                                                                     .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(ancestorId)));
+            if (ancestorFamilyDescendantsList.size() == 1) {
+                updateAncestorFamilyBuilder.updateExpression("REMOVE %s".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName()));
+            } else {
+                updateAncestorFamilyBuilder.updateExpression("DELETE %s :descendants".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
+                                           .expressionAttributeValues(singletonMap(":descendants", AttributeValue.fromSs(singletonList(memberRecord.id()
+                                                                                                                                                   .toString()))));
+            }
+
             transactionItems = List.of(TransactWriteItem.builder()
                                                         .delete(deleteFamily)
                                                         .build(), TransactWriteItem.builder()
                                                                                    .delete(deleteMember)
-                                                                                   .build());
+                                                                                   .build(), TransactWriteItem.builder()
+                                                                                                              .update(updateAncestorFamilyBuilder.build())
+                                                                                                              .build());
         } else {
             // NATURALIZED
             final Update update = Update.builder()

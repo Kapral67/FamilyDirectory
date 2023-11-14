@@ -67,9 +67,7 @@ class CreateEvent implements EventHelper {
                 memberRecord = this.buildMemberRecord(id, id);
             }
             case SPOUSE -> {
-                if (MemberPicker.getEntries()
-                                .isEmpty())
-                {
+                if (MemberPicker.isEmpty()) {
                     throw new IllegalStateException("ROOT Member Must Exist");
                 }
                 Logger.info("SPOUSE Creation Events are for Creating Non-Native Members.");
@@ -85,9 +83,7 @@ class CreateEvent implements EventHelper {
                 memberRecord = this.buildMemberRecord(UUID.randomUUID(), id);
             }
             case DESCENDANT -> {
-                if (MemberPicker.getEntries()
-                                .isEmpty())
-                {
+                if (MemberPicker.isEmpty()) {
                     throw new IllegalStateException("ROOT Member Must Exist");
                 }
                 Logger.info("DESCENDANT Creation Events are for Creating Native Members.");

@@ -1,6 +1,8 @@
 package org.familydirectory.sdk.adminclient.utility;
 
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -17,6 +19,8 @@ import static java.util.Collections.emptyMap;
 
 public final
 class MemberPicker {
+    private static final Comparator<MemberRecord> LAST_NAME_COMPARATOR = Comparator.comparing(memberRecord -> memberRecord.member()
+                                                                                                                          .getLastName());
     private final Set<MemberRecord> entries;
 
     private
@@ -52,8 +56,15 @@ class MemberPicker {
     }
 
     public static
-    Set<MemberRecord> getEntries () {
-        return Singleton.getInstance().entries;
+    boolean isEmpty () {
+        return Singleton.getInstance().entries.isEmpty();
+    }
+
+    public static
+    List<MemberRecord> getEntries () {
+        return Singleton.getInstance().entries.stream()
+                                              .sorted(LAST_NAME_COMPARATOR)
+                                              .toList();
     }
 
     public static

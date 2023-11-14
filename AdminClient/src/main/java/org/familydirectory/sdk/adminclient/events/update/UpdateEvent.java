@@ -32,9 +32,7 @@ class UpdateEvent implements EventHelper {
     @Override
     public
     void execute () {
-        if (MemberPicker.getEntries()
-                        .isEmpty())
-        {
+        if (MemberPicker.isEmpty()) {
             throw new IllegalStateException("No Members Exist to Update");
         }
         final MemberRecord ddbMemberRecord = this.getExistingMember("Please Select Existing Member to UPDATE:");

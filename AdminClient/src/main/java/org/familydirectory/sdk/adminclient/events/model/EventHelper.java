@@ -246,9 +246,7 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
     @NotNull
     default
     MemberRecord getExistingMember (final @NotNull String message) {
-        final List<MemberRecord> records = MemberPicker.getEntries()
-                                                       .stream()
-                                                       .toList();
+        final List<MemberRecord> records = MemberPicker.getEntries();
         int index = -1;
         while (index < 0 || index >= records.size()) {
             Logger.custom(requireNonNull(message), Ansi.BOLD, Ansi.BLUE);
