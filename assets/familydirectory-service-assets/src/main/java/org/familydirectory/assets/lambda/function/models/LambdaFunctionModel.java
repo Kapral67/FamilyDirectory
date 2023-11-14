@@ -12,7 +12,8 @@ public
 interface LambdaFunctionModel {
     Duration DEFAULT_TIMEOUT = seconds(30);
     Number NEW_ACCOUNT_MAX_MEMORY_SIZE = 3008;
-    Number DEFAULT_MEMORY_SIZE = NEW_ACCOUNT_MAX_MEMORY_SIZE;
+    Number SINGLE_vCPU_MEMORY_SIZE = 1769;
+    Number DEFAULT_MEMORY_SIZE = SINGLE_vCPU_MEMORY_SIZE;
 
     @NotNull
     String handler ();
@@ -42,9 +43,13 @@ interface LambdaFunctionModel {
         return "%sRoleArn".formatted(this.functionName());
     }
 
-    @NotNull
-    Duration timeout ();
+    default @NotNull
+    Duration timeout () {
+        return DEFAULT_TIMEOUT;
+    }
 
-    @NotNull
-    Number memorySize ();
+    default @NotNull
+    Number memorySize () {
+        return DEFAULT_MEMORY_SIZE;
+    }
 }

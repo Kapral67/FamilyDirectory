@@ -76,12 +76,6 @@ enum StreamFunction implements LambdaFunctionModel {
         return minutes(5);
     }
 
-    @Override
-    public @NotNull
-    Number memorySize () {
-        return LambdaFunctionModel.NEW_ACCOUNT_MAX_MEMORY_SIZE;
-    }
-
     public @NotNull
     List<DdbTable> streamEventSources () {
         return this.streamEventSources;
