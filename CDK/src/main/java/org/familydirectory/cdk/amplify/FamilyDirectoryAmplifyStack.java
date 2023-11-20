@@ -6,11 +6,14 @@ import java.util.Map;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.models.DdbTableParameter;
+import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.apigateway.FamilyDirectoryApiGatewayStack;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.SecretValue;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -87,11 +90,15 @@ class FamilyDirectoryAmplifyStack extends Stack {
                                           .autoBranchDeletion(AMPLIFY_APP_AUTO_BRANCH_DELETE)
 //                                        TODO: Disable BasicAuth once stable
                                           .basicAuth(devAuth)
-                                          .environmentVariables(Map.of("REACT_APP_REDIRECT_URI", REACT_APP_REDIRECT_URI, "REACT_APP_API_DOMAIN", REACT_APP_API_DOMAIN, "REACT_APP_AUTH_DOMAIN",
-                                                                       FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME, "REACT_APP_CLIENT_ID",
-                                                                       importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME), "REACT_APP_SURNAME", rootMemberSurname,
-                                                                       "REACT_APP_AWS_REGION", FamilyDirectoryCdkApp.DEFAULT_REGION, "REACT_APP_USER_POOL_ID",
-                                                                       importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)))
+                                          .environmentVariables(Map.ofEntries(Map.entry(ReactEnvVar.REDIRECT_URI.toString(), REACT_APP_REDIRECT_URI),
+                                                                              Map.entry(ReactEnvVar.API_DOMAIN.toString(), REACT_APP_API_DOMAIN),
+                                                                              Map.entry(ReactEnvVar.AUTH_DOMAIN.toString(), FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME),
+                                                                              Map.entry(ReactEnvVar.CLIENT_ID.toString(),
+                                                                                        importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME)),
+                                                                              Map.entry(ReactEnvVar.SURNAME.toString(), rootMemberSurname),
+                                                                              Map.entry(ReactEnvVar.AWS_REGION.toString(), FamilyDirectoryCdkApp.DEFAULT_REGION),
+                                                                              Map.entry(ReactEnvVar.USER_POOL_ID.toString(), importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)),
+                                                                              Map.entry(ReactEnvVar.AGE_OF_MAJORITY.toString(), String.valueOf(DdbUtils.AGE_OF_MAJORITY))))
                                           .platform(Platform.WEB)
                                           .sourceCodeProvider(GitHubSourceCodeProvider.Builder.create()
                                                                                               .owner(AMPLIFY_REPOSITORY_OWNER)
@@ -107,5 +114,27 @@ class FamilyDirectoryAmplifyStack extends Stack {
                                                                                           .pullRequestPreview(AMPLIFY_ROOT_BRANCH_PULL_REQUEST_PREVIEW)
                                                                                           .build());
         spaRootDomain.mapRoot(spaRootBranch);
+    }
+
+    public
+    enum ReactEnvVar {
+        REDIRECT_URI,
+        API_DOMAIN,
+        AUTH_DOMAIN,
+        CLIENT_ID,
+        SURNAME,
+        AWS_REGION,
+        USER_POOL_ID,
+        AGE_OF_MAJORITY;
+
+        public static final String PREFIX = "REACT_APP_";
+
+        @Override
+        @Contract(pure = true)
+        @NotNull
+        public final
+        String toString () {
+            return PREFIX + this.name();
+        }
     }
 }
