@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
@@ -20,6 +22,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
 import static java.time.LocalDate.now;
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toUnmodifiableMap;
@@ -339,15 +342,19 @@ class Member extends MemberModel {
                 return this;
             }
             phones.forEach((k, v) -> {
-                if (v.contains(String.valueOf(DAGGER))) {
+                if (nonNull(v) && v.contains(String.valueOf(DAGGER))) {
                     throw new IllegalArgumentException("Forbidden Character in %s Phone".formatted(k.name()));
                 }
             });
-            this.phones = phones.entrySet()
-                                .stream()
-                                .filter(e -> !e.getValue()
-                                               .isBlank())
-                                .collect(toUnmodifiableMap(Map.Entry::getKey, entry -> DdbUtils.normalizePhoneNumber(entry.getValue())));
+            this.phones = Optional.of(phones.entrySet())
+                                  .map(set -> set.stream()
+                                                 .filter(Predicate.not(Objects::isNull))
+                                                 .filter(e -> !e.getValue()
+                                                                .trim()
+                                                                .isBlank())
+                                                 .collect(toUnmodifiableMap(Map.Entry::getKey, entry -> DdbUtils.normalizePhoneNumber(entry.getValue()))))
+                                  .filter(Predicate.not(Map::isEmpty))
+                                  .orElse(null);
             this.isPhonesSet = true;
             return this;
         }
@@ -356,24 +363,32 @@ class Member extends MemberModel {
         public
         Builder address (final @Nullable List<String> address) {
             this.checkBuildStatus();
+            final String addressSizeErrorMessage = "Address Must Be Exactly Two Lines";
             if (this.isAddressSet) {
                 throw new IllegalStateException("Address already set");
             } else if (isNull(address)) {
                 this.isAddressSet = true;
                 return this;
             } else if (address.size() != REQ_NON_NULL_ADDRESS_SIZE) {
-                throw new IllegalArgumentException("Address Must Be Exactly Two Lines");
+                throw new IllegalArgumentException(addressSizeErrorMessage);
             }
             address.forEach(s -> {
-                if (s.contains(String.valueOf(DAGGER))) {
+                if (nonNull(s) && s.contains(String.valueOf(DAGGER))) {
                     throw new IllegalArgumentException("Forbidden Character in Address");
                 }
             });
-            this.address = address.stream()
-                                  .filter(Predicate.not(String::isBlank))
-                                  .map(String::trim)
-                                  .map(s -> s.replaceAll("\\s", " "))
-                                  .toList();
+            this.address = Optional.of(address)
+                                   .map(list -> list.stream()
+                                                    .filter(Predicate.not(Objects::isNull))
+                                                    .map(String::trim)
+                                                    .filter(Predicate.not(String::isBlank))
+                                                    .map(s -> s.replaceAll("\\s", " "))
+                                                    .toList())
+                                   .filter(Predicate.not(List::isEmpty))
+                                   .orElse(null);
+            if (nonNull(this.address) && this.address.size() != REQ_NON_NULL_ADDRESS_SIZE) {
+                throw new IllegalArgumentException(addressSizeErrorMessage);
+            }
             this.isAddressSet = true;
             return this;
         }
