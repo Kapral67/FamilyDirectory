@@ -59,7 +59,7 @@ class FamilyDirectoryApiGatewayStack extends Stack {
     public static final boolean HTTP_API_DISABLE_EXECUTE_API_ENDPOINT = true;
     public static final boolean CORS_ALLOW_CREDENTIALS = false;
     public static final List<String> CORS_ALLOW_ORIGIN = singletonList(FamilyDirectoryCdkApp.HTTPS_PREFIX + FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
-    public static final List<String> CORS_ALLOW_HEADERS = List.of("X-Amz-Date", "Authorization", "X-Api-Key", "X-Amz-Security-Token");
+    public static final List<String> CORS_ALLOW_HEADERS = List.of("authorization", "content-type");
     public static final List<String> HTTP_API_ROUTE_AUTHORIZATION_SCOPES = List.of("openid", "email");
     public static final String HTTP_API_PUBLIC_STAGE_ID = "Prod";
     public static final boolean HTTP_API_PUBLIC_STAGE_AUTO_DEPLOY = true;
