@@ -94,12 +94,6 @@
 
         <dependency>
             <groupId>software.amazon.awscdk</groupId>
-            <artifactId>apigatewayv2-alpha</artifactId>
-            <version>${cdk-alpha.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>software.amazon.awscdk</groupId>
             <artifactId>apigatewayv2-integrations-alpha</artifactId>
             <version>${cdk-alpha.version}</version>
         </dependency>

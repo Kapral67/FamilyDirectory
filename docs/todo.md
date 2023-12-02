@@ -1,4 +1,4 @@
-## Nov 12
+## Dec 1
 
 ### AmplifyStack
 
@@ -13,9 +13,9 @@
 - [ ] Finish TODOs
 - [ ] Add Instructions for AdminClient
 
-### AdminClient
+### apigatewayv2-*-alpha
 
-- [x] Maybe create script or alias for `./gradlew -q --console plain run`?
+- [ ] migrate to stable once published
 
 ---
 
