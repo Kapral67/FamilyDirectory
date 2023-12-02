@@ -38,7 +38,7 @@ dependencies {
     implementation 'software.amazon.awscdk:aws-cdk-lib:2.113.0'
     implementation 'software.amazon.awscdk:apigatewayv2-integrations-alpha:2.108.0-alpha.0'
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
-    implementation 'com.amazonaws:aws-lambda-java-events:3.11.3'
+    implementation 'com.amazonaws:aws-lambda-java-events:3.11.4'
     implementation platform('software.amazon.awssdk:bom:2.21.37')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:sesv2'
