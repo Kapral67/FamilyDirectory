@@ -21,7 +21,7 @@ enum ApiFunction implements LambdaFunctionModel {
     DELETE_MEMBER("DeleteMember",
                   Map.of(DdbTable.COGNITO, List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:UpdateItem"), DdbTable.MEMBER,
                          List.of("dynamodb:DeleteItem", "dynamodb:GetItem")), List.of("cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"), singletonList("ses:SendEmail"), null,
-                  singletonList(HttpMethod.DELETE), "delete"),
+                  singletonList(HttpMethod.POST), "delete"),
     GET_MEMBER("GetMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null,
                null, null, singletonList(HttpMethod.GET), "get"),
     GET_PDF("GetPdf", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null, null, singletonList("s3:GetObject"),
@@ -62,7 +62,6 @@ enum ApiFunction implements LambdaFunctionModel {
         return Arrays.stream(values())
                      .flatMap(f -> f.methods.stream())
                      .map(m -> CorsHttpMethod.valueOf(m.name()))
-//  FIXME:           .flatMap(m -> Stream.concat(Stream.of(m), Stream.of(CorsHttpMethod.OPTIONS)))
                      .collect(Collectors.toUnmodifiableSet());
     }
 

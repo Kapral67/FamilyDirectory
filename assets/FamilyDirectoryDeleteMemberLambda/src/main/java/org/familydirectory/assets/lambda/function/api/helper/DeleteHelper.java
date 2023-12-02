@@ -64,7 +64,7 @@ class DeleteHelper extends ApiHelper {
         final DeleteEvent deleteEvent;
         try {
             deleteEvent = this.objectMapper.readValue(this.requestEvent.getBody(), DeleteEvent.class);
-        } catch (final JsonProcessingException e) {
+        } catch (final JsonProcessingException | IllegalArgumentException e) {
             this.logger.log("<MEMBER,`%s`> submitted invalid Delete request".formatted(caller.memberId()), WARN);
             LambdaUtils.logTrace(this.logger, e, WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));

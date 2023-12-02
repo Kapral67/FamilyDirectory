@@ -53,7 +53,7 @@ class UpdateHelper extends ApiHelper {
         final UpdateEvent updateEvent;
         try {
             updateEvent = this.objectMapper.readValue(this.requestEvent.getBody(), UpdateEvent.class);
-        } catch (final JsonProcessingException e) {
+        } catch (final JsonProcessingException | IllegalArgumentException e) {
             this.logger.log("<MEMBER,`%s`> submitted invalid Update request".formatted(caller.memberId()), WARN);
             LambdaUtils.logTrace(this.logger, e, WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
