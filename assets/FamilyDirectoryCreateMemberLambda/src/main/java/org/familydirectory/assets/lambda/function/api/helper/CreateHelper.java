@@ -3,6 +3,7 @@ package org.familydirectory.assets.lambda.function.api.helper;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,8 +59,8 @@ class CreateHelper extends ApiHelper {
     CreateEvent getCreateEvent (final @NotNull ApiHelper.Caller caller) {
         final CreateEvent createEvent;
         try {
-            createEvent = this.objectMapper.convertValue(this.requestEvent.getBody(), CreateEvent.class);
-        } catch (final IllegalArgumentException e) {
+            createEvent = this.objectMapper.readValue(this.requestEvent.getBody(), CreateEvent.class);
+        } catch (final JsonProcessingException e) {
             this.logger.log("<MEMBER,`%s`> submitted invalid Create request".formatted(caller.memberId()), WARN);
             LambdaUtils.logTrace(this.logger, e, WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));

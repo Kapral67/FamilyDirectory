@@ -3,6 +3,7 @@ package org.familydirectory.assets.lambda.function.api.helper;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -51,8 +52,8 @@ class UpdateHelper extends ApiHelper {
     EventWrapper getUpdateEvent (final @NotNull Caller caller) {
         final UpdateEvent updateEvent;
         try {
-            updateEvent = this.objectMapper.convertValue(this.requestEvent.getBody(), UpdateEvent.class);
-        } catch (final IllegalArgumentException e) {
+            updateEvent = this.objectMapper.readValue(this.requestEvent.getBody(), UpdateEvent.class);
+        } catch (final JsonProcessingException e) {
             this.logger.log("<MEMBER,`%s`> submitted invalid Update request".formatted(caller.memberId()), WARN);
             LambdaUtils.logTrace(this.logger, e, WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
