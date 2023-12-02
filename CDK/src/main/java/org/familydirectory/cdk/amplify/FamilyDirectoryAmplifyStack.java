@@ -90,6 +90,7 @@ class FamilyDirectoryAmplifyStack extends Stack {
                                           .autoBranchDeletion(AMPLIFY_APP_AUTO_BRANCH_DELETE)
 //                                        TODO: Disable BasicAuth once stable
                                           .basicAuth(devAuth)
+                                          .customRules(singletonList(CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT))
                                           .environmentVariables(Map.ofEntries(Map.entry(ReactEnvVar.REDIRECT_URI.toString(), REACT_APP_REDIRECT_URI),
                                                                               Map.entry(ReactEnvVar.API_DOMAIN.toString(), REACT_APP_API_DOMAIN),
                                                                               Map.entry(ReactEnvVar.AUTH_DOMAIN.toString(), FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME),
@@ -107,7 +108,6 @@ class FamilyDirectoryAmplifyStack extends Stack {
                                                                                               .build())
                                           .build();
         final App spa = new App(this, AMPLIFY_APP_RESOURCE_ID, spaProps);
-        spa.addCustomRule(CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT);
         final Domain spaRootDomain = spa.addDomain(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
         final Branch spaRootBranch = spa.addBranch(AMPLIFY_ROOT_BRANCH_NAME, BranchOptions.builder()
                                                                                           .basicAuth(devAuth)
