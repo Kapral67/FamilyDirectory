@@ -37,7 +37,6 @@ function verify_project_env_vars {
   local repo_token
   local account
   local region
-  local root
 
   domain="ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME"
   if [ -z "${!domain}" ]; then
@@ -79,17 +78,12 @@ function verify_project_env_vars {
     empty_env_var $repo_token
   fi
 
-  root="ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID"
-  if [ -z "${!root}" ]; then
-    empty_env_var $root
-  fi
-
-  account="CDK_DEFAULT_ACCOUNT"
+  account="AWS_ACCOUNT_ID"
   if [ -z "${!account}" ]; then
     empty_env_var $account
   fi
 
-  region="CDK_DEFAULT_REGION"
+  region="AWS_REGION"
   if [ -z "${!region}" ]; then
     empty_env_var $region
   fi

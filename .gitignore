@@ -68,6 +68,11 @@ package-lock.json
 bin/
 AdminClient
 !AdminClient/
+global
+demo
+dev
+fox
+allan
 
 # research files
 *[pP]layground*

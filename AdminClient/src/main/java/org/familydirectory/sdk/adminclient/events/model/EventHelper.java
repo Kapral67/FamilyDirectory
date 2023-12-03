@@ -13,6 +13,7 @@ import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
+import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
 import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.MemberPicker;
@@ -21,7 +22,6 @@ import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
-import static java.lang.System.getenv;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -29,7 +29,7 @@ import static java.util.Optional.ofNullable;
 
 public
 interface EventHelper extends LambdaFunctionHelper, Executable {
-    String ROOT_ID = getenv("ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID");
+    String ROOT_ID = DdbUtils.ROOT_MEMBER_ID;
 
     @NotNull
     static

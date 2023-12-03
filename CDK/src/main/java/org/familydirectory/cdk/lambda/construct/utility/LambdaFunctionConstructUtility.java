@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
@@ -25,7 +26,6 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.ses.IEmailIdentity;
 import software.constructs.Construct;
 import static java.lang.System.getProperty;
-import static java.lang.System.getenv;
 import static java.nio.file.Paths.get;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.nonNull;
@@ -42,7 +42,7 @@ public final
 class LambdaFunctionConstructUtility {
     public static final Runtime RUNTIME = JAVA_17;
     public static final Architecture ARCHITECTURE = ARM_64;
-    public static final String ROOT_ID = getenv("ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID");
+    public static final String ROOT_ID = DdbUtils.ROOT_MEMBER_ID;
 
     private
     LambdaFunctionConstructUtility () {

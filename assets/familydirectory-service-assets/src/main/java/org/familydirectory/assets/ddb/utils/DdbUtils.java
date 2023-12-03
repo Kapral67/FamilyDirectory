@@ -24,6 +24,7 @@ enum DdbUtils {
     public static final int AGE_OF_MAJORITY = 18;
     public static final String NAME_VALIDATOR_REGEX = "[^A-Za-z\\-'_]+";
     public static final String NAME_SPECIAL_CHAR_REGEX = "['\\-]+";
+    public static final String ROOT_MEMBER_ID = "00000000-0000-0000-0000-000000000000";
 
     public static @NotNull
     String normalizePhoneNumber (final @NotNull String uncheckedPhoneNumber) {

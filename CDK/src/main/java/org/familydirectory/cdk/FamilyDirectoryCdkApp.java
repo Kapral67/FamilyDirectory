@@ -14,22 +14,16 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awssdk.regions.Region;
 import static java.lang.System.getenv;
+import static java.util.Objects.isNull;
+import static java.util.Objects.requireNonNull;
 
 public final
 class FamilyDirectoryCdkApp {
 
-    public static final String DEFAULT_ACCOUNT = getenv("CDK_DEFAULT_ACCOUNT");
-    public static final String DEFAULT_REGION = getenv("CDK_DEFAULT_REGION");
-
-    public static final Environment DEFAULT_ENV = Environment.builder()
-                                                             .account(DEFAULT_ACCOUNT)
-                                                             .region(DEFAULT_REGION)
-                                                             .build();
-    public static final Environment US_EAST_1_ENV = Environment.builder()
-                                                               .account(DEFAULT_ACCOUNT)
-                                                               .region(Region.US_EAST_1.toString())
-                                                               .build();
-
+    public static final String DEFAULT_ACCOUNT;
+    public static final String DEFAULT_REGION;
+    public static final Environment DEFAULT_ENV;
+    public static final Environment US_EAST_1_ENV;
     public static final String DOMAIN_STACK_NAME = "FamilyDirectoryDomainStack";
     public static final String SES_STACK_NAME = "FamilyDirectorySesStack";
     public static final String COGNITO_STACK_NAME = "FamilyDirectoryCognitoStack";
@@ -39,8 +33,28 @@ class FamilyDirectoryCdkApp {
     public static final String LAMBDA_STACK_NAME = "FamilyDirectoryLambdaStack";
     public static final String API_STACK_NAME = "FamilyDirectoryApiGatewayStack";
     public static final String AMPLIFY_STACK_NAME = "FamilyDirectoryAmplifyStack";
-
     public static final String HTTPS_PREFIX = "https://";
+
+    static {
+        String account = getenv("CDK_DEFAULT_ACCOUNT");
+        if (isNull(account)) {
+            account = requireNonNull(getenv("AWS_ACCOUNT_ID"));
+        }
+        DEFAULT_ACCOUNT = account;
+        String region = getenv("CDK_DEFAULT_REGION");
+        if (isNull(region)) {
+            region = requireNonNull(getenv("AWS_REGION"));
+        }
+        DEFAULT_REGION = region;
+        DEFAULT_ENV = Environment.builder()
+                                 .account(DEFAULT_ACCOUNT)
+                                 .region(DEFAULT_REGION)
+                                 .build();
+        US_EAST_1_ENV = Environment.builder()
+                                   .account(DEFAULT_ACCOUNT)
+                                   .region(Region.US_EAST_1.toString())
+                                   .build();
+    }
 
     private
     FamilyDirectoryCdkApp () {

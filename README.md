@@ -35,39 +35,47 @@
 
 2. Next you need to define the following environment variables:
 
-    1. `ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME`
+    1. `AWS_ACCOUNT_ID`
+        - The AWS Account Id
+        - In AWS Console, at the top right, click the drop-down to see your Account ID
+            - Set this environment variable to that number excluding any dashes
+
+    2. `AWS_REGION`
+        - The AWS Region (See Step 1)
+
+    3. `ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME`
         - Should be a Fully-Qualified-Domain-Name (e.g. `example.com`, `aws.example.com`, etc.) whose DNS should be
           controlled by Route53
 
-    2. `ORG_FAMILYDIRECTORY_API_SUBDOMAIN_NAME`
+    4. `ORG_FAMILYDIRECTORY_API_SUBDOMAIN_NAME`
 
         - Should be the subdomain of `ORG_FAMILY_DIRECTORY_HOSTED_ZONE_NAME` where api endpoints are accessed (
           e.g. `api`)
 
-    3. `ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME`
+    5. `ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME`
 
         - Should be the subdomain of `ORG_FAMILY_DIRECTORY_HOSTED_ZONE_NAME` where authentication is handled (
           e.g. `auth`)
 
-    4. `ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS`
+    6. `ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS`
 
         - Should be an externally-managed email address that captures responses to cognito *no-reply* emails (
           e.g. `familydirectory@gmail.com`)
 
-    5. `ORG_FAMILYDIRECTORY_SES_MAIL_FROM_SUBDOMAIN_NAME`
+    7. `ORG_FAMILYDIRECTORY_SES_MAIL_FROM_SUBDOMAIN_NAME`
 
         - Should be the subdomain of `ORG_FAMILY_DIRECTORY_HOSTED_ZONE_NAME` where emails are sent from (e.g. `support`)
 
-    6. `ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME`
+    8. `ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME`
 
         - The name of your repository on GitHub containing the UI components
         - **==TODO==** *Add Fork Instructions*
 
-    7. `ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER`
+    9. `ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER`
 
         - Your GitHub Username
 
-    8. `ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OAUTH_TOKEN`
+    10. `ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OAUTH_TOKEN`
 
         - Fine-grained GitHub Token that ONLY gives access
           to `${ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER}/${ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME}` and only
@@ -75,18 +83,13 @@
         - **==TODO==** *Add More Detailed Instructions*
         - **==TODO==** *Add Disclaimer About How This Token Is Used*
 
-    9. `ORG_FAMILYDIRECTORY_ROOT_MEMBER_ID`
-
-        - The `ROOT MEMBER` of this FamilyDirectory must be known and so an Environment Variable is set for it.
-        - A good value for this variable is `"00000000-0000-0000-0000-000000000000"`
-
 3. Now is a good time to bootstrap you're aws account for cdk if you haven't already
 
     - This only needs to be done once before the first deployment:
 
-        - `cdk bootstrap "aws://[ACCOUNT_ID_FROM_STEP_ONE]/[REGION_FROM_STEP_ONE]"`
+        - `cdk bootstrap "aws://$AWS_ACCOUNT_ID/$AWS_REGION"`
 
-        - `cdk bootstrap "aws://$[ACCOUNT_ID_FROM_STEP_ONE]/us-east-1` (Only needed if your chosen region from step 1 is
+        - `cdk bootstrap "aws://$AWS_ACCOUNT_ID/us-east-1` (Only needed if your chosen region from step 1 is
           not `us-east-1`)
 
 
