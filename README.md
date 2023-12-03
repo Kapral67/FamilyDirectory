@@ -69,7 +69,9 @@
     8. `ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME`
 
         - The name of your repository on GitHub containing the UI components
-        - **==TODO==** *Add Fork Instructions*
+        - Unless you want to write your own UI, just
+          fork [FamilyDirectoryUI](https://github.com/Kapral67/FamilyDirectoryUI) and set this Environment Variable
+          to `FamilyDirectoryUI`
 
     9. `ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER`
 
@@ -80,8 +82,12 @@
         - Fine-grained GitHub Token that ONLY gives access
           to `${ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER}/${ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME}` and only
           allows read/write permissions for repository hooks
-        - **==TODO==** *Add More Detailed Instructions*
-        - **==TODO==** *Add Disclaimer About How This Token Is Used*
+        - This token only needs to be valid for each time you deploy the `AmplifyStack`
+        - To create this, go to GitHub Settings > Developer settings > Personal access tokens > Fine-grained tokens
+            - Generate new token
+            - Set Expiration to something short like 7 days
+            - Repository Access: Only select repositories *Your Fork/Repo Here*
+            - Permissions > Repository permissions > Webhooks > Access: Read and write
 
 3. Now is a good time to bootstrap you're aws account for cdk if you haven't already
 
@@ -134,7 +140,9 @@
         - Since there lots of artifacts being deployed and dns validation occurring on some stacks, this will take
           a while
 
-    3. **==TODO==** *Need Instructions for adding Root Member to Database before
-       deploying `FamilyDirectoryAmplifyStack`*
+    3. If you used the `stage.bash` script to build this repo, then `AdminClient` is already built for you
+        - Before deploying the `FamilyDirectoryAmplifyStack`, you need to create the root member
+        - The `AdminClient` has the capability to walk you through this
+        - Just run `AdminClient` and select **CREATE** command and **ROOT** option
 
-***TODO** Finish Deployment Order*
+***==TODO==** Finish Deployment Order*
