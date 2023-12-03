@@ -5,9 +5,6 @@
 1. Your AWS account and region info must be stored in
    an [aws configuration & credential file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 
-    - The Account & Region must match the environment variables you set for `CDK_DEFAULT_ACCOUNT` & `CDK_DEFAULT_REGION`
-      in Step 2
-
     - The easiest way to get the access key and secret key for your credential file:
 
         1. Go to AWS Console and Find IAM Service
@@ -22,7 +19,7 @@
       or [aws toolkit plugin for IntelliJ](https://plugins.jetbrains.com/plugin/11349-aws-toolkit)
 
         - The config file at a location like `~/.aws/config` should look like (replace `us-east-1` with whatever your
-          desired region and remember to set the `CDK_DEFAULT_REGION` Environment variable to this as well):
+          desired region):
         ```
       [default]
 		region = us-east-1
@@ -83,23 +80,13 @@
         - The `ROOT MEMBER` of this FamilyDirectory must be known and so an Environment Variable is set for it.
         - A good value for this variable is `"00000000-0000-0000-0000-000000000000"`
 
-    10. `CDK_DEFAULT_ACCOUNT`
-
-        - The AWS Account Id
-        - In AWS Console, at the top right, click the drop-down to see your Account ID
-            - Set this environment variable to that number excluding any dashes
-
-    11. `CDK_DEFAULT_REGION`
-
-        - The AWS Region (See Step 1)
-
 3. Now is a good time to bootstrap you're aws account for cdk if you haven't already
 
     - This only needs to be done once before the first deployment:
 
-        - `cdk bootstrap "aws://$CDK_DEFAULT_ACCOUNT/$CDK_DEFAULT_REGION"`
+        - `cdk bootstrap "aws://[ACCOUNT_ID_FROM_STEP_ONE]/[REGION_FROM_STEP_ONE]"`
 
-        - `cdk bootstrap "aws://$CDK_DEFAULT_ACCOUNT/us-east-1` (Only needed if your `$CDK_DEFAULT_REGION` is
+        - `cdk bootstrap "aws://$[ACCOUNT_ID_FROM_STEP_ONE]/us-east-1` (Only needed if your chosen region from step 1 is
           not `us-east-1`)
 
 
