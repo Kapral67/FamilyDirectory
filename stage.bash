@@ -29,9 +29,6 @@ function verify_project_env_vars {
     user_error "Environment Variable: '$*' Cannot Be Empty"
   }
   local domain
-  local sub
-  local auth
-  local mail
   local repo_name
   local repo_owner
   local repo_token
@@ -41,26 +38,6 @@ function verify_project_env_vars {
   domain="ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME"
   if [ -z "${!domain}" ]; then
     empty_env_var $domain
-  fi
-
-  sub="ORG_FAMILYDIRECTORY_API_SUBDOMAIN_NAME"
-  if [ -z "${!sub}" ]; then
-    empty_env_var $sub
-  fi
-
-  auth="ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME"
-  if  [ -z "${!auth}" ]; then
-    empty_env_var $auth
-  fi
-
-  reply="ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS"
-  if [ -z "${!reply}" ]; then
-    empty_env_var $reply
-  fi
-
-  mail="ORG_FAMILYDIRECTORY_SES_MAIL_FROM_SUBDOMAIN_NAME"
-  if [ -z "${!mail}" ]; then
-    empty_env_var $mail
   fi
 
   repo_name="ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME"

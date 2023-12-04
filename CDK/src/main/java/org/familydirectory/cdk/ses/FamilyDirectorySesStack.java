@@ -23,7 +23,6 @@ import software.amazon.awscdk.services.ssm.IStringParameter;
 import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 import static java.lang.Boolean.TRUE;
-import static java.lang.System.getenv;
 import static java.util.Objects.requireNonNull;
 
 public
@@ -33,7 +32,7 @@ class FamilyDirectorySesStack extends Stack {
     public static final String SES_CONFIGURATION_SET_NAME = "DefaultSES%s".formatted(SES_CONFIGURATION_SET_RESOURCE_ID);
     public static final String SES_EMAIL_IDENTITY_RESOURCE_ID = "EmailIdentity";
     public static final String SES_EMAIL_IDENTITY_ARN_EXPORT_NAME = "%sArn".formatted(SES_EMAIL_IDENTITY_RESOURCE_ID);
-    public static final String SES_MAIL_FROM_DOMAIN_NAME = "%s.%s".formatted(getenv("ORG_FAMILYDIRECTORY_SES_MAIL_FROM_SUBDOMAIN_NAME"), FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
+    public static final String SES_MAIL_FROM_DOMAIN_NAME = "notifications.%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
     public static final String SES_EMAIL_IDENTITY_NAME_EXPORT_NAME = "%sName".formatted(SES_EMAIL_IDENTITY_RESOURCE_ID);
 
     public

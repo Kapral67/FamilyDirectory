@@ -108,8 +108,6 @@ class FamilyDirectoryCognitoStackTest {
                                                                                                                                                                  FamilyDirectorySesStack.SES_CONFIGURATION_SET_NAME,
                                                                                                                                                                  "From",
                                                                                                                                                                  FamilyDirectoryCognitoStack.COGNITO_FROM_EMAIL_ADDRESS,
-                                                                                                                                                                 "ReplyToEmailAddress",
-                                                                                                                                                                 FamilyDirectoryCognitoStack.COGNITO_REPLY_TO_EMAIL_ADDRESS,
                                                                                                                                                                  "SourceArn", sesArnCapture)),
                               entry("LambdaConfig", Map.of("PostConfirmation", singletonMap("Fn::GetAtt", List.of(triggerIdMap.get(TriggerFunction.POST_CONFIRMATION), "Arn")), "PreSignUp",
                                                            singletonMap("Fn::GetAtt", List.of(triggerIdMap.get(TriggerFunction.PRE_SIGN_UP), "Arn")))), entry("MfaConfiguration", "OFF"),

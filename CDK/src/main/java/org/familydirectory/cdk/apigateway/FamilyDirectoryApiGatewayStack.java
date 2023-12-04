@@ -43,7 +43,6 @@ import software.amazon.awscdk.services.ssm.IStringParameter;
 import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 import static java.lang.Boolean.FALSE;
-import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static software.amazon.awscdk.Fn.importValue;
@@ -52,7 +51,7 @@ public
 class FamilyDirectoryApiGatewayStack extends Stack {
     public static final String API_CERTIFICATE_RESOURCE_ID = "ApiCertificate";
     public static final String API_A_RECORD_RESOURCE_ID = "ApiARecord";
-    public static final String API_DOMAIN_NAME = "%s.%s".formatted(getenv("ORG_FAMILYDIRECTORY_API_SUBDOMAIN_NAME"), FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
+    public static final String API_DOMAIN_NAME = "api.%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
     public static final String API_CERTIFICATE_NAME = "%s-%s".formatted(API_DOMAIN_NAME, API_CERTIFICATE_RESOURCE_ID);
     public static final String API_DOMAIN_NAME_RESOURCE_ID = "ApiDomainName";
     public static final String API_COGNITO_AUTHORIZER_RESOURCE_ID = "HttpUserPoolAuthorizer";

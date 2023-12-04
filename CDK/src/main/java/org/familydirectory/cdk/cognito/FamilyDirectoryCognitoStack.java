@@ -62,7 +62,6 @@ import software.amazon.awssdk.regions.Region;
 import software.constructs.Construct;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.ofNullable;
 import static software.amazon.awscdk.Duration.days;
@@ -78,9 +77,8 @@ class FamilyDirectoryCognitoStack extends Stack {
     public static final String COGNITO_USER_POOL_RESOURCE_ID = "UserPool";
     public static final String COGNITO_USER_POOL_ID_EXPORT_NAME = "%sId".formatted(COGNITO_USER_POOL_RESOURCE_ID);
     public static final String COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME = "%sId".formatted(COGNITO_USER_POOL_CLIENT_RESOURCE_ID);
-    public static final String COGNITO_DOMAIN_NAME = "%s.%s".formatted(getenv("ORG_FAMILYDIRECTORY_COGNITO_SUBDOMAIN_NAME"), FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
+    public static final String COGNITO_DOMAIN_NAME = "auth.%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
     public static final String COGNITO_FROM_EMAIL_ADDRESS = "no-reply@%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
-    public static final String COGNITO_REPLY_TO_EMAIL_ADDRESS = getenv("ORG_FAMILYDIRECTORY_COGNITO_REPLY_TO_EMAIL_ADDRESS");
     public static final String COGNITO_SIGN_IN_URL_EXPORT_NAME = "CognitoSignInUrl";
     public static final List<UserPoolClientIdentityProvider> COGNITO_USER_POOL_CLIENT_IDENTITY_PROVIDERS = singletonList(COGNITO);
     public static final Number COGNITO_MIN_PASSWORD_LENGTH = 8;
@@ -127,7 +125,6 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                          .email(UserPoolEmail.withSES(UserPoolSESOptions.builder()
                                                                                                         .configurationSetName(FamilyDirectorySesStack.SES_CONFIGURATION_SET_NAME)
                                                                                                         .fromEmail(COGNITO_FROM_EMAIL_ADDRESS)
-                                                                                                        .replyTo(COGNITO_REPLY_TO_EMAIL_ADDRESS)
                                                                                                         .sesVerifiedDomain(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)
                                                                                                         .build()))
                                                          .enableSmsRole(FALSE)
