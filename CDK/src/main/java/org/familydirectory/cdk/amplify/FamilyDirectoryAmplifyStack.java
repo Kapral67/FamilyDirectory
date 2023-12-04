@@ -51,6 +51,9 @@ class FamilyDirectoryAmplifyStack extends Stack {
     public static final String AMPLIFY_REPOSITORY_OWNER = getenv("ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER");
     public static final String AMPLIFY_REPOSITORY_NAME = getenv("ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME");
     public static final String AMPLIFY_REPOSITORY_OAUTH_TOKEN = getenv("ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OAUTH_TOKEN");
+    public static final Platform AMPLIFY_PLATFORM = Platform.WEB;
+    public static final List<CustomRule> AMPLIFY_CUSTOM_RULES = singletonList(CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT);
+    public static final String AMPLIFY_SURNAME_FIELD = "Item.%s.S".formatted(MemberTableParameter.LAST_NAME.jsonFieldName());
 
     public
     FamilyDirectoryAmplifyStack (final Construct scope, final String id, final StackProps stackProps) {
@@ -78,11 +81,11 @@ class FamilyDirectoryAmplifyStack extends Stack {
                                                                                             .build();
         final AwsCustomResource rootMemberSurnameResource = new AwsCustomResource(this, AMPLIFY_ROOT_MEMBER_SURNAME_RESOURCE_ID, rootMemberSurnameResourceProps);
 
-        final String rootMemberSurname = rootMemberSurnameResource.getResponseField("Item.%s.S".formatted(MemberTableParameter.LAST_NAME.jsonFieldName()));
+        final String rootMemberSurname = rootMemberSurnameResource.getResponseField(AMPLIFY_SURNAME_FIELD);
 
         final AppProps spaProps = AppProps.builder()
                                           .autoBranchDeletion(AMPLIFY_APP_AUTO_BRANCH_DELETE)
-                                          .customRules(singletonList(CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT))
+                                          .customRules(AMPLIFY_CUSTOM_RULES)
                                           .environmentVariables(Map.ofEntries(Map.entry(ReactEnvVar.REDIRECT_URI.toString(), REACT_APP_REDIRECT_URI),
                                                                               Map.entry(ReactEnvVar.API_DOMAIN.toString(), REACT_APP_API_DOMAIN),
                                                                               Map.entry(ReactEnvVar.AUTH_DOMAIN.toString(), FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME),
@@ -92,7 +95,7 @@ class FamilyDirectoryAmplifyStack extends Stack {
                                                                               Map.entry(ReactEnvVar.AWS_REGION.toString(), FamilyDirectoryCdkApp.DEFAULT_REGION),
                                                                               Map.entry(ReactEnvVar.USER_POOL_ID.toString(), importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)),
                                                                               Map.entry(ReactEnvVar.AGE_OF_MAJORITY.toString(), String.valueOf(DdbUtils.AGE_OF_MAJORITY))))
-                                          .platform(Platform.WEB)
+                                          .platform(AMPLIFY_PLATFORM)
                                           .sourceCodeProvider(GitHubSourceCodeProvider.Builder.create()
                                                                                               .owner(AMPLIFY_REPOSITORY_OWNER)
                                                                                               .repository(AMPLIFY_REPOSITORY_NAME)
