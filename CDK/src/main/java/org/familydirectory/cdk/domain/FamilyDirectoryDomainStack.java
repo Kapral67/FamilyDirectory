@@ -16,7 +16,6 @@ class FamilyDirectoryDomainStack extends Stack {
     public static final String HOSTED_ZONE_RESOURCE_ID = "HostedZone";
     public static final String HOSTED_ZONE_NAME = getenv("ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME");
     public static final String HOSTED_ZONE_ID_PARAMETER_NAME = "%sId".formatted(HOSTED_ZONE_RESOURCE_ID);
-    public static final String HOSTED_ZONE_A_RECORD_RESOURCE_ID = "%sARecord".formatted(HOSTED_ZONE_RESOURCE_ID);
 
     public
     FamilyDirectoryDomainStack (final Construct scope, final String id, final StackProps stackProps) {

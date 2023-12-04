@@ -141,6 +141,21 @@ class FamilyDirectoryApiGatewayStackTest {
                                                                                                 .next()
                                                                                                 .name(), func.endpoint()), "Target",
                            singletonMap("Fn::Join", List.of("", List.of("integrations/", singletonMap("Ref", integrationId)))))));
+
+            template.hasResourceProperties("AWS::Lambda::Permission", objectLike(
+                    Map.of("Action", FamilyDirectoryApiGatewayStack.LAMBDA_INVOKE_PERMISSION_ACTION, "FunctionName", singletonMap("Fn::ImportValue", func.arnExportName()), "Principal",
+                           FamilyDirectoryApiGatewayStack.API_GATEWAY_PERMISSION_PRINCIPAL, "SourceArn", singletonMap("Fn::Join", List.of("",
+                                                                                                                                          List.of(FamilyDirectoryApiGatewayStack.EXECUTE_API_ARN_PREFIX,
+                                                                                                                                                  singletonMap("Ref", apiId),
+                                                                                                                                                  FamilyDirectoryApiGatewayStack.getExecuteApiSuffix(
+                                                                                                                                                          func)))))));
         }
+
+        template.hasResourceProperties("AWS::ApiGatewayV2::Stage", objectLike(
+                Map.of("ApiId", singletonMap("Ref", apiId), "AutoDeploy", FamilyDirectoryApiGatewayStack.HTTP_API_PUBLIC_STAGE_AUTO_DEPLOY, "StageName",
+                       FamilyDirectoryApiGatewayStack.HTTP_API_PUBLIC_STAGE_ID)));
+
+        template.hasResourceProperties("AWS::ApiGatewayV2::ApiMapping", objectLike(
+                Map.of("ApiId", singletonMap("Ref", apiId), "DomainName", singletonMap("Ref", domainNameId), "Stage", FamilyDirectoryApiGatewayStack.HTTP_API_PUBLIC_STAGE_ID)));
     }
 }

@@ -24,7 +24,6 @@ import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.amplify.alpha.App;
 import software.amazon.awscdk.services.amplify.alpha.AppProps;
-import software.amazon.awscdk.services.amplify.alpha.BasicAuth;
 import software.amazon.awscdk.services.amplify.alpha.Branch;
 import software.amazon.awscdk.services.amplify.alpha.BranchOptions;
 import software.amazon.awscdk.services.amplify.alpha.CustomRule;
@@ -81,15 +80,8 @@ class FamilyDirectoryAmplifyStack extends Stack {
 
         final String rootMemberSurname = rootMemberSurnameResource.getResponseField("Item.%s.S".formatted(MemberTableParameter.LAST_NAME.jsonFieldName()));
 
-//      TODO: Disable BasicAuth once stable
-        final BasicAuth devAuth = BasicAuth.fromCredentials(getenv("DEV_ORG_FAMILYDIRECTORY_USERNAME"), SecretValue.unsafePlainText(getenv("DEV_ORG_FAMILYDIRECTORY_PASSWORD")));
         final AppProps spaProps = AppProps.builder()
-//                                        TODO: Enable AutoBranchCreation once stable
-//                                        .autoBranchCreation()
-//                                        TODO: Enable AutoBranchDeletion once stable
                                           .autoBranchDeletion(AMPLIFY_APP_AUTO_BRANCH_DELETE)
-//                                        TODO: Disable BasicAuth once stable
-                                          .basicAuth(devAuth)
                                           .customRules(singletonList(CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT))
                                           .environmentVariables(Map.ofEntries(Map.entry(ReactEnvVar.REDIRECT_URI.toString(), REACT_APP_REDIRECT_URI),
                                                                               Map.entry(ReactEnvVar.API_DOMAIN.toString(), REACT_APP_API_DOMAIN),
@@ -110,7 +102,6 @@ class FamilyDirectoryAmplifyStack extends Stack {
         final App spa = new App(this, AMPLIFY_APP_RESOURCE_ID, spaProps);
         final Domain spaRootDomain = spa.addDomain(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
         final Branch spaRootBranch = spa.addBranch(AMPLIFY_ROOT_BRANCH_NAME, BranchOptions.builder()
-                                                                                          .basicAuth(devAuth)
                                                                                           .pullRequestPreview(AMPLIFY_ROOT_BRANCH_PULL_REQUEST_PREVIEW)
                                                                                           .build());
         spaRootDomain.mapRoot(spaRootBranch);

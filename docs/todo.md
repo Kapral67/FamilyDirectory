@@ -1,17 +1,12 @@
-## Dec 1
+## Dec 03
 
 ### AmplifyStack
 
 - [ ] Needs Unit Testing
 
-### ApiGatewayStack
-
-- [ ] Needs Additional Unit Testing
-
 ### README
 
 - [ ] Finish TODOs
-- [ ] Add Instructions for AdminClient
 
 ### apigatewayv2-*-alpha
 

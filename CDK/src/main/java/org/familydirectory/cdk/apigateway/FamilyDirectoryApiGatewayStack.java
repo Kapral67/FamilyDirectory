@@ -5,6 +5,7 @@ import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
+import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -44,6 +45,7 @@ import software.constructs.Construct;
 import static java.lang.Boolean.FALSE;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
 import static software.amazon.awscdk.Fn.importValue;
 
 public
@@ -63,6 +65,9 @@ class FamilyDirectoryApiGatewayStack extends Stack {
     public static final List<String> HTTP_API_ROUTE_AUTHORIZATION_SCOPES = List.of("openid", "email");
     public static final String HTTP_API_PUBLIC_STAGE_ID = "Prod";
     public static final boolean HTTP_API_PUBLIC_STAGE_AUTO_DEPLOY = true;
+    public static final String LAMBDA_INVOKE_PERMISSION_ACTION = "lambda:InvokeFunction";
+    public static final String API_GATEWAY_PERMISSION_PRINCIPAL = "apigateway.amazonaws.com";
+    public static final String EXECUTE_API_ARN_PREFIX = "arn:aws:execute-api:%s:%s:".formatted(FamilyDirectoryCdkApp.DEFAULT_REGION, FamilyDirectoryCdkApp.DEFAULT_ACCOUNT);
 
     public
     FamilyDirectoryApiGatewayStack (final Construct scope, final String id, final StackProps stackProps) {
@@ -144,12 +149,12 @@ class FamilyDirectoryApiGatewayStack extends Stack {
 
 //      TODO: More Programmatic Solution Available Once [this issue](https://github.com/aws/aws-cdk/issues/23301) is resolved
 //      Parts of Execute-Api Arn: https://docs.aws.amazon.com/apigateway/latest/developerguide/arn-format-reference.html#apigateway-execute-api-arns
-            final String sourceArn = "arn:aws:execute-api:%s:%s:%s/*/*%s".formatted(FamilyDirectoryCdkApp.DEFAULT_REGION, FamilyDirectoryCdkApp.DEFAULT_ACCOUNT, httpApi.getApiId(), func.endpoint());
+            final String sourceArn = "%s%s%s".formatted(EXECUTE_API_ARN_PREFIX, httpApi.getApiId(), getExecuteApiSuffix(func));
 
             new CfnPermission(this, "Allow%sInvoke%s".formatted(HTTP_API_RESOURCE_ID, func.name()), CfnPermissionProps.builder()
-                                                                                                                      .action("lambda:InvokeFunction")
+                                                                                                                      .action(LAMBDA_INVOKE_PERMISSION_ACTION)
                                                                                                                       .functionName(function.getFunctionArn())
-                                                                                                                      .principal("apigateway.amazonaws.com")
+                                                                                                                      .principal(API_GATEWAY_PERMISSION_PRINCIPAL)
                                                                                                                       .sourceArn(sourceArn)
                                                                                                                       .build());
         }
@@ -161,5 +166,11 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                                                                       .domainName(apiDomainName)
                                                                                                       .build())
                                                                    .build());
+    }
+
+    @NotNull
+    public static
+    String getExecuteApiSuffix (final @NotNull ApiFunction func) {
+        return "/*/*" + requireNonNull(func).endpoint();
     }
 }
