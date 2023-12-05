@@ -1,5 +1,6 @@
 package org.familydirectory.cdk.test.lambda;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.familydirectory.assets.ddb.enums.DdbTable;
@@ -22,6 +23,7 @@ import software.amazon.awscdk.assertions.Template;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.Map.entry;
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -138,6 +140,7 @@ class FamilyDirectoryLambdaStackTest {
             template.hasResourceProperties("AWS::IAM::Policy", objectLike(Map.of("PolicyDocument", singletonMap("Statement", statementsCapture), "PolicyName", defaultPolicyId)));
             final List<Object> statements = statementsCapture.asArray();
             verifyFunctionPolicyStatements(function, statements);
+            verifyStreamFunctionPolicyStatements(function, statements);
 
             for (final DdbTable eventTable : function.streamEventSources()) {
                 assertTrue(eventTable.hasStream());
@@ -155,6 +158,45 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                            entry("ParallelizationFactor", FamilyDirectoryLambdaStack.DDB_STREAM_PARALLELIZATION_FACTOR),
                                                                                                            entry("StartingPosition", "LATEST"))));
             }
+        }
+    }
+
+    private static
+    void verifyStreamFunctionPolicyStatements (final @NotNull StreamFunction function, final @NotNull List<Object> statements) {
+        final String failMessage = "Function: %s | DDB_STREAM | Actions: %s".formatted(function.functionName(), FamilyDirectoryLambdaStack.DDB_STREAM_POLICY_ACTIONS.toString());
+        boolean fail = true;
+        for (final Object o : statements) {
+            try {
+                @SuppressWarnings("unchecked")
+                final Map<String, Object> statement = (Map<String, Object>) o;
+                if (statement.get("Effect")
+                             .equals("Allow") && statement.get("Action")
+                                                          .equals(FamilyDirectoryLambdaStack.DDB_STREAM_POLICY_ACTIONS))
+                {
+                    final Object resourceObj = statement.get("Resource");
+                    final List<Map<String, String>> resourceMap = new ArrayList<>(1);
+                    function.streamEventSources()
+                            .forEach(src -> resourceMap.add(Map.of("Fn::ImportValue", requireNonNull(src.streamArnExportName()))));
+                    if (resourceMap.size() == 1 && resourceObj.equals(resourceMap.iterator()
+                                                                                 .next()))
+                    {
+                        fail = false;
+                        break;
+                    } else if (resourceObj instanceof List) {
+                        @SuppressWarnings("unchecked")
+                        final List<Map<String, String>> resource = (List<Map<String, String>>) resourceObj;
+                        if (resource.containsAll(resourceMap)) {
+                            fail = false;
+                            break;
+                        }
+                    }
+                }
+            } catch (final ClassCastException e) {
+                fail(failMessage, e);
+            }
+        }
+        if (fail) {
+            fail(failMessage);
         }
     }
 

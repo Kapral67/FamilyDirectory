@@ -53,6 +53,7 @@ class FamilyDirectoryLambdaStack extends Stack {
     public static final Number DDB_STREAM_PARALLELIZATION_FACTOR = 1;
     public static final Number DDB_STREAM_RETRY_ATTEMPTS = 0;
     public static final boolean DDB_STREAM_ENABLED = false;
+    public static final List<String> DDB_STREAM_POLICY_ACTIONS = List.of("dynamodb:DescribeStream", "dynamodb:GetRecords", "dynamodb:GetShardIterator");
 
     public
     FamilyDirectoryLambdaStack (final Construct scope, final String id, final StackProps stackProps)
@@ -94,7 +95,7 @@ class FamilyDirectoryLambdaStack extends Stack {
                 final Function lambda = entry.getValue();
                 lambda.addToRolePolicy(PolicyStatement.Builder.create()
                                                               .effect(ALLOW)
-                                                              .actions(List.of("dynamodb:DescribeStream", "dynamodb:GetRecords", "dynamodb:GetShardIterator"))
+                                                              .actions(DDB_STREAM_POLICY_ACTIONS)
                                                               .resources(singletonList(streamArn))
                                                               .build());
                 lambda.addEventSource(new DynamoEventSource(Table.fromTableAttributes(this, eventTable.name(), TableAttributes.builder()
