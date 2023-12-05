@@ -7,6 +7,7 @@ import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
+import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
@@ -94,6 +95,26 @@ class FamilyDirectoryLambdaStackTest {
                                                           .toString();
             final Capture statementsCapture = new Capture();
             template.hasResourceProperties("AWS::IAM::Policy", objectLike(Map.of("PolicyDocument", singletonMap("Statement", statementsCapture), "PolicyName", defaultPolicyId)));
+            final List<Object> statements = statementsCapture.asArray();
+            verifyFunctionPolicyStatements(function, statements);
+        }
+
+        for (final TriggerFunction function : TriggerFunction.values()) {
+            final Capture statementsCapture = new Capture();
+            template.hasResourceProperties("AWS::IAM::Policy", objectLike(Map.of("PolicyDocument", singletonMap("Statement", statementsCapture), "Roles", singletonList(singletonMap("Fn::Select",
+                                                                                                                                                                                     List.of(1,
+                                                                                                                                                                                             singletonMap(
+                                                                                                                                                                                                     "Fn::Split",
+                                                                                                                                                                                                     List.of("/",
+                                                                                                                                                                                                             singletonMap(
+                                                                                                                                                                                                                     "Fn::Select",
+                                                                                                                                                                                                                     List.of(5,
+                                                                                                                                                                                                                             singletonMap(
+                                                                                                                                                                                                                                     "Fn::Split",
+                                                                                                                                                                                                                                     List.of(":",
+                                                                                                                                                                                                                                             singletonMap(
+                                                                                                                                                                                                                                                     "Fn::ImportValue",
+                                                                                                                                                                                                                                                     function.roleArnExportName())))))))))))));
             final List<Object> statements = statementsCapture.asArray();
             verifyFunctionPolicyStatements(function, statements);
         }
