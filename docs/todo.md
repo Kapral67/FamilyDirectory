@@ -1,4 +1,4 @@
-## Dec 03
+## Dec 04
 
 ### AmplifyStack
 
@@ -6,7 +6,7 @@
 
 ### README
 
-- [ ] Finish TODOs
+- [ ] Add Instruction to Migrate SES out of sandbox
 
 ### apigatewayv2-*-alpha
 
