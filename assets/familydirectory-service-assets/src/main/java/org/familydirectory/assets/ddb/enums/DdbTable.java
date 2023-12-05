@@ -7,13 +7,12 @@ import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import static java.util.Arrays.asList;
 
 public
 enum DdbTable {
-    COGNITO("CognitoTable", asList(CognitoTableParameter.values()), false),
-    FAMILY("FamilyTable", asList(FamilyTableParameter.values()), false),
-    MEMBER("MemberTable", asList(MemberTableParameter.values()), true);
+    COGNITO("CognitoTable", List.of(CognitoTableParameter.values()), false),
+    FAMILY("FamilyTable", List.of(FamilyTableParameter.values()), false),
+    MEMBER("MemberTable", List.of(MemberTableParameter.values()), true);
 
     @NotNull
     private final String arnExportName;

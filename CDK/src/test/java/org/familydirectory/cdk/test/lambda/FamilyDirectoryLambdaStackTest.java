@@ -11,7 +11,6 @@ import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.lambda.FamilyDirectoryLambdaStack;
 import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
-import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import org.familydirectory.cdk.sss.FamilyDirectorySssStack;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
@@ -21,9 +20,11 @@ import software.amazon.awscdk.assertions.Template;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.Map.entry;
+import static java.util.Optional.ofNullable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static software.amazon.awscdk.assertions.Match.absent;
 import static software.amazon.awscdk.assertions.Match.objectLike;
 
@@ -58,30 +59,190 @@ class FamilyDirectoryLambdaStackTest {
             assertFalse(functionRoleIdCapture.asString()
                                              .isBlank());
 
-            final Map<String, Map<String, Object>> functionMap = template.findResources("AWS::Lambda::Function", objectLike(singletonMap("Properties", Map.of("Architectures", singletonList(
-                                                                                                                                                                      LambdaFunctionConstructUtility.ARCHITECTURE.toString()), "Environment", singletonMap("Variables", Map.of(LambdaUtils.EnvVar.COGNITO_USER_POOL_ID.name(),
-                                                                                                                                                                                                                                                                               singletonMap("Fn::ImportValue",
-                                                                                                                                                                                                                                                                                            FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME),
-                                                                                                                                                                                                                                                                               LambdaUtils.EnvVar.HOSTED_ZONE_NAME.name(),
-                                                                                                                                                                                                                                                                               FamilyDirectoryDomainStack.HOSTED_ZONE_NAME,
-                                                                                                                                                                                                                                                                               LambdaUtils.EnvVar.ROOT_ID.name(), LambdaFunctionConstructUtility.ROOT_ID,
-                                                                                                                                                                                                                                                                               LambdaUtils.EnvVar.SES_EMAIL_IDENTITY_NAME.name(),
-                                                                                                                                                                                                                                                                               singletonMap("Fn::ImportValue",
-                                                                                                                                                                                                                                                                                            FamilyDirectorySesStack.SES_EMAIL_IDENTITY_NAME_EXPORT_NAME),
-                                                                                                                                                                                                                                                                               LambdaUtils.EnvVar.S3_PDF_BUCKET_NAME.name(),
-                                                                                                                                                                                                                                                                               singletonMap("Fn::ImportValue",
-                                                                                                                                                                                                                                                                                            FamilyDirectorySssStack.S3_PDF_BUCKET_NAME_EXPORT_NAME))),
-                                                                                                                                                              "Handler", function.handler(),
-                                                                                                                                                              "MemorySize", function.memorySize(),
-                                                                                                                                                              "Role", singletonMap("Fn::GetAtt",
-                                                                                                                                                                                   List.of(functionRoleIdCapture.asString(),
-                                                                                                                                                                                           "Arn")),
-                                                                                                                                                              "Runtime",
-                                                                                                                                                              LambdaFunctionConstructUtility.RUNTIME.toString(),
-                                                                                                                                                              "Timeout", function.timeout()
-                                                                                                                                                                                 .toSeconds()))));
+            final Capture policyResourcesCapture = new Capture();
+            final Map<String, Map<String, Object>> functionMap = template.findResources("AWS::Lambda::Function", objectLike(Map.of("Properties", Map.of("Architectures", singletonList(
+                                                                                                                                                                LambdaFunctionConstructUtility.ARCHITECTURE.toString()), "Environment", singletonMap("Variables", Map.of(LambdaUtils.EnvVar.COGNITO_USER_POOL_ID.name(),
+                                                                                                                                                                                                                                                                         singletonMap("Fn::ImportValue",
+                                                                                                                                                                                                                                                                                      FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME),
+                                                                                                                                                                                                                                                                         LambdaUtils.EnvVar.HOSTED_ZONE_NAME.name(),
+                                                                                                                                                                                                                                                                         FamilyDirectoryDomainStack.HOSTED_ZONE_NAME,
+                                                                                                                                                                                                                                                                         LambdaUtils.EnvVar.ROOT_ID.name(), LambdaFunctionConstructUtility.ROOT_ID,
+                                                                                                                                                                                                                                                                         LambdaUtils.EnvVar.S3_PDF_BUCKET_NAME.name(),
+                                                                                                                                                                                                                                                                         singletonMap("Fn::ImportValue",
+                                                                                                                                                                                                                                                                                      FamilyDirectorySssStack.S3_PDF_BUCKET_NAME_EXPORT_NAME))),
+                                                                                                                                                        "Handler", function.handler(), "MemorySize",
+                                                                                                                                                        function.memorySize(), "Role",
+                                                                                                                                                        singletonMap("Fn::GetAtt",
+                                                                                                                                                                     List.of(functionRoleIdCapture.asString(),
+                                                                                                                                                                             "Arn")), "Runtime",
+                                                                                                                                                        LambdaFunctionConstructUtility.RUNTIME.toString(),
+                                                                                                                                                        "Timeout", function.timeout()
+                                                                                                                                                                           .toSeconds()), "DependsOn",
+                                                                                                                                   policyResourcesCapture)));
             assertEquals(1, functionMap.size());
             assertTrue(functionMap.containsKey(functionIdCapture.asString()));
+
+            final List<Object> policyResources = policyResourcesCapture.asArray()
+                                                                       .stream()
+                                                                       .filter(s -> !s.equals(functionRoleIdCapture.asString()))
+                                                                       .toList();
+            assertEquals(1, policyResources.size());
+            final String defaultPolicyId = policyResources.iterator()
+                                                          .next()
+                                                          .toString();
+            final Capture statementsCapture = new Capture();
+            template.hasResourceProperties("AWS::IAM::Policy", objectLike(Map.of("PolicyDocument", singletonMap("Statement", statementsCapture), "PolicyName", defaultPolicyId)));
+            final List<Object> statements = statementsCapture.asArray();
+            ofNullable(function.ddbActions()).ifPresent(map -> map.forEach((key, value) -> {
+                final Map<String, Object> keyResource = singletonMap("Fn::ImportValue", key.arnExportName());
+                final String failMessage = "Function: %s | DdbTable: %s | Actions: %s".formatted(function.name(), key.name(), value.toString());
+                boolean fail = true;
+                for (final Object o : statements) {
+                    try {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> statement = (Map<String, Object>) o;
+                        final Object resourceObj = statement.get("Resource");
+                        if (statement.get("Effect")
+                                     .equals("Allow") && resourceObj instanceof List)
+                        {
+                            @SuppressWarnings("unchecked")
+                            final List<Map<String, Object>> resource = (List<Map<String, Object>>) resourceObj;
+                            if (resource.contains(keyResource) && resource.contains(singletonMap("Fn::Join", List.of("", List.of(keyResource, "/index/*"))))) {
+                                final Object actionsObj = statement.get("Action");
+                                if (actionsObj instanceof String && value.size() == 1 && actionsObj.equals(value.iterator()
+                                                                                                                .next()))
+                                {
+                                    fail = false;
+                                    break;
+                                } else if (actionsObj instanceof List) {
+                                    @SuppressWarnings("unchecked")
+                                    final List<String> actions = (List<String>) actionsObj;
+                                    if (actions.containsAll(value)) {
+                                        fail = false;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (final ClassCastException e) {
+                        fail(failMessage, e);
+                    }
+                }
+                if (fail) {
+                    fail(failMessage);
+                }
+            }));
+            ofNullable(function.cognitoActions()).ifPresent(cognitoActions -> {
+                final String cognitoArnSuffix = ":cognito-idp:%s:%s:userpool/".formatted(FamilyDirectoryCdkApp.DEFAULT_REGION, FamilyDirectoryCdkApp.DEFAULT_ACCOUNT);
+                final String failMessage = "Function: %s | COGNITO | Actions: %s".formatted(function.name(), cognitoActions.toString());
+                boolean fail = true;
+                for (final Object o : statements) {
+                    try {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> statement = (Map<String, Object>) o;
+                        final Object resourceObj = statement.get("Resource");
+                        if (statement.get("Effect")
+                                     .equals("Allow") && resourceObj instanceof Map)
+                        {
+                            @SuppressWarnings("unchecked")
+                            final List<Object> resourceFnJoin = (List<Object>) ((List<Object>) ((Map<String, Object>) resourceObj).get("Fn::Join")).get(1);
+                            if ((resourceFnJoin.contains("arn:aws:%s".formatted(cognitoArnSuffix)) ||
+                                 resourceFnJoin.containsAll(List.of("arn:", singletonMap("Ref", "AWS::Partition"), cognitoArnSuffix))) &&
+                                resourceFnJoin.contains(singletonMap("Fn::ImportValue", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)))
+                            {
+                                final Object actionsObj = statement.get("Action");
+                                if (actionsObj instanceof String && cognitoActions.size() == 1 && actionsObj.equals(cognitoActions.iterator()
+                                                                                                                                  .next()))
+                                {
+                                    fail = false;
+                                    break;
+                                } else if (actionsObj instanceof List) {
+                                    @SuppressWarnings("unchecked")
+                                    final List<String> actions = (List<String>) actionsObj;
+                                    if (actions.containsAll(cognitoActions)) {
+                                        fail = false;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (final ClassCastException e) {
+                        fail(failMessage, e);
+                    }
+                }
+                if (fail) {
+                    fail(failMessage);
+                }
+            });
+            ofNullable(function.sesActions()).ifPresent(sesActions -> {
+                final String failMessage = "Function: %s | SES | Actions: %s".formatted(function.name(), sesActions.toString());
+                boolean fail = true;
+                for (final Object o : statements) {
+                    try {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> statement = (Map<String, Object>) o;
+                        if (statement.get("Effect")
+                                     .equals("Allow") && statement.get("Resource")
+                                                                  .equals("*"))
+                        {
+                            final Object actionsObj = statement.get("Action");
+                            if (actionsObj instanceof String && sesActions.size() == 1 && actionsObj.equals(sesActions.iterator()
+                                                                                                                      .next()))
+                            {
+                                fail = false;
+                                break;
+                            } else if (actionsObj instanceof List) {
+                                @SuppressWarnings("unchecked")
+                                final List<String> actions = (List<String>) actionsObj;
+                                if (actions.containsAll(sesActions)) {
+                                    fail = false;
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (final ClassCastException e) {
+                        fail(failMessage, e);
+                    }
+                }
+                if (fail) {
+                    fail(failMessage);
+                }
+            });
+            ofNullable(function.sssActions()).ifPresent(sssActions -> {
+                final String failMessage = "Function: %s | S3 | Actions: %s".formatted(function.name(), sssActions.toString());
+                boolean fail = true;
+                for (final Object o : statements) {
+                    try {
+                        @SuppressWarnings("unchecked")
+                        final Map<String, Object> statement = (Map<String, Object>) o;
+                        if (statement.get("Effect")
+                                     .equals("Allow") && statement.get("Resource")
+                                                                  .equals(singletonMap("Fn::Join", List.of("", List.of(singletonMap("Fn::ImportValue",
+                                                                                                                                    FamilyDirectorySssStack.S3_PDF_BUCKET_ARN_EXPORT_NAME), "/*")))))
+                        {
+                            final Object actionsObj = statement.get("Action");
+                            if (actionsObj instanceof String && sssActions.size() == 1 && actionsObj.equals(sssActions.iterator()
+                                                                                                                      .next()))
+                            {
+                                fail = false;
+                                break;
+                            } else if (actionsObj instanceof List) {
+                                @SuppressWarnings("unchecked")
+                                final List<String> actions = (List<String>) actionsObj;
+                                if (actions.containsAll(sssActions)) {
+                                    fail = false;
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (final ClassCastException e) {
+                        fail(failMessage, e);
+                    }
+                }
+                if (fail) {
+                    fail(failMessage);
+                }
+            });
         }
 
         for (final StreamFunction function : StreamFunction.values()) {

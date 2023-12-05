@@ -236,7 +236,7 @@ class DeleteEvent implements EventHelper {
                                                 .content(EmailContent.builder()
                                                                      .simple(message)
                                                                      .build())
-                                                .fromEmailAddress("no-reply@%s".formatted(getenv("ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME")))
+                                                .fromEmailAddress("no-reply@%s".formatted(requireNonNull(getenv("ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME"))))
                                                 .build());
         }
     }

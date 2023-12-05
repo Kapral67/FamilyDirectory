@@ -1,6 +1,5 @@
 package org.familydirectory.sdk.adminclient.enums;
 
-import java.util.Arrays;
 import java.util.List;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.jetbrains.annotations.NotNull;
@@ -10,7 +9,7 @@ import static java.util.Objects.isNull;
 
 public
 enum Commands {
-    CREATE(Arrays.asList(CreateOptions.values())),
+    CREATE(List.of(CreateOptions.values())),
     UPDATE(null),
     DELETE(null),
     TOGGLE_PDF_GENERATOR(null),

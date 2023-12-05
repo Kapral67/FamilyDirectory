@@ -1,6 +1,5 @@
 package org.familydirectory.cdk.lambda;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.familydirectory.assets.ddb.enums.DdbTable;
@@ -79,15 +78,14 @@ class FamilyDirectoryLambdaStack extends Stack {
                                                                                                                                        .build());
 
 //  API Lambda Functions
-        LambdaFunctionConstructUtility.constructFunctionPermissions(this,
-                                                                    LambdaFunctionConstructUtility.constructFunctionMap(this, Arrays.asList(ApiFunction.values()), hostedZone, emailIdentity, userPool,
-                                                                                                                        pdfBucket), emailIdentity, userPool, pdfBucket);
+        LambdaFunctionConstructUtility.constructFunctionPermissions(this, LambdaFunctionConstructUtility.constructFunctionMap(this, List.of(ApiFunction.values()), hostedZone, userPool, pdfBucket),
+                                                                    userPool, pdfBucket);
 
 //  Cognito Trigger Permissions
-        LambdaFunctionConstructUtility.constructFunctionPermissions(this, List.of(TriggerFunction.values()), emailIdentity, userPool, null);
+        LambdaFunctionConstructUtility.constructFunctionPermissions(this, List.of(TriggerFunction.values()), userPool, null);
 
 //  Stream Functions
-        final Map<LambdaFunctionModel, Function> streamFunctionMap = LambdaFunctionConstructUtility.constructFunctionMap(this, Arrays.asList(StreamFunction.values()), null, null, null, pdfBucket);
+        final Map<LambdaFunctionModel, Function> streamFunctionMap = LambdaFunctionConstructUtility.constructFunctionMap(this, List.of(StreamFunction.values()), null, null, pdfBucket);
 
         for (final Map.Entry<LambdaFunctionModel, Function> entry : streamFunctionMap.entrySet()) {
             final StreamFunction streamFunction = (StreamFunction) entry.getKey();
@@ -120,6 +118,6 @@ class FamilyDirectoryLambdaStack extends Stack {
             }
         }
 
-        LambdaFunctionConstructUtility.constructFunctionPermissions(this, streamFunctionMap, null, null, pdfBucket);
+        LambdaFunctionConstructUtility.constructFunctionPermissions(this, streamFunctionMap, null, pdfBucket);
     }
 }

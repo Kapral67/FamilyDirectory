@@ -61,7 +61,6 @@ enum LambdaUtils {
         COGNITO_USER_POOL_ID,
         HOSTED_ZONE_NAME,
         ROOT_ID,
-        SES_EMAIL_IDENTITY_NAME,
         S3_PDF_BUCKET_NAME
     }
 }

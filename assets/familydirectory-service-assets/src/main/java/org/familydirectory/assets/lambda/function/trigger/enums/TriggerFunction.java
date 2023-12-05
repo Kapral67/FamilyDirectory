@@ -13,7 +13,7 @@ public
 enum TriggerFunction implements LambdaFunctionModel {
     PRE_SIGN_UP("PreSignUp", Map.of(DdbTable.MEMBER, singletonList("dynamodb:Query"), DdbTable.COGNITO, singletonList("dynamodb:Query")), null, null),
     POST_CONFIRMATION("PostConfirmation", Map.of(DdbTable.MEMBER, singletonList("dynamodb:Query"), DdbTable.COGNITO, List.of("dynamodb:GetItem", "dynamodb:PutItem")),
-                      singletonList("cognito-idp:AdminDisableUser"), singletonList("ses:SendEmail"));
+                      singletonList("cognito-idp:AdminDisableUser"), List.of("ses:SendEmail", "ses:SendRawEmail"));
 
     @NotNull
     private final String functionName;

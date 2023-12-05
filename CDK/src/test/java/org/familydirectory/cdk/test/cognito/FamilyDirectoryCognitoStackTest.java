@@ -89,9 +89,6 @@ class FamilyDirectoryCognitoStackTest {
         for (final TriggerFunction trigger : TriggerFunction.values()) {
             template.hasResourceProperties("AWS::Lambda::Function", objectLike(Map.of("Architectures", singletonList(LambdaFunctionConstructUtility.ARCHITECTURE.toString()), "Environment",
                                                                                       singletonMap("Variables", Map.of(LambdaUtils.EnvVar.ROOT_ID.name(), LambdaFunctionConstructUtility.ROOT_ID,
-                                                                                                                       LambdaUtils.EnvVar.SES_EMAIL_IDENTITY_NAME.name(),
-                                                                                                                       singletonMap("Fn::ImportValue",
-                                                                                                                                    FamilyDirectorySesStack.SES_EMAIL_IDENTITY_NAME_EXPORT_NAME),
                                                                                                                        LambdaUtils.EnvVar.HOSTED_ZONE_NAME.name(),
                                                                                                                        FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)), "Handler", trigger.handler(),
                                                                                       "MemorySize", trigger.memorySize(), "Role",

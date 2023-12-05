@@ -165,7 +165,7 @@ class DeleteHelper extends ApiHelper {
                                                                      .userPoolId(this.userPoolId)
                                                                      .username(ddbMemberCognitoUsername)
                                                                      .build());
-            this.logger.log("Cognito Account Deleted for <MEMBER,`%s`>: <USERNAME,`%s>".formatted(ddbMemberId, ddbMemberCognitoUsername), INFO);
+            this.logger.log("Cognito Account Deleted for <MEMBER,`%s`>: <USERNAME,`%s`>".formatted(ddbMemberId, ddbMemberCognitoUsername), INFO);
 
             final String ddbMemberCognitoEmail = Optional.of(ddbMemberCognitoUser)
                                                          .filter(UserType::hasAttributes)
