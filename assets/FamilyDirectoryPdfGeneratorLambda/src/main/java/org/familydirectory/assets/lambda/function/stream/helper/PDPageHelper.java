@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -14,7 +15,6 @@ import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.member.Member;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.amazon.awssdk.utils.Pair;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
@@ -65,20 +65,6 @@ class PDPageHelper implements Closeable {
     private static
     float inch2px (final float inch) {
         return inch * PX_IN_INCH;
-    }
-
-    private static @Nullable
-    Integer getLongestLineWidthInList (final @NotNull List<String> list, final @NotNull PDFont font, final float fontSize) throws IOException {
-        float longestLineWidth = 0.0f;
-        Integer longestLine = null;
-        for (int i = 0; i < list.size(); ++i) {
-            final float lineWidth = getTextWidth(font, fontSize, list.get(i));
-            if (lineWidth > longestLineWidth) {
-                longestLineWidth = lineWidth;
-                longestLine = i;
-            }
-        }
-        return longestLine;
     }
 
     private static
@@ -229,11 +215,6 @@ class PDPageHelper implements Closeable {
     }
 
     private
-    float centerY () {
-        return this.height() * 0.5f;
-    }
-
-    private
     float height () {
         return this.page.getMediaBox()
                         .getHeight();
@@ -271,12 +252,12 @@ class PDPageHelper implements Closeable {
             final String spouseName = (nonNull(spouse.getDeathday()))
                     ? "%c%s".formatted(DAGGER, spouse.getDisplayName())
                     : spouse.getDisplayName();
-            final Pair<String, String> header = (getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, spouseName) > getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, memberName))
-                    ? Pair.of("%s &".formatted(memberName), spouseName)
-                    : Pair.of(memberName, "& %s".formatted(spouseName));
-            this.addColumnCenteredText(header.left(), TITLE_FONT);
+            final Map.Entry<String, String> header = (getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, spouseName) > getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, memberName))
+                    ? Map.entry("%s &".formatted(memberName), spouseName)
+                    : Map.entry(memberName, "& %s".formatted(spouseName));
+            this.addColumnCenteredText(header.getKey(), TITLE_FONT);
             this.newLine(STANDARD_LINE_SPACING);
-            this.addColumnCenteredText(header.right(), TITLE_FONT);
+            this.addColumnCenteredText(header.getValue(), TITLE_FONT);
             this.newLine(STANDARD_LINE_SPACING);
         }
 
@@ -516,8 +497,8 @@ class PDPageHelper implements Closeable {
                 final String header = "%c %s".formatted(BULLET, (nonNull(desc.getDeathday()))
                         ? "%c%s".formatted(DAGGER, desc.getDisplayName())
                         : desc.getDisplayName());
-                final float headerFontSize = this.getColumnFittedFontSize(header, STANDARD_FONT);
-                this.contents.setFont(STANDARD_FONT, headerFontSize);
+                final float headerFontSize = this.getColumnFittedFontSize(header, TITLE_FONT);
+                this.contents.setFont(TITLE_FONT, headerFontSize);
                 this.addColumnAgnosticText(header);
                 this.newLine(STANDARD_LINE_SPACING);
 
