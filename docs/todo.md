@@ -1,16 +1,8 @@
-## Dec 04
-
-### AmplifyStack
-
-- [ ] Needs Unit Testing
+## Dec 06
 
 ### README
 
 - [ ] Add Instruction to Migrate SES out of sandbox
-
-### apigatewayv2-*-alpha
-
-- [ ] migrate to stable once published
 
 ---
 

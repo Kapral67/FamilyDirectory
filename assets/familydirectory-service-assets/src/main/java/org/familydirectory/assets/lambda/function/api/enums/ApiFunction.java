@@ -9,8 +9,8 @@ import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.amazon.awscdk.services.apigatewayv2.alpha.CorsHttpMethod;
-import software.amazon.awscdk.services.apigatewayv2.alpha.HttpMethod;
+import software.amazon.awscdk.services.apigatewayv2.CorsHttpMethod;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 

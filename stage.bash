@@ -75,58 +75,58 @@ STAGE_DIR="$(pwd)"
 # service assets
 cd "$STAGE_DIR/assets/familydirectory-service-assets" || script_error
 rm -rf .mvn
-./gradlew clean build
-./gradlew publish
+./gradlew clean build || exit 3
+./gradlew publish || exit 3
 clean_maven_local
 
 # ADMIN CLIENT
 cd "$STAGE_DIR/AdminClient" || script_error
-./gradlew clean build
-./gradlew distTar
-tar xf "build/distributions/AdminClient-$ORG_FAMILYDIRECTORY_VERSION.tar" -C build/distributions
+./gradlew clean build || exit 3
+./gradlew distTar || exit 3
+tar xf "build/distributions/AdminClient-$ORG_FAMILYDIRECTORY_VERSION.tar" -C build/distributions || script_error
 rm -f AdminClient
-ln -s "$STAGE_DIR/AdminClient/build/distributions/AdminClient-$ORG_FAMILYDIRECTORY_VERSION/bin/AdminClient" AdminClient
+ln -s "$STAGE_DIR/AdminClient/build/distributions/AdminClient-$ORG_FAMILYDIRECTORY_VERSION/bin/AdminClient" AdminClient || script_error
 
 # LAMBDA FUNCTIONS
 ## API
 cd "$STAGE_DIR/assets/FamilyDirectoryCreateMemberLambda" || script_error
 rm -rf target
-mvn package
+mvn package || exit 3
 
 cd "$STAGE_DIR/assets/FamilyDirectoryUpdateMemberLambda" || script_error
 rm -rf target
-mvn package
+mvn package || exit 3
 
 cd "$STAGE_DIR/assets/FamilyDirectoryDeleteMemberLambda" || script_error
 rm -rf target
-mvn package
+mvn package || exit 3
 
 cd "$STAGE_DIR/assets/FamilyDirectoryGetMemberLambda" || script_error
 rm -rf target
-mvn package
+mvn package || exit 3
 
 cd "$STAGE_DIR/assets/FamilyDirectoryGetPdfLambda" || script_error
 rm -rf target
-mvn package
+mvn package || exit 3
 
 ## COGNITO
 cd "$STAGE_DIR/assets/FamilyDirectoryCognitoPreSignUpTrigger" || script_error
 rm -rf target
-mvn package
+mvn package || exit 3
 
 cd "$STAGE_DIR/assets/FamilyDirectoryCognitoPostConfirmationTrigger" || script_error
 rm -rf target
-mvn package
+mvn package || exit 3
 
 ## PDF
 cd "$STAGE_DIR/assets/FamilyDirectoryPdfGeneratorLambda" || script_error
 rm -rf target
-mvn package
+mvn package || exit 3
 
 # CDK
 cd "$STAGE_DIR/CDK" || script_error
 rm -rf target
-mvn package
+mvn package || exit 3
 rm -rf cdk.out
 
 # Return to current directory

@@ -13,8 +13,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cdk.version>2.113.0</cdk.version>
-        <cdk-alpha.version>2.113.0-alpha.0</cdk-alpha.version>
+        <cdk.version>2.114.1</cdk.version>
+        <cdk-alpha.version>2.114.1-alpha.0</cdk-alpha.version>
         <constructs.version>10.3.0</constructs.version>
         <junit.version>5.10.1</junit.version>
     </properties>
@@ -59,7 +59,6 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- AWS Cloud Development Kit -->
         <dependency>
             <groupId>software.amazon.awscdk</groupId>
             <artifactId>aws-cdk-lib</artifactId>
@@ -91,18 +90,6 @@
         </dependency>
 
         <!-- Unstable Dependencies -->
-
-        <dependency>
-            <groupId>software.amazon.awscdk</groupId>
-            <artifactId>apigatewayv2-integrations-alpha</artifactId>
-            <version>${cdk-alpha.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>software.amazon.awscdk</groupId>
-            <artifactId>apigatewayv2-authorizers-alpha</artifactId>
-            <version>${cdk-alpha.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>software.amazon.awscdk</groupId>
