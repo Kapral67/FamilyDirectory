@@ -170,6 +170,22 @@
             - If you don't see SinglePageApp, then you are probably in the wrong region, make sure you're in the region
               you set as `${AWS_REGION}`
 
+    5. Finally, we need to enable Production Access to SES
+
+        1. Go to SES in AWS Management Console
+
+        2. On the sidebar there is a **Get set up** option, click that
+
+        3. Then on the first section of that page there is a **Request Production Access** button, click that
+
+        4. For the **Mail type** select **TRANSACTIONAL**
+
+        5. For the **Website URL** enter `https://${ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME}`
+
+        6. For the **Use case description** put something to the effect of `"For emailing account-holders of this application"`
+
+      - *It may take up to 24 hours for your Production Access Request to be approved, users are not able to sign-up until this is complete*
+
 ### Updating
 
 #### Frontend

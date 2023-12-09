@@ -1,8 +1,4 @@
-## Dec 06
-
-### README
-
-- [ ] Add Instruction to Migrate SES out of sandbox
+## Dec 09 2023
 
 ---
 
