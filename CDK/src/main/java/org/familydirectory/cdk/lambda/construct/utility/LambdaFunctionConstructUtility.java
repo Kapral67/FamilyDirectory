@@ -33,11 +33,11 @@ import static software.amazon.awscdk.services.iam.Effect.ALLOW;
 import static software.amazon.awscdk.services.iam.PolicyStatement.Builder.create;
 import static software.amazon.awscdk.services.lambda.Architecture.ARM_64;
 import static software.amazon.awscdk.services.lambda.Code.fromAsset;
-import static software.amazon.awscdk.services.lambda.Runtime.JAVA_17;
+import static software.amazon.awscdk.services.lambda.Runtime.JAVA_21;
 
 public final
 class LambdaFunctionConstructUtility {
-    public static final Runtime RUNTIME = JAVA_17;
+    public static final Runtime RUNTIME = JAVA_21;
     public static final Architecture ARCHITECTURE = ARM_64;
     public static final String ROOT_ID = DdbUtils.ROOT_MEMBER_ID;
 

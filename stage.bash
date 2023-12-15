@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-ORG_FAMILYDIRECTORY_VERSION=0.1
+ORG_FAMILYDIRECTORY_VERSION=0.2
 
 function cerr {
   echo "$@" 1>&2

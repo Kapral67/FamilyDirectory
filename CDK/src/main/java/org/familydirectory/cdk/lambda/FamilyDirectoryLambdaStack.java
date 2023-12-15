@@ -3,6 +3,7 @@ package org.familydirectory.cdk.lambda;
 import java.util.List;
 import java.util.Map;
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
@@ -13,7 +14,6 @@ import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import org.familydirectory.cdk.sss.FamilyDirectorySssStack;
-import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.cognito.IUserPool;
@@ -37,8 +37,6 @@ import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
-import static software.amazon.awscdk.Duration.days;
-import static software.amazon.awscdk.Duration.seconds;
 import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.iam.Effect.ALLOW;
 import static software.amazon.awscdk.services.lambda.StartingPosition.LATEST;
@@ -48,11 +46,9 @@ class FamilyDirectoryLambdaStack extends Stack {
     public static final Number DDB_STREAM_BATCH_SIZE = 1;
     public static final boolean DDB_STREAM_BISECT_BATCH_ON_ERROR = false;
     public static final boolean DDB_STREAM_REPORT_BATCH_ITEM_FAILURES = false;
-    public static final Duration DDB_STREAM_MAX_BATCH_WINDOW = seconds(60);
-    public static final Duration DDB_STREAM_MAX_RECORD_AGE = days(7);
     public static final Number DDB_STREAM_PARALLELIZATION_FACTOR = 1;
     public static final Number DDB_STREAM_RETRY_ATTEMPTS = 0;
-    public static final boolean DDB_STREAM_ENABLED = false;
+    public static final boolean DDB_STREAM_ENABLED = true;
     public static final List<String> DDB_STREAM_POLICY_ACTIONS = List.of("dynamodb:DescribeStream", "dynamodb:GetRecords", "dynamodb:GetShardIterator");
 
     public
@@ -107,9 +103,8 @@ class FamilyDirectoryLambdaStack extends Stack {
                                                                                                                                                                        DDB_STREAM_BISECT_BATCH_ON_ERROR)
                                                                                                                                                                .reportBatchItemFailures(
                                                                                                                                                                        DDB_STREAM_REPORT_BATCH_ITEM_FAILURES)
-                                                                                                                                                               .maxBatchingWindow(
-                                                                                                                                                                       DDB_STREAM_MAX_BATCH_WINDOW)
-                                                                                                                                                               .maxRecordAge(DDB_STREAM_MAX_RECORD_AGE)
+                                                                                                                                                               .maxRecordAge(
+                                                                                                                                                                       DdbUtils.DDB_STREAM_MAX_RECORD_AGE)
                                                                                                                                                                .parallelizationFactor(
                                                                                                                                                                        DDB_STREAM_PARALLELIZATION_FACTOR)
                                                                                                                                                                .retryAttempts(DDB_STREAM_RETRY_ATTEMPTS)

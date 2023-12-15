@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
@@ -171,10 +172,8 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                            entry("Enabled", FamilyDirectoryLambdaStack.DDB_STREAM_ENABLED),
                                                                                                            entry("EventSourceArn", singletonMap("Fn::ImportValue", eventTable.streamArnExportName())),
                                                                                                            entry("FunctionName", singletonMap("Ref", functionIdCapture.asString())),
-                                                                                                           entry("FunctionResponseTypes", absent()), entry("MaximumBatchingWindowInSeconds",
-                                                                                                                                                           FamilyDirectoryLambdaStack.DDB_STREAM_MAX_BATCH_WINDOW.toSeconds()),
-                                                                                                           entry("MaximumRecordAgeInSeconds",
-                                                                                                                 FamilyDirectoryLambdaStack.DDB_STREAM_MAX_RECORD_AGE.toSeconds()),
+                                                                                                           entry("FunctionResponseTypes", absent()),
+                                                                                                           entry("MaximumRecordAgeInSeconds", DdbUtils.DDB_STREAM_MAX_RECORD_AGE.toSeconds()),
                                                                                                            entry("MaximumRetryAttempts", FamilyDirectoryLambdaStack.DDB_STREAM_RETRY_ATTEMPTS),
                                                                                                            entry("ParallelizationFactor", FamilyDirectoryLambdaStack.DDB_STREAM_PARALLELIZATION_FACTOR),
                                                                                                            entry("StartingPosition", "LATEST"))));

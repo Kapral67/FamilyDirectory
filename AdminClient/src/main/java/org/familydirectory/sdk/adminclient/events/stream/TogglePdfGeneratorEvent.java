@@ -4,6 +4,7 @@ import io.leego.banana.Ansi;
 import java.util.Map;
 import java.util.Scanner;
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.utility.Logger;
@@ -16,6 +17,8 @@ import software.amazon.awssdk.services.lambda.model.EventSourceMappingConfigurat
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration;
 import software.amazon.awssdk.services.lambda.model.ListEventSourceMappingsRequest;
 import software.amazon.awssdk.services.lambda.model.UpdateEventSourceMappingRequest;
+import static java.lang.System.currentTimeMillis;
+import static java.lang.Thread.sleep;
 import static java.util.Objects.requireNonNull;
 
 public final
@@ -40,7 +43,6 @@ class TogglePdfGeneratorEvent implements EventHelper {
                                                      .map(FunctionConfiguration::functionName)
                                                      .findFirst()
                                                      .orElseThrow();
-
         final EventSourceMappingConfiguration eventSourceMapping = this.lambdaClient.listEventSourceMappings(ListEventSourceMappingsRequest.builder()
                                                                                                                                            .functionName(functionName)
                                                                                                                                            .build())
@@ -68,12 +70,25 @@ class TogglePdfGeneratorEvent implements EventHelper {
         final String input = this.scanner.nextLine()
                                          .trim();
         if (input.equalsIgnoreCase("y")) {
-            this.lambdaClient.updateEventSourceMapping(UpdateEventSourceMappingRequest.builder()
-                                                                                      .uuid(eventSourceMapping.uuid())
-                                                                                      .enabled(!isPdfGeneratorEnabled)
-                                                                                      .build());
+            final long startTime = currentTimeMillis();
+            {
+                this.lambdaClient.updateEventSourceMapping(UpdateEventSourceMappingRequest.builder()
+                                                                                          .uuid(eventSourceMapping.uuid())
+                                                                                          .enabled(!isPdfGeneratorEnabled)
+                                                                                          .build());
 
-            displayCurrentState(!isPdfGeneratorEnabled);
+                displayCurrentState(!isPdfGeneratorEnabled);
+            }
+            final long sleepForMillis = (DdbUtils.DDB_STREAM_MAX_RECORD_AGE.toSeconds()
+                                                                           .longValue() * 1000L) - (currentTimeMillis() - startTime);
+            if (sleepForMillis > 0L) {
+                Logger.info("Please Wait For %d Seconds.".formatted(sleepForMillis / 1000L));
+                try {
+                    sleep(sleepForMillis);
+                } catch (final InterruptedException ignored) {
+                    // Allow Signals to Interrupt Sleep
+                }
+            }
         }
         if (!input.isEmpty()) {
             System.out.println();
