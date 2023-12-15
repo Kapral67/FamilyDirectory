@@ -2,6 +2,8 @@ package org.familydirectory.assets.lambda.function.utility;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.logging.LogLevel;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
@@ -53,7 +55,9 @@ enum LambdaUtils {
         ofNullable(e.getCause()).ifPresent(t -> logger.log(t.getMessage(), DEBUG));
         ofNullable(e.getSuppressed()).ifPresent(suppressed -> Arrays.stream(suppressed)
                                                                     .forEach(t -> logger.log(t.getMessage(), DEBUG)));
-        logger.log(Arrays.toString(e.getStackTrace()), TRACE);
+        final StringWriter stringWriter = new StringWriter();
+        e.printStackTrace(new PrintWriter(stringWriter));
+        logger.log(stringWriter.toString(), TRACE);
     }
 
     public
