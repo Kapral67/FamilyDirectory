@@ -8,13 +8,11 @@ import java.time.format.DateTimeFormatter;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.amazon.awscdk.Duration;
 import static com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat.INTERNATIONAL;
 import static java.time.LocalDate.now;
 import static java.time.Period.between;
 import static java.time.format.DateTimeFormatter.ofPattern;
 import static java.util.Objects.isNull;
-import static software.amazon.awscdk.Duration.seconds;
 
 public
 enum DdbUtils {
@@ -27,7 +25,7 @@ enum DdbUtils {
     public static final String NAME_VALIDATOR_REGEX = "[^A-Za-z\\-'_]+";
     public static final String NAME_SPECIAL_CHAR_REGEX = "['\\-]+";
     public static final String ROOT_MEMBER_ID = "00000000-0000-0000-0000-000000000000";
-    public static final Duration DDB_STREAM_MAX_RECORD_AGE = seconds(60);
+    public static final Number DDB_STREAM_MAX_RECORD_AGE_SECONDS = 60;
 
     public static @NotNull
     String normalizePhoneNumber (final @NotNull String uncheckedPhoneNumber) {

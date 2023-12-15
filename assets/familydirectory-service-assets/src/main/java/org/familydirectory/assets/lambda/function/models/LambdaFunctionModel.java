@@ -5,12 +5,10 @@ import java.util.Map;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.amazon.awscdk.Duration;
-import static software.amazon.awscdk.Duration.seconds;
 
 public
 interface LambdaFunctionModel {
-    Duration DEFAULT_TIMEOUT = seconds(30);
+    Number DEFAULT_TIMEOUT_SECONDS = 30;
     Number NEW_ACCOUNT_MAX_MEMORY_SIZE = 3008;
     Number SINGLE_vCPU_MEMORY_SIZE = 1769;
     Number DEFAULT_MEMORY_SIZE = SINGLE_vCPU_MEMORY_SIZE;
@@ -44,8 +42,8 @@ interface LambdaFunctionModel {
     }
 
     default @NotNull
-    Duration timeout () {
-        return DEFAULT_TIMEOUT;
+    Number timeout_seconds () {
+        return DEFAULT_TIMEOUT_SECONDS;
     }
 
     default @NotNull

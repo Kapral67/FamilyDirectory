@@ -17,12 +17,12 @@ import software.amazon.awssdk.services.lambda.model.EventSourceMappingConfigurat
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration;
 import software.amazon.awssdk.services.lambda.model.ListEventSourceMappingsRequest;
 import software.amazon.awssdk.services.lambda.model.UpdateEventSourceMappingRequest;
-import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.sleep;
 import static java.util.Objects.requireNonNull;
 
 public final
 class TogglePdfGeneratorEvent implements EventHelper {
+    private static final long MILLIS_IN_SEC = 1000L;
     private final @NotNull LambdaClient lambdaClient = LambdaClient.create();
     private final @NotNull Scanner scanner;
 
@@ -63,44 +63,58 @@ class TogglePdfGeneratorEvent implements EventHelper {
         displayCurrentState(isPdfGeneratorEnabled);
         System.out.println();
 
-        Logger.custom("SWITCH %s? (y/N)".formatted(isPdfGeneratorEnabled
-                                                           ? "OFF"
-                                                           : "ON"), Ansi.BOLD, Ansi.BLUE);
+        Logger.customLine("SWITCH %s? (y/N)".formatted(isPdfGeneratorEnabled
+                                                               ? "OFF"
+                                                               : "ON"), Ansi.BOLD, Ansi.BLUE);
 
         final String input = this.scanner.nextLine()
                                          .trim();
         if (input.equalsIgnoreCase("y")) {
-            final long startTime = currentTimeMillis();
-            {
-                this.lambdaClient.updateEventSourceMapping(UpdateEventSourceMappingRequest.builder()
-                                                                                          .uuid(eventSourceMapping.uuid())
-                                                                                          .enabled(!isPdfGeneratorEnabled)
-                                                                                          .build());
+            System.out.println();
 
-                displayCurrentState(!isPdfGeneratorEnabled);
-            }
-            final long sleepForMillis = (DdbUtils.DDB_STREAM_MAX_RECORD_AGE.toSeconds()
-                                                                           .longValue() * 1000L) - (currentTimeMillis() - startTime);
-            if (sleepForMillis > 0L) {
-                Logger.info("Please Wait For %d Seconds.".formatted(sleepForMillis / 1000L));
+            int sleepSec = DdbUtils.DDB_STREAM_MAX_RECORD_AGE_SECONDS.intValue();
+            final int maxSleepSecLength = digitCount(sleepSec);
+            int maxCounterLength = 0;
+            // Only Wait When Switching PdfGenerator From OFF -> ON
+            while (!isPdfGeneratorEnabled && sleepSec > 0) {
+                final String counter = "Please Wait For %d Seconds.%s".formatted(sleepSec, " ".repeat(maxSleepSecLength - digitCount(sleepSec)));
+                if (maxCounterLength == 0 && digitCount(sleepSec) == maxSleepSecLength) {
+                    maxCounterLength = counter.length();
+                }
+                Logger.custom("\r", counter, Ansi.BOLD, Ansi.CYAN);
                 try {
-                    sleep(sleepForMillis);
-                } catch (final InterruptedException ignored) {
-                    // Allow Signals to Interrupt Sleep
+                    sleep(MILLIS_IN_SEC);
+                } catch (final InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                if (--sleepSec <= 0L) {
+                    System.out.printf("\r%s\r", " ".repeat(maxCounterLength));
                 }
             }
+
+            this.lambdaClient.updateEventSourceMapping(UpdateEventSourceMappingRequest.builder()
+                                                                                      .uuid(eventSourceMapping.uuid())
+                                                                                      .enabled(!isPdfGeneratorEnabled)
+                                                                                      .build());
+
+            displayCurrentState(!isPdfGeneratorEnabled);
         }
-        if (!input.isEmpty()) {
+        if (!input.isBlank()) {
             System.out.println();
         }
     }
 
     private static
+    int digitCount (final int n) {
+        return (int) (Math.log10(n) + 1.0);
+    }
+
+    private static
     void displayCurrentState (final boolean isOn) {
         if (isOn) {
-            Logger.custom("SWITCHED ON", Ansi.BOLD, Ansi.GREEN);
+            Logger.customLine("SWITCHED ON", Ansi.BOLD, Ansi.GREEN);
         } else {
-            Logger.custom("SWITCHED OFF", Ansi.BOLD, Ansi.RED);
+            Logger.customLine("SWITCHED OFF", Ansi.BOLD, Ansi.RED);
         }
     }
 

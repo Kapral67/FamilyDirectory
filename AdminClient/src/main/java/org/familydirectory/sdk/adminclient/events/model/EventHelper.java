@@ -100,7 +100,7 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
                     Logger.warn("%s may contain A-Z a-z - _ or '".formatted(param.jsonFieldName()));
                     Logger.info("_ & - characters result in the immediate succeeding character being capitalized");
                     Logger.info("_ characters are removed, useful for names like McDonald (input: mc_donald)");
-                    Logger.custom("[Required] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
+                    Logger.customLine("[Required] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     memberBuilder.firstName(this.scanner()
                                                 .nextLine());
                     System.out.println();
@@ -109,7 +109,7 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
                     Logger.warn("%s may contain A-Z a-z - _ or '".formatted(param.jsonFieldName()));
                     Logger.info("_ & - characters result in the immediate succeeding character being capitalized");
                     Logger.info("_ characters are removed, useful for names like McDonald (input: mc_donald)");
-                    Logger.custom("[Optional] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
+                    Logger.customLine("[Optional] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     final String middleName = this.scanner()
                                                   .nextLine()
                                                   .trim();
@@ -122,7 +122,7 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
                     Logger.warn("%s may contain A-Z a-z - _ or '".formatted(param.jsonFieldName()));
                     Logger.info("_ & - characters result in the immediate succeeding character being capitalized");
                     Logger.info("_ characters are removed, useful for names like McDonald (input: mc_donald)");
-                    Logger.custom("[Required] Please Enter %s:%n".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
+                    Logger.customLine("[Required] Please Enter %s:%n".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     memberBuilder.lastName(this.scanner()
                                                .nextLine());
                     System.out.println();
@@ -131,16 +131,16 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
                     int ordinal = -1;
                     final SuffixType suffix;
                     while (ordinal < 0 || ordinal >= SuffixType.values().length) {
-                        Logger.custom("[Optional] Please Choose A Suffix:", Ansi.BOLD, Ansi.BLUE);
+                        Logger.customLine("[Optional] Please Choose A Suffix:", Ansi.BOLD, Ansi.BLUE);
                         for (final SuffixType sfx : SuffixType.values()) {
-                            Logger.custom("%d) %s".formatted(sfx.ordinal(), sfx.name()));
+                            Logger.customLine("%d) %s".formatted(sfx.ordinal(), sfx.name()));
                         }
                         final String token = this.scanner()
                                                  .nextLine()
                                                  .trim();
                         try {
                             ordinal = Integer.parseInt(token);
-                        } catch (final NumberFormatException e) {
+                        } catch (final NumberFormatException ignored) {
                             if (!token.isEmpty()) {
                                 ordinal = -1;
                             } else {
@@ -159,7 +159,7 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
                 }
                 case BIRTHDAY -> {
                     Logger.warn("%s must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)".formatted(param.jsonFieldName()));
-                    Logger.custom("[Required] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
+                    Logger.customLine("[Required] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     memberBuilder.birthday(Member.convertStringToDate(this.scanner()
                                                                           .nextLine()
                                                                           .trim()));
@@ -167,7 +167,7 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
                 }
                 case DEATHDAY -> {
                     Logger.warn("%s must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)".formatted(param.jsonFieldName()));
-                    Logger.custom("[Optional] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
+                    Logger.customLine("[Optional] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     final String deathDay = this.scanner()
                                                 .nextLine()
                                                 .trim();
@@ -178,7 +178,7 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
                     }
                 }
                 case EMAIL -> {
-                    Logger.custom("[Optional] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
+                    Logger.customLine("[Optional] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     final String email = this.scanner()
                                              .nextLine()
                                              .trim();
@@ -188,7 +188,7 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
                     }
                 }
                 case PHONES -> {
-                    Logger.custom("[Optional] Add %s to this Member? (y/N)".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
+                    Logger.customLine("[Optional] Add %s to this Member? (y/N)".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
                     final String addPhone = this.scanner()
                                                 .nextLine()
                                                 .trim();
@@ -198,7 +198,7 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
                         Logger.warn("For International numbers: + and Country Code are required");
                         final Map<PhoneType, String> phones = new HashMap<>();
                         for (final PhoneType phoneType : PhoneType.values()) {
-                            Logger.custom("[Optional] Please Enter %s Phone Number:".formatted(phoneType.name()), Ansi.BOLD, Ansi.BLUE);
+                            Logger.customLine("[Optional] Please Enter %s Phone Number:".formatted(phoneType.name()), Ansi.BOLD, Ansi.BLUE);
                             final String phone = this.scanner()
                                                      .nextLine()
                                                      .trim();
@@ -216,9 +216,9 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
                     final List<String> addressLines = new ArrayList<>();
                     for (int i = 1; i <= Member.REQ_NON_NULL_ADDRESS_SIZE; ++i) {
                         if (i == 1) {
-                            Logger.custom("[Optional] Please Enter %s line %d:".formatted(param.jsonFieldName(), i), Ansi.BOLD, Ansi.BLUE);
+                            Logger.customLine("[Optional] Please Enter %s line %d:".formatted(param.jsonFieldName(), i), Ansi.BOLD, Ansi.BLUE);
                         } else {
-                            Logger.custom("[Required] Please Enter %s line %d:".formatted(param.jsonFieldName(), i), Ansi.BOLD, Ansi.BLUE);
+                            Logger.customLine("[Required] Please Enter %s line %d:".formatted(param.jsonFieldName(), i), Ansi.BOLD, Ansi.BLUE);
                         }
                         final String addressLineText = this.scanner()
                                                            .nextLine()
@@ -249,18 +249,18 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
         final List<MemberRecord> records = MemberPicker.getEntries();
         int index = -1;
         while (index < 0 || index >= records.size()) {
-            Logger.custom(requireNonNull(message), Ansi.BOLD, Ansi.BLUE);
+            Logger.customLine(requireNonNull(message), Ansi.BOLD, Ansi.BLUE);
             for (int i = 0; i < records.size(); ++i) {
-                Logger.custom("%d) %s".formatted(i, records.get(i)
-                                                           .member()
-                                                           .getFullName()));
+                Logger.customLine("%d) %s".formatted(i, records.get(i)
+                                                               .member()
+                                                               .getFullName()));
             }
             final String token = this.scanner()
                                      .nextLine()
                                      .trim();
             try {
                 index = Integer.parseInt(token);
-            } catch (final NumberFormatException e) {
+            } catch (final NumberFormatException ignored) {
                 index = -1;
             }
             if (index < 0 || index >= records.size()) {

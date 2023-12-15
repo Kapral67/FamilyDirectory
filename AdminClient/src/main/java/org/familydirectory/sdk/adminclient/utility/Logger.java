@@ -19,12 +19,12 @@ class Logger implements LambdaLogger {
     }
 
     public static
-    void custom (final @Nullable String message, final Ansi... styles) {
-        custom(LogLevel.UNDEFINED, message, styles);
+    void customLine (final @Nullable String message, final Ansi... styles) {
+        customLine(LogLevel.UNDEFINED, message, styles);
     }
 
     public static
-    void custom (final @NotNull LogLevel logLevel, final @Nullable String message, final Ansi... styles)
+    void customLine (final @NotNull LogLevel logLevel, final @Nullable String message, final Ansi... styles)
     {
         final StringBuilder sb = new StringBuilder();
         if (!logLevel.equals(LogLevel.UNDEFINED)) {
@@ -38,16 +38,36 @@ class Logger implements LambdaLogger {
         }
     }
 
+    public static
+    void custom (final @NotNull String prepended, final @Nullable String message, final Ansi... styles) {
+        custom(LogLevel.UNDEFINED, prepended, message, styles);
+    }
+
+    public static
+    void custom (final @NotNull LogLevel logLevel, final @NotNull String prepended, final @Nullable String message, final Ansi... styles)
+    {
+        final StringBuilder sb = new StringBuilder();
+        if (!logLevel.equals(LogLevel.UNDEFINED)) {
+            sb.append("[%s] ".formatted(logLevel.name()));
+        }
+        if (nonNull(message)) {
+            sb.append("%s".formatted(message));
+        }
+        if (!sb.isEmpty()) {
+            System.out.printf("%s%s", prepended, BananaUtils.bananansi(sb.toString(), Font.TERM, styles));
+        }
+    }
+
     @Override
     public
     void log (final String message) {
-        custom(LogLevel.UNDEFINED, message);
+        customLine(LogLevel.UNDEFINED, message);
     }
 
     @Override
     public
     void log (final byte[] message) {
-        custom(LogLevel.UNDEFINED, Arrays.toString(message));
+        customLine(LogLevel.UNDEFINED, Arrays.toString(message));
     }
 
     @Override
@@ -73,32 +93,32 @@ class Logger implements LambdaLogger {
 
     public static
     void fatal (final @Nullable String fatal) {
-        custom(LogLevel.FATAL, fatal, Ansi.BLACK, Ansi.BG_RED);
+        customLine(LogLevel.FATAL, fatal, Ansi.BLACK, Ansi.BG_RED);
     }
 
     public static
     void error (final @Nullable String error) {
-        custom(LogLevel.ERROR, error, Ansi.RED);
+        customLine(LogLevel.ERROR, error, Ansi.RED);
     }
 
     public static
     void warn (final @Nullable String warn) {
-        custom(LogLevel.WARN, warn, Ansi.YELLOW);
+        customLine(LogLevel.WARN, warn, Ansi.YELLOW);
     }
 
     public static
     void info (final @Nullable String info) {
-        custom(LogLevel.INFO, info, Ansi.CYAN);
+        customLine(LogLevel.INFO, info, Ansi.CYAN);
     }
 
     public static
     void debug (final @Nullable String debug) {
-        custom(LogLevel.DEBUG, debug, Ansi.GREEN);
+        customLine(LogLevel.DEBUG, debug, Ansi.GREEN);
     }
 
     public static
     void trace (final @Nullable String trace) {
-        custom(LogLevel.TRACE, trace, Ansi.FAINT);
+        customLine(LogLevel.TRACE, trace, Ansi.FAINT);
     }
 
     @Override

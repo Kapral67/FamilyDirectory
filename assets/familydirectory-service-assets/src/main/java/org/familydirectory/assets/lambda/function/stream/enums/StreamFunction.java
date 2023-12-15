@@ -3,13 +3,12 @@ package org.familydirectory.assets.lambda.function.stream.enums;
 import java.util.List;
 import java.util.Map;
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.amazon.awscdk.Duration;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
-import static software.amazon.awscdk.Duration.minutes;
 
 public
 enum StreamFunction implements LambdaFunctionModel {
@@ -72,8 +71,8 @@ enum StreamFunction implements LambdaFunctionModel {
 
     @Override
     public @NotNull
-    Duration timeout () {
-        return minutes(5);
+    Number timeout_seconds () {
+        return DdbUtils.DDB_STREAM_MAX_RECORD_AGE_SECONDS;
     }
 
     public @NotNull

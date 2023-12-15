@@ -37,6 +37,7 @@ import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static software.amazon.awscdk.Duration.seconds;
 import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.iam.Effect.ALLOW;
 import static software.amazon.awscdk.services.lambda.StartingPosition.LATEST;
@@ -104,7 +105,7 @@ class FamilyDirectoryLambdaStack extends Stack {
                                                                                                                                                                .reportBatchItemFailures(
                                                                                                                                                                        DDB_STREAM_REPORT_BATCH_ITEM_FAILURES)
                                                                                                                                                                .maxRecordAge(
-                                                                                                                                                                       DdbUtils.DDB_STREAM_MAX_RECORD_AGE)
+                                                                                                                                                                       seconds(DdbUtils.DDB_STREAM_MAX_RECORD_AGE_SECONDS))
                                                                                                                                                                .parallelizationFactor(
                                                                                                                                                                        DDB_STREAM_PARALLELIZATION_FACTOR)
                                                                                                                                                                .retryAttempts(DDB_STREAM_RETRY_ATTEMPTS)

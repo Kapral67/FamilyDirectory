@@ -33,15 +33,15 @@ class AdminClient {
                 int ordinal = -1;
                 final Commands command;
                 while (ordinal < 0 || ordinal >= Commands.values().length) {
-                    Logger.custom("Please Choose A Command:", Ansi.BOLD, Ansi.BLUE);
+                    Logger.customLine("Please Choose A Command:", Ansi.BOLD, Ansi.BLUE);
                     for (final Commands cmd : Commands.values()) {
-                        Logger.custom("%d) %s".formatted(cmd.ordinal(), cmd.name()));
+                        Logger.customLine("%d) %s".formatted(cmd.ordinal(), cmd.name()));
                     }
                     final String token = scanner.nextLine()
                                                 .trim();
                     try {
                         ordinal = Integer.parseInt(token);
-                    } catch (final NumberFormatException e) {
+                    } catch (final NumberFormatException ignored) {
                         ordinal = -1;
                     }
                     if (ordinal < 0 || ordinal >= Commands.values().length) {
@@ -58,14 +58,14 @@ class AdminClient {
                     ordinal = -1;
                     while (ordinal < 0 || ordinal >= command.options()
                                                             .size()) {
-                        Logger.custom("Please Choose An Option:", Ansi.BOLD, Ansi.BLUE);
+                        Logger.customLine("Please Choose An Option:", Ansi.BOLD, Ansi.BLUE);
                         command.options()
-                               .forEach(e -> Logger.custom("%d) %s".formatted(e.ordinal(), e.name())));
+                               .forEach(e -> Logger.customLine("%d) %s".formatted(e.ordinal(), e.name())));
                         final String token = scanner.nextLine()
                                                     .trim();
                         try {
                             ordinal = Integer.parseInt(token);
-                        } catch (final NumberFormatException e) {
+                        } catch (final NumberFormatException ignored) {
                             ordinal = -1;
                         }
                         if (ordinal < 0 || ordinal >= command.options()
@@ -95,5 +95,4 @@ class AdminClient {
             Logger.error(e.getMessage());
         }
     }
-
 }

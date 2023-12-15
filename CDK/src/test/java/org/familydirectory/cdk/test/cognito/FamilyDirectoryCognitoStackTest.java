@@ -93,8 +93,7 @@ class FamilyDirectoryCognitoStackTest {
                                                                                                                        FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)), "Handler", trigger.handler(),
                                                                                       "MemorySize", trigger.memorySize(), "Role",
                                                                                       singletonMap("Fn::GetAtt", List.of(triggerRoleIdMap.get(trigger), "Arn")), "Runtime",
-                                                                                      LambdaFunctionConstructUtility.RUNTIME.toString(), "Timeout", trigger.timeout()
-                                                                                                                                                           .toSeconds())));
+                                                                                      LambdaFunctionConstructUtility.RUNTIME.toString(), "Timeout", trigger.timeout_seconds())));
         }
 
         final Capture sesArnCapture = new Capture();

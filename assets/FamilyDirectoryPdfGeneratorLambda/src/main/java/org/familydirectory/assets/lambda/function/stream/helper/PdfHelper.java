@@ -174,7 +174,9 @@ class PdfHelper implements LambdaFunctionHelper {
             try {
                 this.page.addBodyTextBlock(member, spouse, descendants, startOfSection);
             } catch (final PDPageHelper.NewPageException x) {
-                throw new IOException(e);
+                final IOException thrown = new IOException(x);
+                thrown.addSuppressed(thrown);
+                throw thrown;
             }
         }
     }

@@ -28,6 +28,7 @@ import static java.nio.file.Paths.get;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
+import static software.amazon.awscdk.Duration.seconds;
 import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.iam.Effect.ALLOW;
 import static software.amazon.awscdk.services.iam.PolicyStatement.Builder.create;
@@ -56,7 +57,7 @@ class LambdaFunctionConstructUtility {
                                                                                                       .runtime(RUNTIME)
                                                                                                       .code(fromAsset(getLambdaJar(f.functionName())))
                                                                                                       .handler(f.handler())
-                                                                                                      .timeout(f.timeout())
+                                                                                                      .timeout(seconds(f.timeout_seconds()))
                                                                                                       .architecture(ARCHITECTURE)
                                                                                                       .memorySize(f.memorySize())
                                                                                                       .build());

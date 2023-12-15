@@ -1,12 +1,4 @@
-## Dec 14 2023
-
-### BEFORE v0.2 DEPLOYMENT
-
-- Fix Weird GET_MEMBER ISSUE (see dev CloudWatch)
-
-- Add CountDown in AdminClient when TOGGLE_PDF_GENERATOR is toggled
-
-    - Also, Better Formatting
+## Dec 15 2023
 
 ---
 

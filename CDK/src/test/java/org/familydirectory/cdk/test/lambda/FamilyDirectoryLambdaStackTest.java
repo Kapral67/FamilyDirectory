@@ -80,9 +80,8 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                                                                                      List.of(functionRoleIdCapture.asString(),
                                                                                                                                                                              "Arn")), "Runtime",
                                                                                                                                                         LambdaFunctionConstructUtility.RUNTIME.toString(),
-                                                                                                                                                        "Timeout", function.timeout()
-                                                                                                                                                                           .toSeconds()), "DependsOn",
-                                                                                                                                   policyResourcesCapture)));
+                                                                                                                                                        "Timeout", function.timeout_seconds()),
+                                                                                                                                   "DependsOn", policyResourcesCapture)));
             assertEquals(1, functionMap.size());
             assertTrue(functionMap.containsKey(functionIdCapture.asString()));
 
@@ -144,9 +143,8 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                                                                                      List.of(functionRoleIdCapture.asString(),
                                                                                                                                                                              "Arn")), "Runtime",
                                                                                                                                                         LambdaFunctionConstructUtility.RUNTIME.toString(),
-                                                                                                                                                        "Timeout", function.timeout()
-                                                                                                                                                                           .toSeconds()), "DependsOn",
-                                                                                                                                   policyResourcesCapture)));
+                                                                                                                                                        "Timeout", function.timeout_seconds()),
+                                                                                                                                   "DependsOn", policyResourcesCapture)));
             assertEquals(1, functionMap.size());
             assertTrue(functionMap.containsKey(functionIdCapture.asString()));
 
@@ -173,7 +171,7 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                            entry("EventSourceArn", singletonMap("Fn::ImportValue", eventTable.streamArnExportName())),
                                                                                                            entry("FunctionName", singletonMap("Ref", functionIdCapture.asString())),
                                                                                                            entry("FunctionResponseTypes", absent()),
-                                                                                                           entry("MaximumRecordAgeInSeconds", DdbUtils.DDB_STREAM_MAX_RECORD_AGE.toSeconds()),
+                                                                                                           entry("MaximumRecordAgeInSeconds", DdbUtils.DDB_STREAM_MAX_RECORD_AGE_SECONDS),
                                                                                                            entry("MaximumRetryAttempts", FamilyDirectoryLambdaStack.DDB_STREAM_RETRY_ATTEMPTS),
                                                                                                            entry("ParallelizationFactor", FamilyDirectoryLambdaStack.DDB_STREAM_PARALLELIZATION_FACTOR),
                                                                                                            entry("StartingPosition", "LATEST"))));
