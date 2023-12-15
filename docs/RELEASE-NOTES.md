@@ -16,4 +16,12 @@
 
 ### Dependency Upgrades
 
-- Tracked by PRs: #565 thru #599
+- Tracked by PRs:
+
+    - #565
+
+    - #566
+
+    - #577 thru #599
+
+- CDK version is now `2.115.0` please use the respective [AWS CDK Toolkit](https://docs.aws.amazon.com/cdk/v2/guide/cli.html)
