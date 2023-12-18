@@ -1,4 +1,10 @@
-## Dec 15 2023
+## Dec 17 2023
+
+### v0.3
+
+#### Dependency Upgrade Tracking PRs
+
+- #600 - #610
 
 ---
 
