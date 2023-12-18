@@ -90,8 +90,7 @@ class FamilyDirectoryLambdaStackTest {
                                                                        .filter(s -> !s.equals(functionRoleIdCapture.asString()))
                                                                        .toList();
             assertEquals(1, policyResources.size());
-            final String defaultPolicyId = policyResources.iterator()
-                                                          .next()
+            final String defaultPolicyId = policyResources.getFirst()
                                                           .toString();
             final Capture statementsCapture = new Capture();
             template.hasResourceProperties("AWS::IAM::Policy", objectLike(Map.of("PolicyDocument", singletonMap("Statement", statementsCapture), "PolicyName", defaultPolicyId)));
@@ -153,8 +152,7 @@ class FamilyDirectoryLambdaStackTest {
                                                                        .filter(s -> !s.equals(functionRoleIdCapture.asString()))
                                                                        .toList();
             assertEquals(1, policyResources.size());
-            final String defaultPolicyId = policyResources.iterator()
-                                                          .next()
+            final String defaultPolicyId = policyResources.getFirst()
                                                           .toString();
             final Capture statementsCapture = new Capture();
             template.hasResourceProperties("AWS::IAM::Policy", objectLike(Map.of("PolicyDocument", singletonMap("Statement", statementsCapture), "PolicyName", defaultPolicyId)));
@@ -195,9 +193,7 @@ class FamilyDirectoryLambdaStackTest {
                     final List<Map<String, String>> resourceMap = new ArrayList<>(1);
                     function.streamEventSources()
                             .forEach(src -> resourceMap.add(Map.of("Fn::ImportValue", requireNonNull(src.streamArnExportName()))));
-                    if (resourceMap.size() == 1 && resourceObj.equals(resourceMap.iterator()
-                                                                                 .next()))
-                    {
+                    if (resourceMap.size() == 1 && resourceObj.equals(resourceMap.getFirst())) {
                         fail = false;
                         break;
                     } else if (resourceObj instanceof List) {
@@ -236,9 +232,7 @@ class FamilyDirectoryLambdaStackTest {
                         final List<Map<String, Object>> resource = (List<Map<String, Object>>) resourceObj;
                         if (resource.contains(keyResource) && resource.contains(singletonMap("Fn::Join", List.of("", List.of(keyResource, "/index/*"))))) {
                             final Object actionsObj = statement.get("Action");
-                            if (actionsObj instanceof String && value.size() == 1 && actionsObj.equals(value.iterator()
-                                                                                                            .next()))
-                            {
+                            if (actionsObj instanceof String && value.size() == 1 && actionsObj.equals(value.getFirst())) {
                                 fail = false;
                                 break;
                             } else if (actionsObj instanceof List) {
@@ -278,9 +272,7 @@ class FamilyDirectoryLambdaStackTest {
                             resourceFnJoin.contains(singletonMap("Fn::ImportValue", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)))
                         {
                             final Object actionsObj = statement.get("Action");
-                            if (actionsObj instanceof String && cognitoActions.size() == 1 && actionsObj.equals(cognitoActions.iterator()
-                                                                                                                              .next()))
-                            {
+                            if (actionsObj instanceof String && cognitoActions.size() == 1 && actionsObj.equals(cognitoActions.getFirst())) {
                                 fail = false;
                                 break;
                             } else if (actionsObj instanceof List) {
@@ -313,9 +305,7 @@ class FamilyDirectoryLambdaStackTest {
                                                               .equals("*"))
                     {
                         final Object actionsObj = statement.get("Action");
-                        if (actionsObj instanceof String && sesActions.size() == 1 && actionsObj.equals(sesActions.iterator()
-                                                                                                                  .next()))
-                        {
+                        if (actionsObj instanceof String && sesActions.size() == 1 && actionsObj.equals(sesActions.getFirst())) {
                             fail = false;
                             break;
                         } else if (actionsObj instanceof List) {
@@ -348,9 +338,7 @@ class FamilyDirectoryLambdaStackTest {
                                                                                    List.of("", List.of(singletonMap("Fn::ImportValue", FamilyDirectorySssStack.S3_PDF_BUCKET_ARN_EXPORT_NAME), "/*")))))
                     {
                         final Object actionsObj = statement.get("Action");
-                        if (actionsObj instanceof String && sssActions.size() == 1 && actionsObj.equals(sssActions.iterator()
-                                                                                                                  .next()))
-                        {
+                        if (actionsObj instanceof String && sssActions.size() == 1 && actionsObj.equals(sssActions.getFirst())) {
                             fail = false;
                             break;
                         } else if (actionsObj instanceof List) {

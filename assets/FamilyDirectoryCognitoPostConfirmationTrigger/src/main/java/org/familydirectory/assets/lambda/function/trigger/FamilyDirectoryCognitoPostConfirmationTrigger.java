@@ -100,8 +100,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                 throw e;
             }
             final String memberId = ofNullable(memberEmailQueryResponse.items()
-                                                                       .iterator()
-                                                                       .next()
+                                                                       .getFirst()
                                                                        .get(MemberTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
                                                                                                                      .filter(Predicate.not(String::isBlank))
                                                                                                                      .orElseThrow();

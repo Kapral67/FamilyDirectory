@@ -86,7 +86,8 @@ class FamilyDirectoryAmplifyStack extends Stack {
         final AppProps spaProps = AppProps.builder()
                                           .autoBranchDeletion(AMPLIFY_APP_AUTO_BRANCH_DELETE)
                                           .customRules(AMPLIFY_CUSTOM_RULES)
-                                          .environmentVariables(Map.ofEntries(Map.entry(ReactEnvVar.REDIRECT_URI.toString(), REACT_APP_REDIRECT_URI),
+                                          .environmentVariables(Map.ofEntries(Map.entry(ReactEnvVar.BACKEND_VERSION.toString(), FamilyDirectoryCdkApp.VERSION),
+                                                                              Map.entry(ReactEnvVar.REDIRECT_URI.toString(), REACT_APP_REDIRECT_URI),
                                                                               Map.entry(ReactEnvVar.API_DOMAIN.toString(), REACT_APP_API_DOMAIN),
                                                                               Map.entry(ReactEnvVar.AUTH_DOMAIN.toString(), FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME),
                                                                               Map.entry(ReactEnvVar.CLIENT_ID.toString(),
@@ -112,6 +113,7 @@ class FamilyDirectoryAmplifyStack extends Stack {
 
     public
     enum ReactEnvVar {
+        BACKEND_VERSION,
         REDIRECT_URI,
         API_DOMAIN,
         AUTH_DOMAIN,

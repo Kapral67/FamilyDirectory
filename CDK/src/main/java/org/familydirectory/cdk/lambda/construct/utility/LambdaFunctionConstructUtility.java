@@ -104,8 +104,7 @@ class LambdaFunctionConstructUtility {
     }
 
     public static
-    void constructFunctionPermissions (final @NotNull Construct scope, final @NotNull Map<? extends LambdaFunctionModel, Function> values, final @Nullable IUserPool userPool,
-                                       final @Nullable IBucket pdfBucket)
+    void constructFunctionPermissions (final @NotNull Map<? extends LambdaFunctionModel, Function> values, final @Nullable IUserPool userPool, final @Nullable IBucket pdfBucket)
     {
         values.forEach((k, v) -> {
 //      Assign Ddb Permissions

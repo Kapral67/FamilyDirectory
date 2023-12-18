@@ -60,8 +60,7 @@ class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUs
                 throw new IllegalStateException();
             }
             final String memberId = ofNullable(memberEmailQueryResponse.items()
-                                                                       .iterator()
-                                                                       .next()
+                                                                       .getFirst()
                                                                        .get(MemberTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
                                                                                                                      .filter(Predicate.not(String::isBlank))
                                                                                                                      .orElseThrow();

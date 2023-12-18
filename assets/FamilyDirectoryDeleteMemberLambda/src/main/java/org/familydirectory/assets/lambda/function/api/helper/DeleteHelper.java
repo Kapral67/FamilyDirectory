@@ -135,8 +135,7 @@ class DeleteHelper extends ApiHelper {
                                        .isEmpty())
         {
             final String ddbMemberCognitoSub = ofNullable(cognitoMemberQueryResponse.items()
-                                                                                    .iterator()
-                                                                                    .next()
+                                                                                    .getFirst()
                                                                                     .get(CognitoTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
                                                                                                                                    .filter(Predicate.not(String::isBlank))
                                                                                                                                    .orElseThrow();
@@ -154,8 +153,7 @@ class DeleteHelper extends ApiHelper {
                                                                       .build();
             final UserType ddbMemberCognitoUser = ofNullable(this.cognitoClient.listUsers(listUsersRequest)).filter(ListUsersResponse::hasUsers)
                                                                                                             .map(ListUsersResponse::users)
-                                                                                                            .map(list -> list.iterator()
-                                                                                                                             .next())
+                                                                                                            .map(List::getFirst)
                                                                                                             .orElseThrow();
             final String ddbMemberCognitoUsername = Optional.of(ddbMemberCognitoUser)
                                                             .map(UserType::username)

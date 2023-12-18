@@ -45,8 +45,7 @@ class FamilyDirectoryAmplifyStackTest {
                                                                                                                                                                        singletonMap("Statement",
                                                                                                                                                                                     singletonList(
                                                                                                                                                                                             Map.of("Action",
-                                                                                                                                                                                                   FamilyDirectoryAmplifyStack.AMPLIFY_ROOT_MEMBER_SURNAME_RESOURCE_POLICY_STATEMENT_ACTIONS.iterator()
-                                                                                                                                                                                                                                                                                            .next(),
+                                                                                                                                                                                                   FamilyDirectoryAmplifyStack.AMPLIFY_ROOT_MEMBER_SURNAME_RESOURCE_POLICY_STATEMENT_ACTIONS.getFirst(),
                                                                                                                                                                                                    "Effect",
                                                                                                                                                                                                    "Allow",
                                                                                                                                                                                                    "Resource",
@@ -75,8 +74,7 @@ class FamilyDirectoryAmplifyStackTest {
                                                                                .getKey();
 
         assertEquals(1, FamilyDirectoryAmplifyStack.AMPLIFY_CUSTOM_RULES.size());
-        final CustomRule amplifyCustomRule = FamilyDirectoryAmplifyStack.AMPLIFY_CUSTOM_RULES.iterator()
-                                                                                             .next();
+        final CustomRule amplifyCustomRule = FamilyDirectoryAmplifyStack.AMPLIFY_CUSTOM_RULES.getFirst();
         final Capture spaEnvironmentVariablesCapture = new Capture();
         final Map<String, Map<String, Object>> spaMap = template.findResources("AWS::Amplify::App", objectLike(singletonMap("Properties",
                                                                                                                             Map.of("BasicAuthConfig", singletonMap("EnableBasicAuth", false),
@@ -95,7 +93,8 @@ class FamilyDirectoryAmplifyStackTest {
         assertEquals(1, spaMap.size());
         final List<Object> spaEnvironmentVariableList = spaEnvironmentVariablesCapture.asArray();
         assertEquals(FamilyDirectoryAmplifyStack.ReactEnvVar.values().length, spaEnvironmentVariableList.size());
-        assertTrue(spaEnvironmentVariableList.containsAll(List.of(Map.of("Name", FamilyDirectoryAmplifyStack.ReactEnvVar.CLIENT_ID.toString(), "Value",
+        assertTrue(spaEnvironmentVariableList.containsAll(List.of(Map.of("Name", FamilyDirectoryAmplifyStack.ReactEnvVar.BACKEND_VERSION.toString(), "Value", FamilyDirectoryCdkApp.VERSION),
+                                                                  Map.of("Name", FamilyDirectoryAmplifyStack.ReactEnvVar.CLIENT_ID.toString(), "Value",
                                                                          singletonMap("Fn::ImportValue", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME)),
                                                                   Map.of("Name", FamilyDirectoryAmplifyStack.ReactEnvVar.AGE_OF_MAJORITY.toString(), "Value", String.valueOf(DdbUtils.AGE_OF_MAJORITY)),
                                                                   Map.of("Name", FamilyDirectoryAmplifyStack.ReactEnvVar.SURNAME.toString(), "Value",

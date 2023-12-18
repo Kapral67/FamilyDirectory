@@ -14,7 +14,7 @@ record MemberRecord(@NotNull UUID id, @NotNull Member member, @NotNull UUID fami
         } else if (o == null || this.getClass() != o.getClass()) {
             return false;
         }
-        return this.id.equals(((MemberRecord) o).id);
+        return this.id.equals(((MemberRecord) o).id());
     }
 
     @Override

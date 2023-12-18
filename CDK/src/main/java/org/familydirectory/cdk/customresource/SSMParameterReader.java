@@ -52,8 +52,8 @@ class SSMParameterReader extends AwsCustomResource {
 
     public static
     boolean validateTemplate (final @NotNull String fromTemplate, final @NotNull String parameterName, final @NotNull Region region) {
-        final String regex = "\\{\"action\":\"getParameter\",\"service\":\"SSM\",\"parameters\":\\{\"Name\":\"" + parameterName + "\"\\},\"physicalResourceId\":\\{\"id\":\"\\d+\"\\},\"region\":\"" +
-                             region + "\"\\}";
+        final String regex = "\\{\"action\":\"getParameter\",\"service\":\"SSM\",\"parameters\":\\{\"Name\":\"" + parameterName + "\"},\"physicalResourceId\":\\{\"id\":\"\\d+\"},\"region\":\"" +
+                             region + "\"}";
         return Pattern.compile(regex)
                       .matcher(fromTemplate)
                       .matches();

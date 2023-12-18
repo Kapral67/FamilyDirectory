@@ -2,7 +2,6 @@ package org.familydirectory.assets.lambda.function.api.helper;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URL;
 import java.time.Duration;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
@@ -18,7 +17,6 @@ import static java.util.Objects.requireNonNull;
 public final
 class GetPdfHelper extends ApiHelper {
     private static final long SIGNATURE_DURATION_MINUTES = 10;
-    private final @NotNull ObjectMapper objectMapper = new ObjectMapper();
     private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
     private final @NotNull S3Presigner s3Presigner = S3Presigner.create();
     private final @NotNull LambdaLogger logger;

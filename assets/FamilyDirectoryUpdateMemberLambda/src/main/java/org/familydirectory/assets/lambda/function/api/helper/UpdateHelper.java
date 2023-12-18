@@ -90,8 +90,7 @@ class UpdateHelper extends ApiHelper {
                               .isEmpty())
             {
                 final String emailResponseMemberId = emailResponse.items()
-                                                                  .iterator()
-                                                                  .next()
+                                                                  .getFirst()
                                                                   .get(MemberTableParameter.ID.jsonFieldName())
                                                                   .s();
                 this.logger.log("<MEMBER,`%s`> Requested Update For <MEMBER,`%s`>, but <MEMBER,`%s`> Already Claims <EMAIL,`%s`>".formatted(caller.memberId(), ddbMemberId, emailResponseMemberId,

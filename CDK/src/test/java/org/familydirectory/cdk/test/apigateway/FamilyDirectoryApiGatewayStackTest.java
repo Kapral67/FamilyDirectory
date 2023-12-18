@@ -137,8 +137,7 @@ class FamilyDirectoryApiGatewayStackTest {
             template.hasResourceProperties("AWS::ApiGatewayV2::Route", objectLike(
                     Map.of("ApiId", singletonMap("Ref", apiId), "AuthorizationScopes", FamilyDirectoryApiGatewayStack.HTTP_API_ROUTE_AUTHORIZATION_SCOPES, "AuthorizationType", "JWT", "AuthorizerId",
                            singletonMap("Ref", authorizerId), "RouteKey", "%s %s".formatted(func.methods()
-                                                                                                .iterator()
-                                                                                                .next()
+                                                                                                .getFirst()
                                                                                                 .name(), func.endpoint()), "Target",
                            singletonMap("Fn::Join", List.of("", List.of("integrations/", singletonMap("Ref", integrationId)))))));
 

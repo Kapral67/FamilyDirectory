@@ -129,7 +129,6 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
                 }
                 case SUFFIX -> {
                     int ordinal = -1;
-                    final SuffixType suffix;
                     while (ordinal < 0 || ordinal >= SuffixType.values().length) {
                         Logger.customLine("[Optional] Please Choose A Suffix:", Ansi.BOLD, Ansi.BLUE);
                         for (final SuffixType sfx : SuffixType.values()) {
@@ -288,12 +287,6 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
             if (!emailResponse.items()
                               .isEmpty())
             {
-                final String emailResponseMemberId = emailResponse.items()
-                                                                  .iterator()
-                                                                  .next()
-                                                                  .get(MemberTableParameter.ID.jsonFieldName())
-                                                                  .s();
-
                 throw new IllegalStateException("EMAIL %s already claimed by Existing Member".formatted(memberEmail));
             }
         }
