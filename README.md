@@ -1,6 +1,20 @@
 ## Family Directory
 
-*For `cdk` usage, see [CDK-GettingStarted.md](docs/CDK-GettingStarted.md)*
+### Prerequisites
+
+1. Core Utilities (for using [stage.bash](stage.bash)):
+
+    1. [Bash](https://www.gnu.org/software/bash/)
+
+    2. [Tar](https://www.gnu.org/software/tar/)
+
+2. [Java JDK 21 or greater](https://docs.aws.amazon.com/corretto/latest/corretto-21-ug/downloads-list.html)
+
+3. [Apache Maven](https://maven.apache.org/download.cgi)
+
+4. [AWS CDK ToolKit](https://docs.aws.amazon.com/cdk/v2/guide/cli.html)
+
+    - *For `cdk` usage, see [CDK-GettingStarted.md](docs/CDK-GettingStarted.md)*
 
 ### Steps to Deploy
 
@@ -182,9 +196,11 @@
 
         5. For the **Website URL** enter `https://${ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME}`
 
-        6. For the **Use case description** put something to the effect of `"For emailing account-holders of this application"`
+        6. For the **Use case description** put something to the effect
+           of `"For emailing account-holders of this application"`
 
-      - *It may take up to 24 hours for your Production Access Request to be approved, users are not able to sign-up until this is complete*
+    - *It may take up to 24 hours for your Production Access Request to be approved, users are not able to sign-up until
+      this is complete*
 
 ### Updating
 

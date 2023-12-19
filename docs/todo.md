@@ -1,6 +1,18 @@
-## Dec 17 2023
+## Dec 19 2023
 
 ### v0.3
+
+#### Features
+
+- Expose FamilyDirectory Version as EnvVar to Amplify
+
+    - Frontend code can dynamically change to incorporate new features if available
+
+#### Bug Fixes
+
+- Minor Tweaks
+
+    - Remove unused code, migrate to Java 21 `List::getFirst` instead of `.iterator().next()`
 
 #### Dependency Upgrade Tracking PRs
 
