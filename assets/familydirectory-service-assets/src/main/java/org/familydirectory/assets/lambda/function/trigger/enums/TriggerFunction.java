@@ -72,4 +72,19 @@ enum TriggerFunction implements LambdaFunctionModel {
     String functionName () {
         return this.functionName;
     }
+
+    @Override
+    @NotNull
+    public final
+    Number timeoutSeconds () {
+        // [Cognito Requires Response in 5 seconds or less](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools-working-with-aws-lambda-triggers.html#important-lambda-considerations)
+        return 5;
+    }
+
+    @Override
+    @NotNull
+    public final
+    Number memorySize () {
+        return LambdaFunctionModel.NEW_ACCOUNT_MAX_MEMORY_SIZE;
+    }
 }

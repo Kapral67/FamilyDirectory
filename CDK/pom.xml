@@ -21,7 +21,7 @@
 
     <groupId>org.familydirectory.cdk</groupId>
     <artifactId>familydirectory-cdk</artifactId>
-    <version>0.2</version>
+    <version>0.3</version>
 
     <build>
         <plugins>
@@ -59,7 +59,7 @@
     </dependencyManagement>
 
     <dependencies>
-        
+
         <dependency>
             <groupId>software.amazon.awscdk</groupId>
             <artifactId>aws-cdk-lib</artifactId>

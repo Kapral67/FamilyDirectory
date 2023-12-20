@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'org.familydirectory.sdk.adminclient'
-version = '0.2'
+version = '0.3'
 
 compileJava {
     sourceCompatibility = '21'
@@ -19,7 +19,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.familydirectory.assets:familydirectory-service-assets:0.2'
+    implementation 'org.familydirectory.assets:familydirectory-service-assets:0.3'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.0'
     implementation 'org.jetbrains:annotations:24.1.0'
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'

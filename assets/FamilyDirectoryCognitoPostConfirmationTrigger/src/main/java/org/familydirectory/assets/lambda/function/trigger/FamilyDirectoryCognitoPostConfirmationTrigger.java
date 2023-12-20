@@ -40,6 +40,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
             final String email = ofNullable(event.getRequest()
                                                  .getUserAttributes()
                                                  .get("email")).filter(s -> s.contains("@"))
+                                                               .map(String::toLowerCase)
                                                                .orElseThrow(() -> {
                                                                    logger.log("ERROR: Cognito <USER,`%s`> Email Not Found".formatted(event.getUserName()), ERROR);
                                                                    final IllegalStateException e = new IllegalStateException();

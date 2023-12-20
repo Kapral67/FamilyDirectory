@@ -16,7 +16,7 @@
 
 ### Bug Fixes
 
-- Convert Emails to Lowercase before comparing in PreSignUp
+- Convert Emails to Lowercase before comparing in TriggerFunctions
 
 - Minor Tweaks
 

@@ -16,6 +16,8 @@
 
     - *For `cdk` usage, see [CDK-GettingStarted.md](docs/CDK-GettingStarted.md)*
 
+5. [Docker](https://www.docker.com/get-started/)
+
 ### Steps to Deploy
 
 1. Your AWS account and region info must be stored in

@@ -42,7 +42,7 @@ interface LambdaFunctionModel {
     }
 
     default @NotNull
-    Number timeout_seconds () {
+    Number timeoutSeconds () {
         return DEFAULT_TIMEOUT_SECONDS;
     }
 

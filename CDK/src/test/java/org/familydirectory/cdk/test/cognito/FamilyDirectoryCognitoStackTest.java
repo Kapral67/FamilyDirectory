@@ -75,8 +75,9 @@ class FamilyDirectoryCognitoStackTest {
         template.hasOutput(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME, objectLike(
                 Map.of("Value", singletonMap("Ref", userPoolClientIdCapture), "Export", singletonMap("Name", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME))));
         final Capture userPoolDomainNameCapture = new Capture();
-        template.hasOutput(FamilyDirectoryCognitoStack.COGNITO_SIGN_IN_URL_EXPORT_NAME, objectLike(Map.of("Value", singletonMap("Fn::Join", List.of("", List.of("https://", singletonMap("Ref",
-                                                                                                                                                                                         userPoolDomainNameCapture),
+        template.hasOutput(FamilyDirectoryCognitoStack.COGNITO_SIGN_IN_URL_EXPORT_NAME, objectLike(Map.of("Value", singletonMap("Fn::Join", List.of("", List.of(FamilyDirectoryCdkApp.HTTPS_PREFIX,
+                                                                                                                                                                singletonMap("Ref",
+                                                                                                                                                                             userPoolDomainNameCapture),
                                                                                                                                                                 "/login" + "?client_id=",
                                                                                                                                                                 singletonMap("Ref",
                                                                                                                                                                              userPoolClientIdCapture.asString()),
@@ -93,7 +94,7 @@ class FamilyDirectoryCognitoStackTest {
                                                                                                                        FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)), "Handler", trigger.handler(),
                                                                                       "MemorySize", trigger.memorySize(), "Role",
                                                                                       singletonMap("Fn::GetAtt", List.of(triggerRoleIdMap.get(trigger), "Arn")), "Runtime",
-                                                                                      LambdaFunctionConstructUtility.RUNTIME.toString(), "Timeout", trigger.timeout_seconds())));
+                                                                                      LambdaFunctionConstructUtility.RUNTIME.toString(), "Timeout", trigger.timeoutSeconds())));
         }
 
         final Capture sesArnCapture = new Capture();

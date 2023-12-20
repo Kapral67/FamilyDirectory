@@ -80,7 +80,7 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                                                                                      List.of(functionRoleIdCapture.asString(),
                                                                                                                                                                              "Arn")), "Runtime",
                                                                                                                                                         LambdaFunctionConstructUtility.RUNTIME.toString(),
-                                                                                                                                                        "Timeout", function.timeout_seconds()),
+                                                                                                                                                        "Timeout", function.timeoutSeconds()),
                                                                                                                                    "DependsOn", policyResourcesCapture)));
             assertEquals(1, functionMap.size());
             assertTrue(functionMap.containsKey(functionIdCapture.asString()));
@@ -142,7 +142,7 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                                                                                      List.of(functionRoleIdCapture.asString(),
                                                                                                                                                                              "Arn")), "Runtime",
                                                                                                                                                         LambdaFunctionConstructUtility.RUNTIME.toString(),
-                                                                                                                                                        "Timeout", function.timeout_seconds()),
+                                                                                                                                                        "Timeout", function.timeoutSeconds()),
                                                                                                                                    "DependsOn", policyResourcesCapture)));
             assertEquals(1, functionMap.size());
             assertTrue(functionMap.containsKey(functionIdCapture.asString()));

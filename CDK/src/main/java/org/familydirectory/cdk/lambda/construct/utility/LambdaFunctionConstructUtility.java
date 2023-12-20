@@ -17,6 +17,7 @@ import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.iam.IRole;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.lambda.Architecture;
+import software.amazon.awscdk.services.lambda.EventInvokeConfigOptions;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionProps;
 import software.amazon.awscdk.services.lambda.Runtime;
@@ -57,10 +58,13 @@ class LambdaFunctionConstructUtility {
                                                                                                       .runtime(RUNTIME)
                                                                                                       .code(fromAsset(getLambdaJar(f.functionName())))
                                                                                                       .handler(f.handler())
-                                                                                                      .timeout(seconds(f.timeout_seconds()))
+                                                                                                      .timeout(seconds(f.timeoutSeconds()))
                                                                                                       .architecture(ARCHITECTURE)
                                                                                                       .memorySize(f.memorySize())
                                                                                                       .build());
+                         function.configureAsyncInvoke(EventInvokeConfigOptions.builder()
+                                                                               .retryAttempts(0)
+                                                                               .build());
 
                          Arrays.stream(LambdaUtils.EnvVar.values())
                                .forEach(env -> {
