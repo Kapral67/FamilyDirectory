@@ -9,6 +9,7 @@ import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.lambda.FamilyDirectoryLambdaStack;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import org.familydirectory.cdk.sss.FamilyDirectorySssStack;
+import org.familydirectory.cdk.toolkitcleaner.CdkGarbageCollectionStack;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
@@ -34,6 +35,7 @@ class FamilyDirectoryCdkApp {
     public static final String API_STACK_NAME = "FamilyDirectoryApiGatewayStack";
     public static final String AMPLIFY_STACK_NAME = "FamilyDirectoryAmplifyStack";
     public static final String HTTPS_PREFIX = "https://";
+    private static final String CDK_GARBAGE_COLLECTION_STACK_NAME = "CdkToolkitGarbageCollectionStack";
 
     static {
         String account = getenv("CDK_DEFAULT_ACCOUNT");
@@ -120,10 +122,16 @@ class FamilyDirectoryCdkApp {
         apiGatewayStack.addDependency(cognitoStack);
         apiGatewayStack.addDependency(lambdaStack);
 
+        final CdkGarbageCollectionStack cdkGarbageCollectionStack = new CdkGarbageCollectionStack(app, CDK_GARBAGE_COLLECTION_STACK_NAME, StackProps.builder()
+                                                                                                                                                    .env(DEFAULT_ENV)
+                                                                                                                                                    .stackName(CDK_GARBAGE_COLLECTION_STACK_NAME)
+                                                                                                                                                    .build());
+
         final FamilyDirectoryAmplifyStack amplifyStack = new FamilyDirectoryAmplifyStack(app, AMPLIFY_STACK_NAME, StackProps.builder()
                                                                                                                             .env(DEFAULT_ENV)
                                                                                                                             .stackName(AMPLIFY_STACK_NAME)
                                                                                                                             .build());
+        amplifyStack.addDependency(cdkGarbageCollectionStack);
         amplifyStack.addDependency(domainStack);
         amplifyStack.addDependency(dynamoDbStack);
         amplifyStack.addDependency(cognitoStack);

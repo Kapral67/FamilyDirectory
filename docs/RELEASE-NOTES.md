@@ -1,5 +1,31 @@
 # FamilyDirectory Release Notes
 
+## v0.3
+
+### Features
+
+- Expose FamilyDirectory Version as EnvVar to Amplify
+
+    - Frontend code can dynamically change to incorporate new features if available
+
+- Garbage Collect CDK Assets
+
+    - Keep Costs Low by Garbage Collecting Unused CDK Assets
+
+        - see [aws-cdk-rfcs#64](https://github.com/aws/aws-cdk-rfcs/issues/64)
+
+### Bug Fixes
+
+- Convert Emails to Lowercase before comparing in PreSignUp
+
+- Minor Tweaks
+
+    - Remove unused code, migrate to Java 21 `List::getFirst` instead of `.iterator().next()`
+
+### Dependency Upgrade Tracking PRs
+
+- #600 - #610
+
 ## v0.2
 
 ### Features

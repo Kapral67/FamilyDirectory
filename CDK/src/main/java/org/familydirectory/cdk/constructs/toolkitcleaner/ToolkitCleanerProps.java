@@ -1,4 +1,4 @@
-package org.familydirectory.cdk.construct.toolkitcleaner;
+package org.familydirectory.cdk.constructs.toolkitcleaner;
 
 import org.immutables.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -8,7 +8,7 @@ import software.amazon.awscdk.services.events.Schedule;
 @Value.Immutable
 public
 interface ToolkitCleanerProps {
-    Duration DEFAULT_SCHEDULE_DURATION = Duration.days(1);
+    Schedule DEFAULT_SCHEDULE = Schedule.rate(Duration.days(30));
 
     /**
      * To Disable Automatic Cleaning, set to null
@@ -19,7 +19,7 @@ interface ToolkitCleanerProps {
     @Value.Default
     default
     Schedule getSchedule () {
-        return Schedule.rate(DEFAULT_SCHEDULE_DURATION);
+        return DEFAULT_SCHEDULE;
     }
 
     @Value.Default
