@@ -24,7 +24,11 @@
 
 ### Dependency Upgrade Tracking PRs
 
-- #600 - #610
+- ~~#600 - #610~~
+
+    - superseded by #611, #613 - #622
+
+- #612
 
 ## v0.2
 
