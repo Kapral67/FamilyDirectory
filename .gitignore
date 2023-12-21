@@ -6,7 +6,7 @@ target
 
 # CDK asset staging directory
 .cdk.staging
-cdk.out
+cdk*.out
 
 # Gradle files
 .gradle/
