@@ -19,7 +19,6 @@ import static java.util.Objects.requireNonNull;
 public final
 class ToolkitCleanerEvent implements EventHelper {
     private static final double BYTES_IN_GIGABYTE = Math.pow(1024.0, 3.0);
-    private static final int MAX_DOTS = 3;
     private final @NotNull SfnClient sfnClient = SfnClient.create();
     private final @NotNull ObjectMapper objectMapper = new ObjectMapper();
     private final @NotNull Scanner scanner;
