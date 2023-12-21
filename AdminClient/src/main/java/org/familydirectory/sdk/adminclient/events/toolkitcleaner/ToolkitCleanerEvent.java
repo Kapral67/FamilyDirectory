@@ -57,9 +57,9 @@ class ToolkitCleanerEvent implements EventHelper {
                                           .trim();
         if (!choice.isBlank()) {
             System.out.println();
-        }
-        if (choice.equalsIgnoreCase("n")) {
-            return;
+            if (choice.equalsIgnoreCase("n")) {
+                return;
+            }
         }
 
         final String stateMachineArn = this.sfnClient.listStateMachines()
