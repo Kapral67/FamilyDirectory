@@ -14,6 +14,8 @@
 
         - see [aws-cdk-rfcs#64](https://github.com/aws/aws-cdk-rfcs/issues/64)
 
+    - Requires Manually Invocation Using `AdminClient`, see [README](../README.md)
+
 ### Bug Fixes
 
 - Convert Emails to Lowercase before comparing in TriggerFunctions

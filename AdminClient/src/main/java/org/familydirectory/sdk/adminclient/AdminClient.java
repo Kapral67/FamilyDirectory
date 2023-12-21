@@ -3,6 +3,7 @@ package org.familydirectory.sdk.adminclient;
 import io.leego.banana.Ansi;
 import io.leego.banana.BananaUtils;
 import io.leego.banana.Font;
+import java.util.Arrays;
 import java.util.Scanner;
 import org.familydirectory.sdk.adminclient.enums.Commands;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
@@ -10,6 +11,7 @@ import org.familydirectory.sdk.adminclient.events.create.CreateEvent;
 import org.familydirectory.sdk.adminclient.events.delete.DeleteEvent;
 import org.familydirectory.sdk.adminclient.events.model.Executable;
 import org.familydirectory.sdk.adminclient.events.stream.TogglePdfGeneratorEvent;
+import org.familydirectory.sdk.adminclient.events.toolkitcleaner.ToolkitCleanerEvent;
 import org.familydirectory.sdk.adminclient.events.update.UpdateEvent;
 import org.familydirectory.sdk.adminclient.utility.Logger;
 import static java.util.Objects.isNull;
@@ -82,6 +84,7 @@ class AdminClient {
                     case UPDATE -> new UpdateEvent(scanner);
                     case DELETE -> new DeleteEvent(scanner);
                     case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(scanner);
+                    case TOOLKIT_CLEANER -> new ToolkitCleanerEvent(scanner);
                     case EXIT -> null;
                 })
                 {
@@ -93,6 +96,7 @@ class AdminClient {
             }
         } catch (final Throwable e) {
             Logger.error(e.getMessage());
+            Logger.trace(Arrays.toString(e.getStackTrace()));
         }
     }
 }

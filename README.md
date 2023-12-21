@@ -221,3 +221,7 @@ For backend updates:
 2. Deploy the `AmplifyStack` (e.g. `cdk deploy FamilyDirectoryAmplifyStack`)
 
     - **Note**: *You must be in the `CDK` directory to run `cdk` commands*
+
+3. Remove Old Cdk Assets using `AdminClient`
+
+    - Simply use the **TOOLKIT_CLEANER** Command after invoking the `AdminClient`

@@ -22,6 +22,7 @@ import software.amazon.awscdk.services.stepfunctions.MapProps;
 import software.amazon.awscdk.services.stepfunctions.RetryProps;
 import software.amazon.awscdk.services.stepfunctions.StateMachine;
 import software.amazon.awscdk.services.stepfunctions.StateMachineProps;
+import software.amazon.awscdk.services.stepfunctions.StateMachineType;
 import software.amazon.awscdk.services.stepfunctions.tasks.EvaluateExpression;
 import software.amazon.awscdk.services.stepfunctions.tasks.EvaluateExpressionProps;
 import software.amazon.awscdk.services.stepfunctions.tasks.LambdaInvoke;
@@ -146,6 +147,7 @@ class ToolkitCleaner extends Construct {
                                                                            .definitionBody(DefinitionBody.fromChainable(getStackNames.next(stacksMap.iterator(extractTemplateHashes))
                                                                                                                                      .next(flattenHashes)
                                                                                                                                      .next(cleanObjects)))
+                                                                           .stateMachineType(StateMachineType.EXPRESS)
                                                                            .build());
     }
 

@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 
 public final
 class TogglePdfGeneratorEvent implements EventHelper {
-    private static final long MILLIS_IN_SEC = 1000L;
     private final @NotNull LambdaClient lambdaClient = LambdaClient.create();
     private final @NotNull Scanner scanner;
 

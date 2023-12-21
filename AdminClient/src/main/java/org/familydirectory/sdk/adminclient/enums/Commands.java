@@ -13,6 +13,7 @@ enum Commands {
     UPDATE(null),
     DELETE(null),
     TOGGLE_PDF_GENERATOR(null),
+    TOOLKIT_CLEANER(null),
     EXIT(null);
 
     @Nullable

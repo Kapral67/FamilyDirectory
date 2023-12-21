@@ -29,6 +29,7 @@ import static java.util.Optional.ofNullable;
 
 public
 interface EventHelper extends LambdaFunctionHelper, Executable {
+    long MILLIS_IN_SEC = 1000L;
     String ROOT_ID = DdbUtils.ROOT_MEMBER_ID;
 
     @NotNull
