@@ -1,6 +1,5 @@
 package org.familydirectory.cdk.toolkitcleaner;
 
-import org.familydirectory.cdk.constructs.toolkitcleaner.ImmutableToolkitCleanerProps;
 import org.familydirectory.cdk.constructs.toolkitcleaner.ToolkitCleaner;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -14,7 +13,6 @@ class CdkGarbageCollectionStack extends Stack {
     CdkGarbageCollectionStack (final Construct scope, final String id, final StackProps stackProps) {
         super(scope, id, stackProps);
 
-        new ToolkitCleaner(this, TOOLKIT_CLEANER_RESOURCE_ID, ImmutableToolkitCleanerProps.builder()
-                                                                                          .build());
+        new ToolkitCleaner(this, TOOLKIT_CLEANER_RESOURCE_ID);
     }
 }

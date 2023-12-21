@@ -5,10 +5,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.Duration;
-import software.amazon.awscdk.services.events.Rule;
-import software.amazon.awscdk.services.events.RuleProps;
-import software.amazon.awscdk.services.events.Schedule;
-import software.amazon.awscdk.services.events.targets.SfnStateMachine;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.EnvironmentOptions;
@@ -33,7 +29,6 @@ import software.amazon.awscdk.services.stepfunctions.tasks.LambdaInvokeProps;
 import software.constructs.Construct;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static java.util.Objects.nonNull;
 
 public final
 class ToolkitCleaner extends Construct {
@@ -47,7 +42,6 @@ class ToolkitCleaner extends Construct {
     private static final boolean PAYLOAD_RESPONSE_ONLY = true;
     private static final String DRY_RUN_ENVIRONMENT_VARIABLE_KEY = "RUN";
     private static final String DRY_RUN_ENVIRONMENT_VARIABLE_VALUE = "true";
-    private static final String RETAIN_ASSETS_NEWER_THAN_KEY = "RETAIN_MILLISECONDS";
     private static final String FILE_ASSET_RESOURCE_ID = "FileAsset";
     private static final String GET_STACK_NAMES_LAMBDA_RESOURCE_ID = "GetStackNamesFunction";
     private static final String EXTRACT_TEMPLATE_HASHES_LAMBDA_RESOURCE_ID = "ExtractTemplateHashesFunction";
@@ -58,7 +52,6 @@ class ToolkitCleaner extends Construct {
     private static final String STACKS_MAP_RESOURCE_ID = "StacksMap";
     private static final String FLATTEN_HASHES_RESOURCE_ID = "FlattenHashes";
     private static final String STATE_MACHINE_RESOURCE_ID = "StateMachine";
-    private static final String STATE_MACHINE_RULE_RESOURCE_ID = "Rule";
     private static final java.util.Map<String, String> STACKS_MAP_RESULT_SELECTOR = singletonMap("AssetHashes", JsonPath.stringAt("$"));
     private static final Number STACKS_MAP_MAX_CONCURRENCY = 1;
     private static final List<String> EXTRACT_TEMPLATE_HASHES_RETRY_ERRORS = singletonList("Throttling");
@@ -84,7 +77,7 @@ class ToolkitCleaner extends Construct {
                                                                                                                               .build());
 
     public
-    ToolkitCleaner (final @NotNull Construct scope, final @NotNull String id, final @NotNull ToolkitCleanerProps props) {
+    ToolkitCleaner (final @NotNull Construct scope, final @NotNull String id) {
         super(scope, id);
 
         final Asset fileAsset = new Asset(this, FILE_ASSET_RESOURCE_ID, AssetProps.builder()
@@ -136,8 +129,10 @@ class ToolkitCleaner extends Construct {
                                                                                                                                   .handler(HANDLER)
                                                                                                                                   .entry(CLEAN_OBJECTS_LAMBDA_ASSET_PATH)
                                                                                                                                   .timeout(FIVE_MINUTES)
-                                                                                                                                  .environment(singletonMap(FILE_ASSET_BUCKET_NAME_KEY,
-                                                                                                                                                            fileAssetBucket.getBucketName()))
+                                                                                                                                  .environment(java.util.Map.of(FILE_ASSET_BUCKET_NAME_KEY,
+                                                                                                                                                                fileAssetBucket.getBucketName(),
+                                                                                                                                                                DRY_RUN_ENVIRONMENT_VARIABLE_KEY,
+                                                                                                                                                                DRY_RUN_ENVIRONMENT_VARIABLE_VALUE))
                                                                                                                                   .build());
         addDefaultLambdaEnvironment(cleanObjectsFunction);
         fileAssetBucket.grantRead(cleanObjectsFunction);
@@ -147,32 +142,11 @@ class ToolkitCleaner extends Construct {
                                                                                                                   .payloadResponseOnly(PAYLOAD_RESPONSE_ONLY)
                                                                                                                   .build());
 
-        if (!props.getDryRun()) {
-            cleanObjectsFunction.addEnvironment(DRY_RUN_ENVIRONMENT_VARIABLE_KEY, DRY_RUN_ENVIRONMENT_VARIABLE_VALUE);
-        }
-
-        if (nonNull(props.getRetainAssetsNewerThan())) {
-            final String millis = String.valueOf(props.getRetainAssetsNewerThan()
-                                                      .toMilliseconds()
-                                                      .longValue());
-            cleanObjectsFunction.addEnvironment(RETAIN_ASSETS_NEWER_THAN_KEY, millis);
-        }
-
-        final StateMachine stateMachine = new StateMachine(this, STATE_MACHINE_RESOURCE_ID, StateMachineProps.builder()
-                                                                                                             .definitionBody(DefinitionBody.fromChainable(
-                                                                                                                     getStackNames.next(stacksMap.iterator(extractTemplateHashes))
-                                                                                                                                  .next(flattenHashes)
-                                                                                                                                  .next(cleanObjects)))
-                                                                                                             .build());
-
-        final Schedule schedule = props.getSchedule();
-        final Rule rule = new Rule(this, STATE_MACHINE_RULE_RESOURCE_ID, RuleProps.builder()
-                                                                                  .enabled(nonNull(schedule))
-                                                                                  .schedule(nonNull(schedule)
-                                                                                                    ? schedule
-                                                                                                    : ToolkitCleanerProps.DEFAULT_SCHEDULE)
-                                                                                  .build());
-        rule.addTarget(new SfnStateMachine(stateMachine));
+        new StateMachine(this, STATE_MACHINE_RESOURCE_ID, StateMachineProps.builder()
+                                                                           .definitionBody(DefinitionBody.fromChainable(getStackNames.next(stacksMap.iterator(extractTemplateHashes))
+                                                                                                                                     .next(flattenHashes)
+                                                                                                                                     .next(cleanObjects)))
+                                                                           .build());
     }
 
     private static

@@ -85,13 +85,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.immutables</groupId>
-            <artifactId>value</artifactId>
-            <version>2.10.0</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.familydirectory.assets</groupId>
             <artifactId>familydirectory-service-assets</artifactId>
             <version>${project.version}</version>
