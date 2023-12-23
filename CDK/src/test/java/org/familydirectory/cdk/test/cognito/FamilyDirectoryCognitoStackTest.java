@@ -153,7 +153,7 @@ class FamilyDirectoryCognitoStackTest {
                                                                                                 entry("WriteAttributes", singletonList("email")))));
 
         final Map<String, Map<String, List<Map<String, String>>>> ssmReaderIamPolicy = singletonMap("PolicyDocument", singletonMap("Statement", singletonList(
-                Map.of("Action", "ssm:GetParameter", "Effect", "Allow", "Resource", "*"))));
+                Map.of("Action", "ssm:GetParameter", "Effect", "Allow", "Resource", LambdaFunctionConstructUtility.GLOBAL_RESOURCE))));
         final Map<String, List<Object>> userPoolCloudFrontDomainNamePolicy = singletonMap("Fn::Join", List.of("", List.of("{\"service" + "\":\"CognitoIdentityServiceProvider\"," +
                                                                                                                           "\"action\":\"describeUserPoolDomain\"," + "\"parameters\":{\"Domain\":\"",
                                                                                                                           singletonMap("Ref", userPoolDomainNameCapture.asString()),

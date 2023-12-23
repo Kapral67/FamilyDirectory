@@ -9,7 +9,6 @@ import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.lambda.FamilyDirectoryLambdaStack;
 import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import org.familydirectory.cdk.sss.FamilyDirectorySssStack;
-import org.familydirectory.cdk.toolkitcleaner.CdkGarbageCollectionStack;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
@@ -104,11 +103,6 @@ class FamilyDirectoryCdkApp {
                                                                                                             .stackName(SSS_STACK_NAME)
                                                                                                             .build());
 
-        final CdkGarbageCollectionStack cdkGarbageCollectionStack = new CdkGarbageCollectionStack(app, CDK_GARBAGE_COLLECTION_STACK_NAME, StackProps.builder()
-                                                                                                                                                    .env(DEFAULT_ENV)
-                                                                                                                                                    .stackName(CDK_GARBAGE_COLLECTION_STACK_NAME)
-                                                                                                                                                    .build());
-
         final FamilyDirectoryLambdaStack lambdaStack = new FamilyDirectoryLambdaStack(app, LAMBDA_STACK_NAME, StackProps.builder()
                                                                                                                         .env(DEFAULT_ENV)
                                                                                                                         .stackName(LAMBDA_STACK_NAME)
@@ -118,7 +112,6 @@ class FamilyDirectoryCdkApp {
         lambdaStack.addDependency(dynamoDbStack);
         lambdaStack.addDependency(cognitoStack);
         lambdaStack.addDependency(sssStack);
-        lambdaStack.addDependency(cdkGarbageCollectionStack);
 
         final FamilyDirectoryApiGatewayStack apiGatewayStack = new FamilyDirectoryApiGatewayStack(app, API_STACK_NAME, StackProps.builder()
                                                                                                                                  .env(DEFAULT_ENV)

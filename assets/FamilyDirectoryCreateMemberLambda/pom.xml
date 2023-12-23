@@ -13,7 +13,7 @@
     </repositories>
 
     <groupId>org.familydirectory.assets.lambda.function.api</groupId>
-    <artifactId>familydirectory-creatememberlambda</artifactId>
+    <artifactId>familydirectorycreatememberlambda</artifactId>
     <version>0.3</version>
 
     <properties>

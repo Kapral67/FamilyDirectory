@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-        xmlns="http://maven.apache.org/POM/4.0.0">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <repositories>
@@ -12,14 +11,14 @@
         </repository>
     </repositories>
 
-    <groupId>org.familydirectory.assets.lambda.function.trigger</groupId>
-    <artifactId>familydirectorycognitopresignuptrigger</artifactId>
+    <groupId>org.familydirectory.assets.lambda.function.toolkitcleaner</groupId>
+    <artifactId>toolkitcleanerlambda</artifactId>
     <version>0.3</version>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <build>
@@ -58,20 +57,13 @@
     <dependencies>
 
         <dependency>
-            <groupId>software.amazon.awscdk</groupId>
-            <artifactId>aws-cdk-lib</artifactId>
-            <version>2.115.0</version>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>cloudformation</artifactId>
         </dependency>
 
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
-            <artifactId>dynamodb-enhanced</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-lambda-java-events</artifactId>
-            <version>3.11.4</version>
+            <artifactId>s3</artifactId>
         </dependency>
 
         <dependency>
@@ -87,10 +79,17 @@
         </dependency>
 
         <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>24.1.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.familydirectory.assets</groupId>
             <artifactId>familydirectory-service-assets</artifactId>
             <version>${project.version}</version>
         </dependency>
 
     </dependencies>
+
 </project>

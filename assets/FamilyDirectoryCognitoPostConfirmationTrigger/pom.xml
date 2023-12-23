@@ -13,7 +13,7 @@
     </repositories>
 
     <groupId>org.familydirectory.assets.lambda.function.trigger</groupId>
-    <artifactId>familydirectory-cognitopostconfirmationtrigger</artifactId>
+    <artifactId>familydirectorycognitopostconfirmationtrigger</artifactId>
     <version>0.3</version>
 
     <properties>

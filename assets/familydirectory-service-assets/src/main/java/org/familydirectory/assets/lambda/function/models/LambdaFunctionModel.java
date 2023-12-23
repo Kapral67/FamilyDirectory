@@ -16,17 +16,25 @@ interface LambdaFunctionModel {
     @NotNull
     String handler ();
 
-    @Nullable
-    Map<DdbTable, List<String>> ddbActions ();
+    default @Nullable
+    Map<DdbTable, List<String>> ddbActions () {
+        return null;
+    }
 
-    @Nullable
-    List<String> cognitoActions ();
+    default @Nullable
+    List<String> cognitoActions () {
+        return null;
+    }
 
-    @Nullable
-    List<String> sesActions ();
+    default @Nullable
+    List<String> sesActions () {
+        return null;
+    }
 
-    @Nullable
-    List<String> sssActions ();
+    default @Nullable
+    List<String> sssActions () {
+        return null;
+    }
 
     default @NotNull
     String arnExportName () {

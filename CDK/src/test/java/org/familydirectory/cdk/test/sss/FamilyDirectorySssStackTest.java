@@ -3,6 +3,7 @@ package org.familydirectory.cdk.test.sss;
 import java.util.List;
 import java.util.Map;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
+import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
 import org.familydirectory.cdk.sss.FamilyDirectorySssStack;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
@@ -73,7 +74,7 @@ class FamilyDirectorySssStackTest {
                                                                                                                                                                                        "Principal",
                                                                                                                                                                                        singletonMap(
                                                                                                                                                                                                "AWS",
-                                                                                                                                                                                               "*"),
+                                                                                                                                                                                               LambdaFunctionConstructUtility.GLOBAL_RESOURCE),
                                                                                                                                                                                        "Resource",
                                                                                                                                                                                        List.of(singletonMap(
                                                                                                                                                                                                        "Fn::GetAtt",
@@ -98,7 +99,7 @@ class FamilyDirectorySssStackTest {
                                                                                                                                                                                        "Principal",
                                                                                                                                                                                        singletonMap(
                                                                                                                                                                                                "AWS",
-                                                                                                                                                                                               "*"),
+                                                                                                                                                                                               LambdaFunctionConstructUtility.GLOBAL_RESOURCE),
                                                                                                                                                                                        "Resource",
                                                                                                                                                                                        List.of(singletonMap(
                                                                                                                                                                                                        "Fn::GetAtt",

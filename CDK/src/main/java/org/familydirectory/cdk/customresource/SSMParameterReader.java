@@ -2,6 +2,7 @@ package org.familydirectory.cdk.customresource;
 
 import java.time.Instant;
 import java.util.regex.Pattern;
+import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.customresources.AwsCustomResource;
@@ -31,7 +32,8 @@ class SSMParameterReader extends AwsCustomResource {
                                                .policy(AwsCustomResourcePolicy.fromStatements(singletonList(PolicyStatement.Builder.create()
                                                                                                                                    .actions(singletonList("ssm:GetParameter"))
                                                                                                                                    .effect(Effect.ALLOW)
-                                                                                                                                   .resources(singletonList("*"))
+                                                                                                                                   .resources(singletonList(
+                                                                                                                                           LambdaFunctionConstructUtility.GLOBAL_RESOURCE))
                                                                                                                                    .build())))
                                                .build());
     }

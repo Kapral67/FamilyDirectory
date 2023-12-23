@@ -1,1 +1,0 @@
-../../src/main/java/org/familydirectory/cdk/constructs/toolkitcleaner/README.md

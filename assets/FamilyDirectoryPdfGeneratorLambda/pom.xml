@@ -12,8 +12,8 @@
         </repository>
     </repositories>
 
-    <groupId>org.familydirectory.assets.lambda.function.pdf</groupId>
-    <artifactId>familydirectory-pdfgeneratorlambda</artifactId>
+    <groupId>org.familydirectory.assets.lambda.function.stream</groupId>
+    <artifactId>familydirectorypdfgeneratorlambda</artifactId>
     <version>0.3</version>
 
     <properties>

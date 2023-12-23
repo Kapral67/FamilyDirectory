@@ -47,18 +47,6 @@ enum StreamFunction implements LambdaFunctionModel {
 
     @Override
     public @Nullable
-    List<String> cognitoActions () {
-        return null;
-    }
-
-    @Override
-    public @Nullable
-    List<String> sesActions () {
-        return null;
-    }
-
-    @Override
-    public @Nullable
     List<String> sssActions () {
         return this.sssActions;
     }

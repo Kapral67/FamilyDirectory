@@ -1,7 +1,6 @@
 package org.familydirectory.cdk.lambda.construct.utility;
 
-import java.io.File;
-import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +8,7 @@ import java.util.stream.Collectors;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
+import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awscdk.CfnOutput;
@@ -24,8 +24,6 @@ import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.constructs.Construct;
-import static java.lang.System.getProperty;
-import static java.nio.file.Paths.get;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
@@ -42,6 +40,7 @@ class LambdaFunctionConstructUtility {
     public static final Runtime RUNTIME = JAVA_21;
     public static final Architecture ARCHITECTURE = ARM_64;
     public static final String ROOT_ID = DdbUtils.ROOT_MEMBER_ID;
+    public static final String GLOBAL_RESOURCE = "*";
 
     private
     LambdaFunctionConstructUtility () {
@@ -49,8 +48,8 @@ class LambdaFunctionConstructUtility {
     }
 
     public static @NotNull
-    Map<LambdaFunctionModel, Function> constructFunctionMap (final @NotNull Construct scope, final @NotNull List<? extends LambdaFunctionModel> values, final @Nullable IHostedZone hostedZone,
-                                                             final @Nullable IUserPool userPool, final @Nullable IBucket pdfBucket)
+    <T extends LambdaFunctionModel> Map<T, Function> constructFunctionMap (final @NotNull Construct scope, final @NotNull List<T> values, final @Nullable IHostedZone hostedZone,
+                                                                           final @Nullable IUserPool userPool, final @Nullable IBucket pdfBucket)
     {
         return values.stream()
                      .collect(Collectors.toUnmodifiableMap(f -> f, f -> {
@@ -97,14 +96,10 @@ class LambdaFunctionConstructUtility {
     @NotNull
     private static
     String getLambdaJar (final String lambdaName) {
-        final File jarDir = new File(get(getProperty("user.dir"), "..", "assets", lambdaName, "target").toUri());
-        try {
-            return requireNonNull(jarDir.listFiles((dir, name) -> name.toLowerCase()
-                                                                      .startsWith("familydirectory") && name.toLowerCase()
-                                                                                                            .endsWith(".jar")))[0].getCanonicalPath();
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
-        }
+        return Paths.get(System.getProperty("user.dir"), "..", "assets", lambdaName, "target", "%s-%s.jar".formatted(lambdaName.toLowerCase(), FamilyDirectoryCdkApp.VERSION))
+                    .toAbsolutePath()
+                    .normalize()
+                    .toString();
     }
 
     public static
@@ -116,7 +111,7 @@ class LambdaFunctionConstructUtility {
                 final String tableArn = importValue(table.arnExportName());
                 v.addToRolePolicy(create().effect(ALLOW)
                                           .actions(actions)
-                                          .resources(List.of(tableArn, "%s/index/*".formatted(tableArn)))
+                                          .resources(List.of(tableArn, "%s/index/%s".formatted(tableArn, GLOBAL_RESOURCE)))
                                           .build());
             }));
 //      Assign Cognito Permissions
@@ -129,14 +124,15 @@ class LambdaFunctionConstructUtility {
 //      Assign Ses Permissions
             ofNullable(k.sesActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
                                                                                       .actions(actions)
-                                                                                      .resources(singletonList("*"))
+                                                                                      .resources(singletonList(GLOBAL_RESOURCE))
                                                                                       .build()));
 
 //      Assign S3 Permissions
             ofNullable(pdfBucket).map(IBucket::getBucketArn)
                                  .ifPresent(pdfBucketArn -> ofNullable(k.sssActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
                                                                                                                                       .actions(actions)
-                                                                                                                                      .resources(singletonList("%s/*".formatted(pdfBucketArn)))
+                                                                                                                                      .resources(singletonList(
+                                                                                                                                              "%s/%s".formatted(pdfBucketArn, GLOBAL_RESOURCE)))
                                                                                                                                       .build())));
         });
     }
@@ -152,7 +148,7 @@ class LambdaFunctionConstructUtility {
                 final String tableArn = importValue(table.arnExportName());
                 executionRole.addToPrincipalPolicy(create().effect(ALLOW)
                                                            .actions(actions)
-                                                           .resources(List.of(tableArn, "%s/index/*".formatted(tableArn)))
+                                                           .resources(List.of(tableArn, "%s/index/%s".formatted(tableArn, GLOBAL_RESOURCE)))
                                                            .build());
             }));
 
@@ -165,7 +161,7 @@ class LambdaFunctionConstructUtility {
 //      Assign Ses Permissions
             ofNullable(f.sesActions()).ifPresent(actions -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
                                                                                                        .actions(actions)
-                                                                                                       .resources(singletonList("*"))
+                                                                                                       .resources(singletonList(GLOBAL_RESOURCE))
                                                                                                        .build()));
 
 //      Assign S3 Permissions
@@ -173,7 +169,8 @@ class LambdaFunctionConstructUtility {
                                  .ifPresent(pdfBucketArn -> ofNullable(f.sssActions()).ifPresent(actions -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
                                                                                                                                                        .actions(actions)
                                                                                                                                                        .resources(singletonList(
-                                                                                                                                                               "%s/*".formatted(pdfBucketArn)))
+                                                                                                                                                               "%s/%s".formatted(pdfBucketArn,
+                                                                                                                                                                                 GLOBAL_RESOURCE)))
                                                                                                                                                        .build())));
         });
     }

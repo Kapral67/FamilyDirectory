@@ -87,3 +87,11 @@ updates:
       day: "sunday"
       time: "13:00"
     target-branch: "main"
+
+  - package-ecosystem: "maven"
+    directory: "/assets/ToolkitCleanerLambda"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "13:00"
+    target-branch: "main"

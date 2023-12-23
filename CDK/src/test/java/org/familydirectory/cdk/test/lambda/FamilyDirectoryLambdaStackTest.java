@@ -8,6 +8,7 @@ import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
+import org.familydirectory.assets.lambda.function.toolkitcleaner.enums.ToolkitCleanerFunction;
 import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
@@ -175,6 +176,69 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                            entry("StartingPosition", "LATEST"))));
             }
         }
+
+        for (final ToolkitCleanerFunction function : ToolkitCleanerFunction.values()) {
+            final Capture functionIdCapture = new Capture();
+            template.hasOutput(function.arnExportName(),
+                               objectLike(Map.of("Value", singletonMap("Fn::GetAtt", List.of(functionIdCapture, "Arn")), "Export", singletonMap("Name", function.arnExportName()))));
+            assertFalse(functionIdCapture.asString()
+                                         .isBlank());
+            final Capture functionRoleIdCapture = new Capture();
+            template.hasOutput(function.roleArnExportName(),
+                               objectLike(Map.of("Value", singletonMap("Fn::GetAtt", List.of(functionRoleIdCapture, "Arn")), "Export", singletonMap("Name", function.roleArnExportName()))));
+            assertFalse(functionRoleIdCapture.asString()
+                                             .isBlank());
+
+            final Capture policyResourcesCapture = new Capture();
+            final Map<String, Map<String, Object>> functionMap = template.findResources("AWS::Lambda::Function", objectLike(Map.of("Properties", Map.of("Architectures", singletonList(
+                                                                                                                                                                LambdaFunctionConstructUtility.ARCHITECTURE.toString()), "Handler", function.handler(), "MemorySize", function.memorySize(), "Role", singletonMap("Fn::GetAtt",
+                                                                                                                                                                                                                                                                                                                  List.of(functionRoleIdCapture.asString(),
+                                                                                                                                                                                                                                                                                                                          "Arn")), "Runtime",
+                                                                                                                                                        LambdaFunctionConstructUtility.RUNTIME.toString(),
+                                                                                                                                                        "Timeout", function.timeoutSeconds()),
+                                                                                                                                   "DependsOn", policyResourcesCapture)));
+            assertEquals(1, functionMap.size());
+            assertTrue(functionMap.containsKey(functionIdCapture.asString()));
+
+            final List<Object> policyResources = policyResourcesCapture.asArray()
+                                                                       .stream()
+                                                                       .filter(s -> !s.equals(functionRoleIdCapture.asString()))
+                                                                       .toList();
+            assertEquals(1, policyResources.size());
+            final String defaultPolicyId = policyResources.getFirst()
+                                                          .toString();
+            final Capture statementsCapture = new Capture();
+            template.hasResourceProperties("AWS::IAM::Policy", objectLike(Map.of("PolicyDocument", singletonMap("Statement", statementsCapture), "PolicyName", defaultPolicyId)));
+            final List<Object> statements = statementsCapture.asArray();
+            verifyFunctionPolicyStatements(function, statements);
+            verifyToolkitCleanerFunctionPolicyStatements(function, statements);
+        }
+    }
+
+    private static
+    void verifyToolkitCleanerFunctionPolicyStatements (final @NotNull ToolkitCleanerFunction function, final @NotNull List<Object> statements) {
+        final String failMessage = "Function: %s | TOOLKIT_CLEANER | Actions: %s".formatted(function.functionName(), function.globalActions()
+                                                                                                                             .toString());
+        boolean fail = true;
+        for (final Object o : statements) {
+            try {
+                @SuppressWarnings("unchecked")
+                final Map<String, Object> statement = (Map<String, Object>) o;
+                if (statement.get("Effect")
+                             .equals("Allow") && statement.get("Action")
+                                                          .equals(function.globalActions()) && statement.get("Resource")
+                                                                                                        .equals(LambdaFunctionConstructUtility.GLOBAL_RESOURCE))
+                {
+                    fail = false;
+                    break;
+                }
+            } catch (final ClassCastException e) {
+                fail(failMessage, e);
+            }
+        }
+        if (fail) {
+            fail(failMessage);
+        }
     }
 
     private static
@@ -302,7 +366,7 @@ class FamilyDirectoryLambdaStackTest {
                     final Map<String, Object> statement = (Map<String, Object>) o;
                     if (statement.get("Effect")
                                  .equals("Allow") && statement.get("Resource")
-                                                              .equals("*"))
+                                                              .equals(LambdaFunctionConstructUtility.GLOBAL_RESOURCE))
                     {
                         final Object actionsObj = statement.get("Action");
                         if (actionsObj instanceof String && sesActions.size() == 1 && actionsObj.equals(sesActions.getFirst())) {
