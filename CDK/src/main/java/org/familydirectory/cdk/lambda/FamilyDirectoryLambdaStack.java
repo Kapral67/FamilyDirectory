@@ -6,7 +6,6 @@ import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
-import org.familydirectory.assets.lambda.function.toolkitcleaner.enums.ToolkitCleanerFunction;
 import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
@@ -111,18 +110,5 @@ class FamilyDirectoryLambdaStack extends Stack {
         }
 
         LambdaFunctionConstructUtility.constructFunctionPermissions(streamFunctionMap, null, pdfBucket);
-
-//  ToolkitCleanerLambda
-        final Map<ToolkitCleanerFunction, Function> toolkitCleanerFunctionMap = LambdaFunctionConstructUtility.constructFunctionMap(this, List.of(ToolkitCleanerFunction.values()), null, null, null);
-
-        for (final Map.Entry<ToolkitCleanerFunction, Function> entry : toolkitCleanerFunctionMap.entrySet()) {
-            final ToolkitCleanerFunction toolkitCleanerFunction = entry.getKey();
-            final Function toolkitCleanerLambda = entry.getValue();
-            toolkitCleanerLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                                                                        .effect(ALLOW)
-                                                                        .actions(toolkitCleanerFunction.globalActions())
-                                                                        .resources(singletonList(LambdaFunctionConstructUtility.GLOBAL_RESOURCE))
-                                                                        .build());
-        }
     }
 }

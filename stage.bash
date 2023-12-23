@@ -123,11 +123,6 @@ cd "$STAGE_DIR/assets/FamilyDirectoryPdfGeneratorLambda" || script_error
 rm -rf target
 mvn package || exit 3
 
-## TOOLKIT_CLEANER
-cd "$STAGE_DIR/assets/ToolkitCleanerLambda" || script_error
-rm -rf target
-mvn package || exit 3
-
 # CDK
 cd "$STAGE_DIR/CDK" || script_error
 rm -rf target
