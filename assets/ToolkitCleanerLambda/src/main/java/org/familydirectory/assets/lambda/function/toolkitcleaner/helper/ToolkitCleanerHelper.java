@@ -1,6 +1,7 @@
 package org.familydirectory.assets.lambda.function.toolkitcleaner.helper;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -17,7 +18,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectVersionsRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse;
 import software.amazon.awssdk.utils.SdkAutoCloseable;
@@ -49,9 +49,9 @@ class ToolkitCleanerHelper implements SdkAutoCloseable {
     @NotNull
     public
     Set<String> getStackNames () {
+        this.logger.log("[INFO]: BEGIN: ToolkitCleanerLambda getStackNames", LogLevel.INFO);
         final Set<String> stacks = new HashSet<>();
         String nextToken = null;
-
         do {
             final DescribeStacksResponse response;
             if (isNull(nextToken)) {
@@ -70,15 +70,15 @@ class ToolkitCleanerHelper implements SdkAutoCloseable {
                                   .map(Stack::stackName)
                                   .collect(Collectors.toUnmodifiableSet()));
         } while (nonNull(nextToken));
-
+        this.logger.log("[INFO]: END: ToolkitCleanerLambda getStackNames | StackNames: %s".formatted(stacks.toString()), LogLevel.INFO);
         return stacks;
     }
 
     @NotNull
     public
     Set<String> extractTemplateHashes (final @NotNull Set<String> stackNames) {
+        this.logger.log("[INFO]: BEGIN: ToolkitCleanerLambda extractTemplateHashes | StackNames: %s".formatted(stackNames.toString()), LogLevel.INFO);
         final Set<String> hashes = new HashSet<>();
-
         stackNames.forEach(stackName -> {
             final String templateBody = this.cfnClient.getTemplate(GetTemplateRequest.builder()
                                                                                      .stackName(stackName)
@@ -89,7 +89,7 @@ class ToolkitCleanerHelper implements SdkAutoCloseable {
                 hashes.add(hashesMatcher.group());
             }
         });
-
+        this.logger.log("[INFO]: END: ToolkitCleanerLambda extractTemplateHashes | Hashes: %s".formatted(hashes.toString()), LogLevel.INFO);
         return hashes;
     }
 
@@ -100,9 +100,9 @@ class ToolkitCleanerHelper implements SdkAutoCloseable {
                                                  .buckets()
                                                  .stream()
                                                  .map(Bucket::name)
-                                                 .filter(s -> s.contains(ASSET_BUCKET_PREFIX))
+                                                 .filter(s -> s.startsWith(ASSET_BUCKET_PREFIX))
                                                  .collect(Collectors.toUnmodifiableSet());
-
+        this.logger.log("[INFO]: BEGIN: ToolkitCleanerLambda cleanObjects | AssetHashes: %s | Buckets: %s".formatted(assetHashes.toString(), buckets.toString()), LogLevel.INFO);
         buckets.forEach(bucketName -> {
             String keyMarker = null;
             String versionIdMarker = null;
@@ -127,30 +127,29 @@ class ToolkitCleanerHelper implements SdkAutoCloseable {
                 }
                 keyMarker = response.nextKeyMarker();
                 versionIdMarker = response.nextVersionIdMarker();
-
                 response.versions()
                         .forEach(obj -> {
                             final String hash = obj.key()
                                                    .substring(0, HASH_LENGTH);
                             if (!assetHashes.contains(hash)) {
-                                ++this.deletedItems[0];
-                                final HeadObjectResponse headResponse = this.s3Client.headObject(HeadObjectRequest.builder()
-                                                                                                                  .bucket(bucketName)
-                                                                                                                  .key(obj.key())
-                                                                                                                  .versionId(obj.versionId())
-                                                                                                                  .build());
-                                this.reclaimedBytes[0] += headResponse.contentLength();
+                                this.reclaimedBytes[0] += this.s3Client.headObject(HeadObjectRequest.builder()
+                                                                                                    .bucket(bucketName)
+                                                                                                    .key(obj.key())
+                                                                                                    .versionId(obj.versionId())
+                                                                                                    .build())
+                                                                       .contentLength();
                                 this.s3Client.deleteObject(DeleteObjectRequest.builder()
                                                                               .bucket(bucketName)
                                                                               .key(obj.key())
                                                                               .versionId(obj.versionId())
                                                                               .build());
+                                ++this.deletedItems[0];
                             }
                         });
 
-            } while (nonNull(keyMarker) && nonNull(versionIdMarker));
+            } while (nonNull(keyMarker) || nonNull(versionIdMarker));
         });
-
+        this.logger.log("[INFO]: END ToolkitCleanerLambda cleanObjects | DeletedItems: %d | ReclaimedBytes: %s".formatted(this.deletedItems[0], this.reclaimedBytes[0]), LogLevel.INFO);
         return new ToolkitCleanerResponse(this.deletedItems[0], this.reclaimedBytes[0]);
     }
 

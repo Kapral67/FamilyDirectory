@@ -34,7 +34,6 @@ class FamilyDirectoryCdkApp {
     public static final String API_STACK_NAME = "FamilyDirectoryApiGatewayStack";
     public static final String AMPLIFY_STACK_NAME = "FamilyDirectoryAmplifyStack";
     public static final String HTTPS_PREFIX = "https://";
-    private static final String CDK_GARBAGE_COLLECTION_STACK_NAME = "CdkToolkitGarbageCollectionStack";
 
     static {
         String account = getenv("CDK_DEFAULT_ACCOUNT");
