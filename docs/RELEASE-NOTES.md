@@ -14,7 +14,9 @@
 
 ### Dependency Upgrade Tracking PRs
 
-- #623 - #648
+- #623 - #626
+
+- #628 - #648
 
 ## v0.3
 
