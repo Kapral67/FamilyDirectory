@@ -3,7 +3,8 @@ package org.familydirectory.sdk.adminclient;
 import io.leego.banana.Ansi;
 import io.leego.banana.BananaUtils;
 import io.leego.banana.Font;
-import java.util.Arrays;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Scanner;
 import org.familydirectory.sdk.adminclient.enums.Commands;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
@@ -96,7 +97,9 @@ class AdminClient {
             }
         } catch (final Throwable e) {
             Logger.error(e.getMessage());
-            Logger.trace(Arrays.toString(e.getStackTrace()));
+            final StringWriter stringWriter = new StringWriter();
+            e.printStackTrace(new PrintWriter(stringWriter));
+            Logger.trace(stringWriter.toString());
         }
     }
 }

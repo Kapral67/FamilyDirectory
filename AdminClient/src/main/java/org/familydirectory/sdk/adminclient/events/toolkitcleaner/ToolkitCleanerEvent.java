@@ -35,7 +35,9 @@ class ToolkitCleanerEvent implements EventHelper {
     private static final String ASSET_BUCKET_PREFIX = "cdk";
     private final long[] deletedItems = {0L};
     private final long[] reclaimedBytes = {0L};
-    private final @NotNull S3Client s3Client = S3Client.create();
+    private final @NotNull S3Client s3Client = S3Client.builder()
+                                                       .crossRegionAccessEnabled(true)
+                                                       .build();
     private final @NotNull CloudFormationClient cfnClient = CloudFormationClient.create();
     private final @NotNull Scanner scanner;
 
@@ -81,7 +83,18 @@ class ToolkitCleanerEvent implements EventHelper {
 
         final ToolkitCleanerResponse response = this.cleanObjects(this.extractTemplateHashes(this.getStackNames()));
 
-        Logger.customLine("Deleted Items: %d | Reclaimed Space: %f GiB".formatted(response.deletedItems(), response.reclaimed(ByteDivisor.GIBI)), Ansi.BOLD, Ansi.PURPLE);
+        Logger.custom("", "Deleted Items: %d | ".formatted(response.deletedItems()), Ansi.BOLD, Ansi.PURPLE);
+        final double bytes = response.reclaimed(ByteDivisor.NONE);
+        if (bytes < ByteDivisor.KILO.divisor()) {
+            Logger.customLine("Reclaimed Space: %d Bytes".formatted(response.reclaimedBytes()), Ansi.BOLD, Ansi.PURPLE);
+        } else if (bytes < ByteDivisor.MEGA.divisor()) {
+            Logger.customLine("Reclaimed Space: %f KiB".formatted(response.reclaimed(ByteDivisor.KIBI)), Ansi.BOLD, Ansi.PURPLE);
+        } else if (bytes < ByteDivisor.GIGA.divisor()) {
+            Logger.customLine("Reclaimed Space: %f MiB".formatted(response.reclaimed(ByteDivisor.MEBI)), Ansi.BOLD, Ansi.PURPLE);
+        } else {
+            Logger.customLine("Reclaimed Space: %f GiB".formatted(response.reclaimed(ByteDivisor.GIBI)), Ansi.BOLD, Ansi.PURPLE);
+        }
+
         System.out.println();
     }
 
@@ -100,9 +113,6 @@ class ToolkitCleanerEvent implements EventHelper {
                                                                               .build());
             }
             nextToken = response.nextToken();
-            if (nextToken.isBlank()) {
-                nextToken = null;
-            }
             stacks.addAll(response.stacks()
                                   .stream()
                                   .map(Stack::stackName)
