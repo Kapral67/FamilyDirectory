@@ -1,5 +1,21 @@
 # FamilyDirectory Release Notes
 
+## v0.4
+
+### Bug Fixes
+
+- Removing Unused/Unnecessary Code
+
+- Incorporate ToolkitCleaner logic entirely within AdminClient
+
+- Deprecates CdkGarbageCollection stack from v0.3
+
+    - If you deployed v0.3, delete the CdkGarbageCollectionStack and all its resources
+
+### Dependency Upgrade Tracking PRs
+
+- #623 - #648
+
 ## v0.3
 
 ### Features
