@@ -1,5 +1,15 @@
 # FamilyDirectory Release Notes
 
+## v0.41
+
+### Bug Fixes
+
+- Incorporate HttpApi's new `arnForExecuteApi` method introduced in CDK `2.117.0`
+
+### Dependency Upgrade Tracking PRs
+
+- #649 - #672
+
 ## v0.4
 
 ### Bug Fixes
