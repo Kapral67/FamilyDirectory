@@ -302,7 +302,7 @@ class FamilyDirectoryLambdaStackTest {
                     final Map<String, Object> statement = (Map<String, Object>) o;
                     if (statement.get("Effect")
                                  .equals("Allow") && statement.get("Resource")
-                                                              .equals(LambdaFunctionConstructUtility.GLOBAL_RESOURCE))
+                                                              .equals(FamilyDirectoryCdkApp.GLOBAL_RESOURCE))
                     {
                         final Object actionsObj = statement.get("Action");
                         if (actionsObj instanceof String && sesActions.size() == 1 && actionsObj.equals(sesActions.getFirst())) {

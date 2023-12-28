@@ -40,7 +40,6 @@ class LambdaFunctionConstructUtility {
     public static final Runtime RUNTIME = JAVA_21;
     public static final Architecture ARCHITECTURE = ARM_64;
     public static final String ROOT_ID = DdbUtils.ROOT_MEMBER_ID;
-    public static final String GLOBAL_RESOURCE = "*";
 
     private
     LambdaFunctionConstructUtility () {
@@ -111,7 +110,7 @@ class LambdaFunctionConstructUtility {
                 final String tableArn = importValue(table.arnExportName());
                 v.addToRolePolicy(create().effect(ALLOW)
                                           .actions(actions)
-                                          .resources(List.of(tableArn, "%s/index/%s".formatted(tableArn, GLOBAL_RESOURCE)))
+                                          .resources(List.of(tableArn, "%s/index/%s".formatted(tableArn, FamilyDirectoryCdkApp.GLOBAL_RESOURCE)))
                                           .build());
             }));
 //      Assign Cognito Permissions
@@ -124,15 +123,15 @@ class LambdaFunctionConstructUtility {
 //      Assign Ses Permissions
             ofNullable(k.sesActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
                                                                                       .actions(actions)
-                                                                                      .resources(singletonList(GLOBAL_RESOURCE))
+                                                                                      .resources(singletonList(FamilyDirectoryCdkApp.GLOBAL_RESOURCE))
                                                                                       .build()));
 
 //      Assign S3 Permissions
             ofNullable(pdfBucket).map(IBucket::getBucketArn)
                                  .ifPresent(pdfBucketArn -> ofNullable(k.sssActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
                                                                                                                                       .actions(actions)
-                                                                                                                                      .resources(singletonList(
-                                                                                                                                              "%s/%s".formatted(pdfBucketArn, GLOBAL_RESOURCE)))
+                                                                                                                                      .resources(singletonList("%s/%s".formatted(pdfBucketArn,
+                                                                                                                                                                                 FamilyDirectoryCdkApp.GLOBAL_RESOURCE)))
                                                                                                                                       .build())));
         });
     }
@@ -148,7 +147,7 @@ class LambdaFunctionConstructUtility {
                 final String tableArn = importValue(table.arnExportName());
                 executionRole.addToPrincipalPolicy(create().effect(ALLOW)
                                                            .actions(actions)
-                                                           .resources(List.of(tableArn, "%s/index/%s".formatted(tableArn, GLOBAL_RESOURCE)))
+                                                           .resources(List.of(tableArn, "%s/index/%s".formatted(tableArn, FamilyDirectoryCdkApp.GLOBAL_RESOURCE)))
                                                            .build());
             }));
 
@@ -161,7 +160,7 @@ class LambdaFunctionConstructUtility {
 //      Assign Ses Permissions
             ofNullable(f.sesActions()).ifPresent(actions -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
                                                                                                        .actions(actions)
-                                                                                                       .resources(singletonList(GLOBAL_RESOURCE))
+                                                                                                       .resources(singletonList(FamilyDirectoryCdkApp.GLOBAL_RESOURCE))
                                                                                                        .build()));
 
 //      Assign S3 Permissions
@@ -170,7 +169,7 @@ class LambdaFunctionConstructUtility {
                                                                                                                                                        .actions(actions)
                                                                                                                                                        .resources(singletonList(
                                                                                                                                                                "%s/%s".formatted(pdfBucketArn,
-                                                                                                                                                                                 GLOBAL_RESOURCE)))
+                                                                                                                                                                                 FamilyDirectoryCdkApp.GLOBAL_RESOURCE)))
                                                                                                                                                        .build())));
         });
     }

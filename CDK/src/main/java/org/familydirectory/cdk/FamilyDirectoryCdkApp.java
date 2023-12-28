@@ -19,7 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 public final
 class FamilyDirectoryCdkApp {
-    public static final String VERSION = "0.4";
+    public static final String VERSION = "0.41";
     public static final String DEFAULT_ACCOUNT;
     public static final String DEFAULT_REGION;
     public static final Environment DEFAULT_ENV;
@@ -34,6 +34,7 @@ class FamilyDirectoryCdkApp {
     public static final String API_STACK_NAME = "FamilyDirectoryApiGatewayStack";
     public static final String AMPLIFY_STACK_NAME = "FamilyDirectoryAmplifyStack";
     public static final String HTTPS_PREFIX = "https://";
+    public static final String GLOBAL_RESOURCE = "*";
 
     static {
         String account = getenv("CDK_DEFAULT_ACCOUNT");

@@ -5,7 +5,6 @@ import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
-import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -44,7 +43,6 @@ import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 import static java.lang.Boolean.FALSE;
 import static java.util.Collections.singletonList;
-import static java.util.Objects.requireNonNull;
 import static software.amazon.awscdk.Fn.importValue;
 
 public
@@ -66,7 +64,6 @@ class FamilyDirectoryApiGatewayStack extends Stack {
     public static final boolean HTTP_API_PUBLIC_STAGE_AUTO_DEPLOY = true;
     public static final String LAMBDA_INVOKE_PERMISSION_ACTION = "lambda:InvokeFunction";
     public static final String API_GATEWAY_PERMISSION_PRINCIPAL = "apigateway.amazonaws.com";
-    public static final String EXECUTE_API_ARN_PREFIX = "arn:aws:execute-api:%s:%s:".formatted(FamilyDirectoryCdkApp.DEFAULT_REGION, FamilyDirectoryCdkApp.DEFAULT_ACCOUNT);
 
     public
     FamilyDirectoryApiGatewayStack (final Construct scope, final String id, final StackProps stackProps) {
@@ -145,16 +142,13 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                               .methods(func.methods())
                                               .integration(httpLambdaIntegration)
                                               .build());
-
-//      TODO: More Programmatic Solution Available Once [this issue](https://github.com/aws/aws-cdk/issues/23301) is resolved
-//      Parts of Execute-Api Arn: https://docs.aws.amazon.com/apigateway/latest/developerguide/arn-format-reference.html#apigateway-execute-api-arns
-            final String sourceArn = "%s%s%s".formatted(EXECUTE_API_ARN_PREFIX, httpApi.getApiId(), getExecuteApiSuffix(func));
-
+//      Allow ApiGateway to invoke its respective Lambda Function
             new CfnPermission(this, "Allow%sInvoke%s".formatted(HTTP_API_RESOURCE_ID, func.name()), CfnPermissionProps.builder()
                                                                                                                       .action(LAMBDA_INVOKE_PERMISSION_ACTION)
                                                                                                                       .functionName(function.getFunctionArn())
                                                                                                                       .principal(API_GATEWAY_PERMISSION_PRINCIPAL)
-                                                                                                                      .sourceArn(sourceArn)
+                                                                                                                      .sourceArn(httpApi.arnForExecuteApi(FamilyDirectoryCdkApp.GLOBAL_RESOURCE,
+                                                                                                                                                          func.endpoint()))
                                                                                                                       .build());
         }
 
@@ -167,9 +161,4 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                                    .build());
     }
 
-    @NotNull
-    public static
-    String getExecuteApiSuffix (final @NotNull ApiFunction func) {
-        return "/*/*" + requireNonNull(func).endpoint();
-    }
 }

@@ -7,7 +7,6 @@ import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoUsEastOneStack;
 import org.familydirectory.cdk.customresource.SSMParameterReader;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
-import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;
@@ -42,7 +41,7 @@ class FamilyDirectoryCognitoUsEastOneStackTest {
         final Template template = Template.fromStack(stack);
 
         final Map<String, Map<String, List<Map<String, String>>>> ssmReaderIamPolicy = singletonMap("PolicyDocument", singletonMap("Statement", singletonList(
-                Map.of("Action", "ssm:GetParameter", "Effect", "Allow", "Resource", LambdaFunctionConstructUtility.GLOBAL_RESOURCE))));
+                Map.of("Action", "ssm:GetParameter", "Effect", "Allow", "Resource", FamilyDirectoryCdkApp.GLOBAL_RESOURCE))));
 
         if (!FamilyDirectoryCdkApp.DEFAULT_REGION.equals(FamilyDirectoryCognitoUsEastOneStack.REGION)) {
             final Capture ssmReaderCreateCapture = new Capture();

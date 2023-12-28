@@ -1,5 +1,6 @@
 package org.familydirectory.cdk.test.apigateway;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
@@ -7,18 +8,23 @@ import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.apigateway.FamilyDirectoryApiGatewayStack;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.assertions.Capture;
 import software.amazon.awscdk.assertions.Template;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static software.amazon.awscdk.assertions.Match.objectLike;
 
 public
 class FamilyDirectoryApiGatewayStackTest {
 
+    private static final String EXECUTE_API_ARN_PRESUFFIX = ":execute-api:%s:%s:".formatted(FamilyDirectoryCdkApp.DEFAULT_REGION, FamilyDirectoryCdkApp.DEFAULT_ACCOUNT);
     private static final String HOSTED_ZONE_ID_PARAMETER_NAME = "%sParameter".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME);
     private static final String FULL_API_DOMAIN_NAME = "%s.".formatted(FamilyDirectoryApiGatewayStack.API_DOMAIN_NAME);
 
@@ -141,13 +147,23 @@ class FamilyDirectoryApiGatewayStackTest {
                                                                                                 .name(), func.endpoint()), "Target",
                            singletonMap("Fn::Join", List.of("", List.of("integrations/", singletonMap("Ref", integrationId)))))));
 
+            final Capture lambdaPermissionSourceArnCapture = new Capture();
             template.hasResourceProperties("AWS::Lambda::Permission", objectLike(
                     Map.of("Action", FamilyDirectoryApiGatewayStack.LAMBDA_INVOKE_PERMISSION_ACTION, "FunctionName", singletonMap("Fn::ImportValue", func.arnExportName()), "Principal",
-                           FamilyDirectoryApiGatewayStack.API_GATEWAY_PERMISSION_PRINCIPAL, "SourceArn", singletonMap("Fn::Join", List.of("",
-                                                                                                                                          List.of(FamilyDirectoryApiGatewayStack.EXECUTE_API_ARN_PREFIX,
-                                                                                                                                                  singletonMap("Ref", apiId),
-                                                                                                                                                  FamilyDirectoryApiGatewayStack.getExecuteApiSuffix(
-                                                                                                                                                          func)))))));
+                           FamilyDirectoryApiGatewayStack.API_GATEWAY_PERMISSION_PRINCIPAL, "SourceArn", singletonMap("Fn::Join", List.of("", lambdaPermissionSourceArnCapture)))));
+            final List<Object> lambdaPermissionsSourceArn = lambdaPermissionSourceArnCapture.asArray();
+            final Iterator<Object> lambdaPermissionsSourceArnIterator = lambdaPermissionsSourceArn.iterator();
+            if (lambdaPermissionsSourceArnIterator.next()
+                                                  .equals("arn:"))
+            {
+                assertEquals(lambdaPermissionsSourceArnIterator.next(), singletonMap("Ref", "AWS::Partition"));
+                assertEquals(lambdaPermissionsSourceArnIterator.next(), EXECUTE_API_ARN_PRESUFFIX);
+            } else {
+                assertEquals(lambdaPermissionsSourceArn.getFirst(), "arn:aws%s".formatted(EXECUTE_API_ARN_PRESUFFIX));
+            }
+            assertEquals(lambdaPermissionsSourceArnIterator.next(), singletonMap("Ref", apiId));
+            assertEquals(lambdaPermissionsSourceArnIterator.next(), getExecuteApiSuffix(func));
+            assertFalse(lambdaPermissionsSourceArnIterator.hasNext());
         }
 
         template.hasResourceProperties("AWS::ApiGatewayV2::Stage", objectLike(
@@ -156,5 +172,11 @@ class FamilyDirectoryApiGatewayStackTest {
 
         template.hasResourceProperties("AWS::ApiGatewayV2::ApiMapping", objectLike(
                 Map.of("ApiId", singletonMap("Ref", apiId), "DomainName", singletonMap("Ref", domainNameId), "Stage", FamilyDirectoryApiGatewayStack.HTTP_API_PUBLIC_STAGE_ID)));
+    }
+
+    @NotNull
+    private static
+    String getExecuteApiSuffix (final @NotNull ApiFunction func) {
+        return "/*/*" + requireNonNull(func).endpoint();
     }
 }
