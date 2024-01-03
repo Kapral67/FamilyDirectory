@@ -13,6 +13,10 @@
 
 - Add some logging (PdfHelper in PdfGeneratorLambda)
 
+#### Dependency Upgrade Tracking PRs
+
+- #673 - #692
+
 ---
 
 ### Deferred Tasks
