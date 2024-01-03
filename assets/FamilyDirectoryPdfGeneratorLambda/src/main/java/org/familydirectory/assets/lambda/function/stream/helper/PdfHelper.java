@@ -1,7 +1,7 @@
 package org.familydirectory.assets.lambda.function.stream.helper;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import java.io.ByteArrayInputStream;
+import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -12,12 +12,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
+import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -37,7 +39,8 @@ class PdfHelper implements LambdaFunctionHelper {
     private static final Comparator<Map.Entry<String, Member>> DESCENDANT_COMPARATOR = Comparator.comparing(entry -> entry.getValue()
                                                                                                                           .getBirthday());
     @NotNull
-    private final PDDocument pdf = new PDDocument();
+    private final PDDocument pdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly(StreamFunction.PDF_GENERATOR.memorySize()
+                                                                                                                     .longValue() * 1000L * 1000L));
     @NotNull
     private final LocalDate date = LocalDate.now();
     @NotNull
@@ -91,6 +94,7 @@ class PdfHelper implements LambdaFunctionHelper {
             this.page.close();
         }
         this.page = new PDPageHelper(this.pdf, new PDPage(), this.title, this.date, ++this.pageNumber);
+        this.logger.log("[INFO]: Create Page %d".formatted(this.pageNumber), LogLevel.INFO);
     }
 
     @Contract("-> new")
@@ -103,12 +107,13 @@ class PdfHelper implements LambdaFunctionHelper {
 
         final ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream();
         this.pdf.save(pdfOutputStream);
-        final byte[] pdfData = pdfOutputStream.toByteArray();
-        return RequestBody.fromInputStream(new ByteArrayInputStream(pdfData), pdfData.length);
+        return RequestBody.fromBytes(pdfOutputStream.toByteArray());
     }
 
     private
     void traverse (final @NotNull String id) throws IOException {
+        this.logger.log("[INFO]: Begin Processing Id: %s".formatted(id), LogLevel.INFO);
+
         final @NotNull Map<String, AttributeValue> family = this.retrieveFamily(id);
         final @NotNull Member member = this.retrieveMember(id);
         final @Nullable Member spouse = this.retrieveMember(ofNullable(family.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
@@ -152,6 +157,8 @@ class PdfHelper implements LambdaFunctionHelper {
         for (final String recursiveDescendant : recursiveDescendantIds) {
             this.traverse(recursiveDescendant);
         }
+
+        this.logger.log("[INFO]: End Processing Id: %s".formatted(id), LogLevel.INFO);
     }
 
     private @NotNull
@@ -175,7 +182,7 @@ class PdfHelper implements LambdaFunctionHelper {
                 this.page.addBodyTextBlock(member, spouse, descendants, startOfSection);
             } catch (final PDPageHelper.NewPageException x) {
                 final IOException thrown = new IOException(x);
-                thrown.addSuppressed(thrown);
+                thrown.addSuppressed(e);
                 throw thrown;
             }
         }

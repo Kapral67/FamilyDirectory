@@ -1,4 +1,17 @@
-## Dec 20 2023
+## Jan 03 2024
+
+### Unreleased Changes
+
+#### Bug Fixes
+
+- Fix suppressed exceptions list in case of double NewPageException (PdfHelper in PdfGeneratorLambda)
+
+- Internal PDDocument now only uses RAM and is limited based on Lambda's configuration in CDK code (PdfHelper in
+  PdfGeneratorLambda)
+
+#### Features
+
+- Add some logging (PdfHelper in PdfGeneratorLambda)
 
 ---
 
