@@ -1,5 +1,7 @@
 ## Family Directory
 
+Want More Info? [See the Poster](.misc/Poster.pdf)
+
 ### Prerequisites
 
 1. Core Utilities (for using [stage.bash](stage.bash)):
