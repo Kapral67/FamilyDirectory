@@ -1,5 +1,29 @@
 # FamilyDirectory Release Notes
 
+## v0.42
+
+### Bug Fixes
+
+- Fix suppressed exceptions list in case of double NewPageException (PdfHelper in PdfGeneratorLambda)
+
+- Internal PDDocument now only uses RAM and is limited based on Lambda's configuration in CDK code (PdfHelper in
+  PdfGeneratorLambda)
+
+### Features
+
+- Add some logging (PdfHelper in PdfGeneratorLambda)
+
+### Dependency Upgrade Tracking PRs
+
+- #673
+- #676 - #677
+- #680
+- #683
+- #685
+- #687
+- #690 - #691
+- #693 - #715
+
 ## v0.41
 
 ### Bug Fixes
