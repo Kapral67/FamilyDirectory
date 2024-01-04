@@ -3,87 +3,65 @@ updates:
   - package-ecosystem: "gradle"
     directory: "/assets/familydirectory-service-assets"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "13:00"
+      interval: "monthly"
     target-branch: "main"
 
   - package-ecosystem: "gradle"
     directory: "/AdminClient"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "13:00"
+      interval: "monthly"
     target-branch: "main"
 
   - package-ecosystem: "maven"
     directory: "/CDK"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "13:00"
+      interval: "monthly"
     target-branch: "main"
 
   - package-ecosystem: "maven"
     directory: "/assets/FamilyDirectoryCreateMemberLambda"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "13:00"
+      interval: "monthly"
     target-branch: "main"
 
   - package-ecosystem: "maven"
     directory: "/assets/FamilyDirectoryUpdateMemberLambda"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "13:00"
+      interval: "monthly"
     target-branch: "main"
 
   - package-ecosystem: "maven"
     directory: "/assets/FamilyDirectoryDeleteMemberLambda"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "13:00"
+      interval: "monthly"
     target-branch: "main"
 
   - package-ecosystem: "maven"
     directory: "/assets/FamilyDirectoryGetMemberLambda"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "13:00"
+      interval: "monthly"
     target-branch: "main"
 
   - package-ecosystem: "maven"
     directory: "/assets/FamilyDirectoryGetPdfLambda"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "13:00"
+      interval: "monthly"
     target-branch: "main"
 
   - package-ecosystem: "maven"
     directory: "/assets/FamilyDirectoryCognitoPreSignUpTrigger"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "13:00"
+      interval: "monthly"
     target-branch: "main"
 
   - package-ecosystem: "maven"
     directory: "/assets/FamilyDirectoryCognitoPostConfirmationTrigger"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "13:00"
+      interval: "monthly"
     target-branch: "main"
 
   - package-ecosystem: "maven"
     directory: "/assets/FamilyDirectoryPdfGeneratorLambda"
     schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "13:00"
+      interval: "monthly"
     target-branch: "main"
