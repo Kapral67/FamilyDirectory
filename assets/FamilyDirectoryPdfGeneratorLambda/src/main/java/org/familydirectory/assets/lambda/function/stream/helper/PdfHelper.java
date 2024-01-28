@@ -77,11 +77,8 @@ class PdfHelper implements LambdaFunctionHelper {
         super();
         this.logger = requireNonNull(logger);
         this.members = new HashSet<>();
-        final String rootMemberLastName = Optional.of(this.retrieveMember(ROOT_MEMBER_ID)
-                                                          .getLastName())
-                                                  .filter(Predicate.not(String::isBlank))
-                                                  .map(String::toUpperCase)
-                                                  .orElseThrow();
+        final String rootMemberLastName = this.getRootMemberSurname()
+                                              .toUpperCase();
         this.familyDirectoryTitle = "%s FAMILY DIRECTORY".formatted(rootMemberLastName);
         this.birthdayTitle = "%s FAMILY BIRTHDAYS".formatted(rootMemberLastName);
         this.families = new HashMap<>();
@@ -97,22 +94,35 @@ class PdfHelper implements LambdaFunctionHelper {
         if (isNull(id)) {
             return null;
         }
+        final UUID uuid = UUID.fromString(id);
         final MemberRecord[] result = new MemberRecord[1];
         this.members.stream()
                     .filter(memberRecord -> memberRecord.id()
-                                                        .equals(UUID.fromString(id)))
+                                                        .equals(uuid))
                     .findAny()
                     .ifPresentOrElse(memberRecord -> result[0] = memberRecord, () -> {
                         final Map<String, AttributeValue> memberMap = requireNonNull(this.getDdbItem(id, DdbTable.MEMBER));
                         final Member member = Member.convertDdbMap(memberMap);
-                        result[0] = new MemberRecord(UUID.fromString(memberMap.get(MemberTableParameter.ID.jsonFieldName())
-                                                                              .s()), member, UUID.fromString(memberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
-                                                                                                                      .s()));
-                        if (!this.members.add(result[0])) {
+                        final UUID ddbId = UUID.fromString(memberMap.get(MemberTableParameter.ID.jsonFieldName())
+                                                                    .s());
+                        if (!ddbId.equals(uuid)) {
+                            throw new IllegalStateException("Invalid ID `%s` doesn't match DDB_ID `%s`".formatted(uuid.toString(), ddbId.toString()));
+                        }
+                        result[0] = new MemberRecord(uuid, member, UUID.fromString(memberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
+                                                                                            .s()));
+                        if (!this.members.add(result[0]) || !this.addToBirthdayTreeSets(result[0])) {
                             throw new IllegalStateException("Invalid Retrieval State for Member: `%s`".formatted(id));
                         }
                     });
         return result[0];
+    }
+
+    private
+    boolean addToBirthdayTreeSets (final @NotNull MemberRecord memberRecord) {
+        return this.birthdayTreeSets.get(requireNonNull(memberRecord).member()
+                                                                     .getBirthday()
+                                                                     .getMonth())
+                                    .add(memberRecord);
     }
 
     private
@@ -161,10 +171,12 @@ class PdfHelper implements LambdaFunctionHelper {
         this.logger.log("[INFO]: Begin Processing Id: %s".formatted(id), LogLevel.INFO);
 
         final @NotNull Map<String, AttributeValue> family = this.retrieveFamily(id);
-        final @NotNull Member member = this.retrieveMember(id);
-        final @Nullable Member spouse = this.retrieveMember(ofNullable(family.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
-                                                                                                                               .filter(Predicate.not(String::isBlank))
-                                                                                                                               .orElse(null));
+        final @NotNull Member member = this.retrieveMember(id)
+                                           .member();
+        final @Nullable Member spouse = ofNullable(this.retrieveMember(ofNullable(family.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
+                                                                                                                                          .filter(Predicate.not(String::isBlank))
+                                                                                                                                          .orElse(null))).map(MemberRecord::member)
+                                                                                                                                                         .orElse(null);
         final @NotNull List<Member> deadEndDescendants = new ArrayList<>();
         final @NotNull List<String> recursiveDescendantIds = new ArrayList<>();
         final @NotNull List<Map.Entry<String, Member>> descendants = new ArrayList<>();
@@ -172,7 +184,8 @@ class PdfHelper implements LambdaFunctionHelper {
                                                                                 .filter(Predicate.not(List::isEmpty))
                                                                                 .ifPresent(ss -> ss.stream()
                                                                                                    .filter(Predicate.not(String::isBlank))
-                                                                                                   .forEach(s -> descendants.add(Map.entry(s, this.retrieveMember(s)))));
+                                                                                                   .forEach(s -> descendants.add(Map.entry(s, this.retrieveMember(s)
+                                                                                                                                                  .member()))));
 
         if (!descendants.isEmpty()) {
             descendants.sort(DESCENDANT_COMPARATOR);
