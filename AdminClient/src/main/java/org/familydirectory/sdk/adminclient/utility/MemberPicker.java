@@ -9,7 +9,7 @@ import java.util.UUID;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
-import org.familydirectory.sdk.adminclient.events.model.MemberRecord;
+import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;

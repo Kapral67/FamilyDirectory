@@ -5,26 +5,32 @@ import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
 import java.util.function.Predicate;
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
+import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
+import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
-import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static java.lang.System.getenv;
@@ -38,9 +44,13 @@ class PdfHelper implements LambdaFunctionHelper {
     private static final String ROOT_MEMBER_ID = getenv(LambdaUtils.EnvVar.ROOT_ID.name());
     private static final Comparator<Map.Entry<String, Member>> DESCENDANT_COMPARATOR = Comparator.comparing(entry -> entry.getValue()
                                                                                                                           .getBirthday());
+    private static final Comparator<MemberRecord> DAY_OF_MONTH_COMPARATOR = Comparator.comparing(entry -> entry.member()
+                                                                                                               .getBirthday()
+                                                                                                               .getDayOfMonth());
     @NotNull
-    private final PDDocument pdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly(StreamFunction.PDF_GENERATOR.memorySize()
-                                                                                                                     .longValue() * 1000L * 1000L));
+    private final PDDocument familyDirectoryPdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly());
+    @NotNull
+    private final PDDocument birthdayPdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly());
     @NotNull
     private final LocalDate date = LocalDate.now();
     @NotNull
@@ -48,66 +58,102 @@ class PdfHelper implements LambdaFunctionHelper {
     @NotNull
     private final LambdaLogger logger;
     @NotNull
-    private final Map<String, Member> members;
+    private final Set<MemberRecord> members;
     @NotNull
     private final Map<String, Map<String, AttributeValue>> families;
     @NotNull
-    private final String title;
-    private int pageNumber = 0;
-    private PDPageHelper page = null;
+    private final String familyDirectoryTitle;
+    @NotNull
+    private final String birthdayTitle;
+    @NotNull
+    private final EnumMap<Month, TreeSet<MemberRecord>> birthdayTreeSets;
+    private PDBirthdayPageHelper birthdayPage = null;
+    private PDFamilyDirectoryPageHelper familyDirectoryPage = null;
+    private int familyDirectoryPageNumber = 0;
+    private int birthdayPageNumber = 0;
 
     public
     PdfHelper (final @NotNull LambdaLogger logger) {
         super();
         this.logger = requireNonNull(logger);
-        this.members = new HashMap<>();
-        this.title = "%s FAMILY DIRECTORY".formatted(Optional.of(this.retrieveMember(ROOT_MEMBER_ID)
-                                                                     .getLastName())
-                                                             .filter(Predicate.not(String::isBlank))
-                                                             .map(String::toUpperCase)
-                                                             .orElseThrow());
+        this.members = new HashSet<>();
+        final String rootMemberLastName = Optional.of(this.retrieveMember(ROOT_MEMBER_ID)
+                                                          .getLastName())
+                                                  .filter(Predicate.not(String::isBlank))
+                                                  .map(String::toUpperCase)
+                                                  .orElseThrow();
+        this.familyDirectoryTitle = "%s FAMILY DIRECTORY".formatted(rootMemberLastName);
+        this.birthdayTitle = "%s FAMILY BIRTHDAYS".formatted(rootMemberLastName);
         this.families = new HashMap<>();
+        this.birthdayTreeSets = new EnumMap<>(Month.class);
+        for (final Month value : Month.values()) {
+            this.birthdayTreeSets.put(value, new TreeSet<>(DAY_OF_MONTH_COMPARATOR));
+        }
     }
 
     @Contract("null -> null; !null -> !null")
     private @Nullable
-    Member retrieveMember (final @Nullable String id) {
+    MemberRecord retrieveMember (final @Nullable String id) {
         if (isNull(id)) {
             return null;
         }
-        if (!this.members.containsKey(id)) {
-            this.members.put(id, this.getMemberById(id));
-        }
-        return this.members.get(id);
+        final MemberRecord[] result = new MemberRecord[1];
+        this.members.stream()
+                    .filter(memberRecord -> memberRecord.id()
+                                                        .equals(UUID.fromString(id)))
+                    .findAny()
+                    .ifPresentOrElse(memberRecord -> result[0] = memberRecord, () -> {
+                        final Map<String, AttributeValue> memberMap = requireNonNull(this.getDdbItem(id, DdbTable.MEMBER));
+                        final Member member = Member.convertDdbMap(memberMap);
+                        result[0] = new MemberRecord(UUID.fromString(memberMap.get(MemberTableParameter.ID.jsonFieldName())
+                                                                              .s()), member, UUID.fromString(memberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
+                                                                                                                      .s()));
+                        if (!this.members.add(result[0])) {
+                            throw new IllegalStateException("Invalid Retrieval State for Member: `%s`".formatted(id));
+                        }
+                    });
+        return result[0];
     }
 
-    @NotNull
     private
-    Member getMemberById (final @NotNull String id) {
-        final Map<String, AttributeValue> memberMap = requireNonNull(this.getDdbItem(id, DdbTable.MEMBER));
-        return Member.convertDdbMap(memberMap);
+    void newFamilyDirectoryPage () throws IOException {
+        if (nonNull(this.familyDirectoryPage)) {
+            this.familyDirectoryPage.close();
+        }
+        this.familyDirectoryPage = new PDFamilyDirectoryPageHelper(this.familyDirectoryPdf, new PDPage(), this.familyDirectoryTitle, this.date, ++this.familyDirectoryPageNumber);
+        this.logger.log("Create Family Directory Page %d".formatted(this.familyDirectoryPageNumber), LogLevel.INFO);
     }
 
     private
-    void newPage () throws IOException {
-        if (nonNull(this.page)) {
-            this.page.close();
+    void newBirthdayPage () throws IOException {
+        if (nonNull(this.birthdayPage)) {
+            this.birthdayPage.close();
         }
-        this.page = new PDPageHelper(this.pdf, new PDPage(), this.title, this.date, ++this.pageNumber);
-        this.logger.log("[INFO]: Create Page %d".formatted(this.pageNumber), LogLevel.INFO);
+        this.birthdayPage = new PDBirthdayPageHelper(this.birthdayPdf, new PDPage(), this.birthdayTitle, this.date, ++this.birthdayPageNumber);
+        this.logger.log("Create Birthday Page %d".formatted(this.birthdayPageNumber), LogLevel.INFO);
     }
 
     @Contract("-> new")
     @NotNull
     public
-    RequestBody getPdf () throws IOException {
-        this.newPage();
+    PdfBundle getPdfBundle () throws IOException {
+        this.newFamilyDirectoryPage();
+        this.newBirthdayPage();
         this.traverse(ROOT_MEMBER_ID);
-        this.page.close();
+        this.familyDirectoryPage.close();
+        this.birthdayPage.close();
 
-        final ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream();
-        this.pdf.save(pdfOutputStream);
-        return RequestBody.fromBytes(pdfOutputStream.toByteArray());
+        try (final ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream()) {
+            this.familyDirectoryPdf.save(pdfOutputStream);
+            final byte[] familyDirectoryArr = pdfOutputStream.toByteArray();
+
+            pdfOutputStream.reset();
+
+            this.birthdayPdf.save(pdfOutputStream);
+            final byte[] birthdayArr = pdfOutputStream.toByteArray();
+
+            return new PdfBundle(familyDirectoryArr, birthdayArr);
+        }
     }
 
     private
@@ -158,7 +204,7 @@ class PdfHelper implements LambdaFunctionHelper {
             this.traverse(recursiveDescendant);
         }
 
-        this.logger.log("[INFO]: End Processing Id: %s".formatted(id), LogLevel.INFO);
+        this.logger.log("End Processing Id: %s".formatted(id), LogLevel.INFO);
     }
 
     private @NotNull
@@ -175,12 +221,12 @@ class PdfHelper implements LambdaFunctionHelper {
     private
     void addFamily (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> descendants, final boolean startOfSection) throws IOException {
         try {
-            this.page.addBodyTextBlock(member, spouse, descendants, startOfSection);
-        } catch (final PDPageHelper.NewPageException e) {
-            this.newPage();
+            this.familyDirectoryPage.addBodyTextBlock(member, spouse, descendants, startOfSection);
+        } catch (final PDFamilyDirectoryPageHelper.NewPageException e) {
+            this.newFamilyDirectoryPage();
             try {
-                this.page.addBodyTextBlock(member, spouse, descendants, startOfSection);
-            } catch (final PDPageHelper.NewPageException x) {
+                this.familyDirectoryPage.addBodyTextBlock(member, spouse, descendants, startOfSection);
+            } catch (final PDFamilyDirectoryPageHelper.NewPageException x) {
                 final IOException thrown = new IOException(x);
                 thrown.addSuppressed(e);
                 throw thrown;
@@ -205,9 +251,14 @@ class PdfHelper implements LambdaFunctionHelper {
     void close () {
         LambdaFunctionHelper.super.close();
         try {
-            this.pdf.close();
+            this.familyDirectoryPdf.close();
+            this.birthdayPdf.close();
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public
+    record PdfBundle(byte[] familyDirectoryPdf, byte[] birthdayPdf) {
     }
 }

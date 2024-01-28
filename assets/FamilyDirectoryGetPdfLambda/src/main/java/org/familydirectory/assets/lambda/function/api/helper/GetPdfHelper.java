@@ -35,7 +35,7 @@ class GetPdfHelper extends ApiHelper {
         this.logger.log("<MEMBER,`%s`> GET PDF".formatted(caller.memberId()), INFO);
         final GetObjectRequest pdfRequest = GetObjectRequest.builder()
                                                             .bucket(getenv(LambdaUtils.EnvVar.S3_PDF_BUCKET_NAME.name()))
-                                                            .key(this.getPdfS3Key())
+                                                            .key(this.getPdfS3Key(this.getRootMemberSurname()))
                                                             .build();
         final GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                                                                               .signatureDuration(Duration.ofMinutes(SIGNATURE_DURATION_MINUTES))
