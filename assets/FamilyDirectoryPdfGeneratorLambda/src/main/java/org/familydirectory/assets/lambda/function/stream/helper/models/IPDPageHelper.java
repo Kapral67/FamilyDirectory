@@ -242,6 +242,11 @@ class IPDPageHelper implements Closeable {
         this.addColumnAgnosticText(line);
     }
 
+    protected final
+    boolean isNewColumnNeeded (final float blockSizeYOffset) {
+        return this.location.y < this.bodyContentStartY && (this.location.y - blockSizeYOffset) < BODY_CONTENT_END_Y;
+    }
+
     @Override
     public final
     void close () throws IOException {

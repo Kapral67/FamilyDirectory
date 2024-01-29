@@ -32,7 +32,7 @@ class PDFamilyDirectoryPageHelper extends IPDPageHelper {
         if (startOfSection && this.location.y < this.bodyContentStartY) {
             blockSizeYOffset += THREE_HALF_LINE_SPACING;
         }
-        if (this.bodyTextBlockNeedsNewColumn(blockSizeYOffset) && !this.nextColumn()) {
+        if (this.isNewColumnNeeded(blockSizeYOffset) && !this.nextColumn()) {
             throw new NewPageException();
         }
 
@@ -348,10 +348,5 @@ class PDFamilyDirectoryPageHelper extends IPDPageHelper {
             this.addColumnAgnosticText(line);
             this.newLine(STANDARD_LINE_SPACING);
         }
-    }
-
-    private
-    boolean bodyTextBlockNeedsNewColumn (final float blockSizeYOffset) {
-        return this.location.y < this.bodyContentStartY && (this.location.y - blockSizeYOffset) < BODY_CONTENT_END_Y;
     }
 }
