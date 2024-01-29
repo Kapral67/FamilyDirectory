@@ -111,8 +111,11 @@ class PdfHelper implements LambdaFunctionHelper {
                         }
                         result[0] = new MemberRecord(uuid, member, UUID.fromString(memberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
                                                                                             .s()));
-                        if (!this.members.add(result[0]) || !this.addToBirthdayTreeSets(result[0])) {
-                            throw new IllegalStateException("Invalid Retrieval State for Member: `%s`".formatted(id));
+                        if (!this.members.add(result[0])) {
+                            throw new IllegalStateException("Member: `%s` Not Present And Can't Be Added".formatted(id));
+                        }
+                        if (!this.addToBirthdayTreeSets(result[0])) {
+                            throw new IllegalStateException("Birthday TreeSets Not Accepting Member: `%s`".formatted(id));
                         }
                     });
         return result[0];
