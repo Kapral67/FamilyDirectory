@@ -18,10 +18,10 @@ import static org.familydirectory.assets.ddb.models.member.MemberModel.DAGGER;
 
 final
 class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
+    private final int maxColumns = 4;
 
     PDFamilyDirectoryPageHelper (final @NotNull PDDocument pdf, final @NotNull PDPage page, final @NotNull String title, final @NotNull LocalDate subtitle, final int pageNumber) throws IOException {
         super(pdf, page, title, subtitle, pageNumber);
-        this.maxColumns = 4;
     }
 
     void addBodyTextBlock (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> deadEndDescendants, final boolean startOfSection)
