@@ -25,10 +25,6 @@ class PDBirthdayPageHelper extends PDPageHelperModel {
         return 3;
     }
 
-    void addBirthday (final @NotNull MemberRecord birthday) throws NewPageException, IOException {
-        this.addBirthday(birthday, null);
-    }
-
     void addBirthday (final @NotNull MemberRecord memberRecord, final @Nullable Month month) throws NewPageException, IOException {
         float blockSizeYOffset = STANDARD_LINE_SPACING;
         if (nonNull(month) && this.location.y < this.bodyContentStartY) {

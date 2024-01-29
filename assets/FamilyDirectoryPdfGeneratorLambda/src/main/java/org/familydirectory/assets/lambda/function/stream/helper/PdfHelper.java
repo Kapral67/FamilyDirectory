@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.apache.pdfbox.io.MemoryUsageSetting;
@@ -67,7 +66,7 @@ class PdfHelper implements LambdaFunctionHelper {
     @NotNull
     private final String birthdayTitle;
     @NotNull
-    private final EnumMap<Month, TreeSet<MemberRecord>> birthdayTreeSets;
+    private final EnumMap<Month, List<MemberRecord>> birthdayLists;
     private PDBirthdayPageHelper birthdayPage = null;
     private PDFamilyDirectoryPageHelper familyDirectoryPage = null;
     private int familyDirectoryPageNumber = 0;
@@ -83,9 +82,9 @@ class PdfHelper implements LambdaFunctionHelper {
         this.familyDirectoryTitle = "%s FAMILY DIRECTORY".formatted(rootMemberLastName);
         this.birthdayTitle = "%s FAMILY BIRTHDAYS".formatted(rootMemberLastName);
         this.families = new HashMap<>();
-        this.birthdayTreeSets = new EnumMap<>(Month.class);
+        this.birthdayLists = new EnumMap<>(Month.class);
         for (final Month value : Month.values()) {
-            this.birthdayTreeSets.put(value, new TreeSet<>(DAY_OF_MONTH_COMPARATOR));
+            this.birthdayLists.put(value, new ArrayList<>());
         }
     }
 
@@ -112,21 +111,19 @@ class PdfHelper implements LambdaFunctionHelper {
                         result[0] = new MemberRecord(uuid, member, UUID.fromString(memberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
                                                                                             .s()));
                         if (!this.members.add(result[0])) {
-                            throw new IllegalStateException("Member: `%s` Not Present And Can't Be Added".formatted(id));
+                            throw new IllegalStateException("Member: `%s` Not Present And Can't Be Added To Members Set".formatted(id));
                         }
-                        if (!this.addToBirthdayTreeSets(result[0])) {
-                            throw new IllegalStateException("Birthday TreeSets Not Accepting Member: `%s`".formatted(id));
-                        }
+                        this.addToBirthdayLists(result[0]);
                     });
         return result[0];
     }
 
     private
-    boolean addToBirthdayTreeSets (final @NotNull MemberRecord memberRecord) {
-        return this.birthdayTreeSets.get(requireNonNull(memberRecord).member()
-                                                                     .getBirthday()
-                                                                     .getMonth())
-                                    .add(memberRecord);
+    void addToBirthdayLists (final @NotNull MemberRecord memberRecord) {
+        this.birthdayLists.get(requireNonNull(memberRecord).member()
+                                                           .getBirthday()
+                                                           .getMonth())
+                          .add(memberRecord);
     }
 
     private
@@ -142,11 +139,13 @@ class PdfHelper implements LambdaFunctionHelper {
     @NotNull
     public
     PdfBundle getPdfBundle () throws IOException {
+
         this.newFamilyDirectoryPage();
-        this.newBirthdayPage();
         this.traverse(ROOT_MEMBER_ID);
-        this.buildBirthdayPdf();
         this.familyDirectoryPage.close();
+
+        this.newBirthdayPage();
+        this.buildBirthdayPdf();
         this.birthdayPage.close();
 
         try (final ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream()) {
@@ -165,33 +164,30 @@ class PdfHelper implements LambdaFunctionHelper {
     private
     void buildBirthdayPdf () throws IOException {
         for (final Month month : Month.values()) {
-            if (this.birthdayTreeSets.containsKey(month)) {
-                final TreeSet<MemberRecord> recordSet = this.birthdayTreeSets.get(month);
+            this.birthdayLists.get(month)
+                              .sort(DAY_OF_MONTH_COMPARATOR);
+            this.logger.log("Begin Processing Month: `%s`".formatted(month.name()), LogLevel.INFO);
+            final List<MemberRecord> monthBirthdayList = this.birthdayLists.get(month);
+            for (int i = 0; i < monthBirthdayList.size(); ++i) {
+                final MemberRecord currentMemberRecord = monthBirthdayList.get(i);
+                this.logger.log("Encountered Birthday: `%s` for Member: `%s`".formatted(currentMemberRecord.member()
+                                                                                                           .getBirthday()
+                                                                                                           .toString(), currentMemberRecord.id()
+                                                                                                                                           .toString()), LogLevel.INFO);
                 try {
-                    this.birthdayPage.addBirthday(recordSet.first(), month);
+                    this.birthdayPage.addBirthday(currentMemberRecord, (i == 0)
+                            ? month
+                            : null);
                 } catch (final PDPageHelperModel.NewPageException e) {
                     this.newBirthdayPage();
                     try {
-                        this.birthdayPage.addBirthday(recordSet.first(), month);
+                        this.birthdayPage.addBirthday(currentMemberRecord, (i == 0)
+                                ? month
+                                : null);
                     } catch (final PDPageHelperModel.NewPageException x) {
                         final IOException thrown = new IOException(x);
                         thrown.addSuppressed(e);
                         throw thrown;
-                    }
-                }
-                recordSet.removeFirst();
-                for (final MemberRecord record : recordSet) {
-                    try {
-                        this.birthdayPage.addBirthday(record);
-                    } catch (final PDPageHelperModel.NewPageException e) {
-                        this.newBirthdayPage();
-                        try {
-                            this.birthdayPage.addBirthday(record);
-                        } catch (final PDPageHelperModel.NewPageException x) {
-                            final IOException thrown = new IOException(x);
-                            thrown.addSuppressed(e);
-                            throw thrown;
-                        }
                     }
                 }
             }
