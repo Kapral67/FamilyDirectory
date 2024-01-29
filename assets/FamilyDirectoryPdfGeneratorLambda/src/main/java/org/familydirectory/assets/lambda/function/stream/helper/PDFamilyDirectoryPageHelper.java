@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.lambda.function.stream.helper.models.IPDPageHelper;
@@ -14,31 +13,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.familydirectory.assets.ddb.models.member.MemberModel.DAGGER;
 
 final
-class PDFamilyDirectoryPageHelper implements IPDPageHelper {
-    private final @NotNull Location location = new Location(0.0f, 0.0f);
-    private final @NotNull PDPageContentStream contents;
-    private final @NotNull PDPage page;
-    private final float bodyContentStartY;
-    private int currentColumn = 1;
+class PDFamilyDirectoryPageHelper extends IPDPageHelper {
 
     PDFamilyDirectoryPageHelper (final @NotNull PDDocument pdf, final @NotNull PDPage page, final @NotNull String title, final @NotNull LocalDate subtitle, final int pageNumber) throws IOException {
-        super();
-        this.page = requireNonNull(page);
-        requireNonNull(pdf).addPage(this.page);
-        this.contents = new PDPageContentStream(pdf, this.page);
-        this.addTitle(requireNonNull(title));
-        this.addSubtitle(requireNonNull(subtitle).format(DISPLAY_DATE_FORMATTER));
-        this.addTopLine();
-        this.bodyContentStartY = this.location.y - THREE_HALF_LINE_SPACING;
-        this.addBottomLine();
-        this.addColumnLines();
-        this.addPageNumber(pageNumber);
-        this.initBody();
+        super(pdf, page, title, subtitle, pageNumber);
+        this.maxColumns = 4;
     }
 
     void addBodyTextBlock (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> deadEndDescendants, final boolean startOfSection)
@@ -56,7 +39,7 @@ class PDFamilyDirectoryPageHelper implements IPDPageHelper {
 //  DRAW LINE BETWEEN SECTIONS
         if (startOfSection && this.location.y < this.bodyContentStartY) {
             this.contents.moveTo(this.location.x, this.location.y);
-            final float linesEnd = (this.currentColumn == 1 || this.currentColumn == this.getMaxColumns())
+            final float linesEnd = (this.currentColumn == 1 || this.currentColumn == this.maxColumns)
                     ? this.location.x + this.columnWidth() - HALF_LINE_SPACING
                     : this.location.x + this.columnWidth() - STANDARD_LINE_SPACING;
             this.contents.lineTo(linesEnd, this.location.y);
@@ -370,53 +353,5 @@ class PDFamilyDirectoryPageHelper implements IPDPageHelper {
     private
     boolean bodyTextBlockNeedsNewColumn (final float blockSizeYOffset) {
         return this.location.y < this.bodyContentStartY && (this.location.y - blockSizeYOffset) < BODY_CONTENT_END_Y;
-    }
-
-    @Override
-    @NotNull
-    public
-    PDPage getPage () {
-        return this.page;
-    }
-
-    @Override
-    public
-    int getMaxColumns () {
-        return 4;
-    }
-
-    @Override
-    @NotNull
-    public
-    Location getLocation () {
-        return this.location;
-    }
-
-    @Override
-    @NotNull
-    public
-    PDPageContentStream getContents () {
-        return this.contents;
-    }
-
-    @Override
-    public
-    float getBodyContentStartY () {
-        return this.bodyContentStartY;
-    }
-
-    @Override
-    public
-    int getCurrentColumn () {
-        return this.currentColumn;
-    }
-
-    @Override
-    public
-    void setCurrentColumn (final int col) {
-        if (col < 1 || col > this.getMaxColumns()) {
-            throw new IllegalArgumentException("%d is must be in [1, %d]".formatted(col, this.getMaxColumns()));
-        }
-        this.currentColumn = col;
     }
 }
