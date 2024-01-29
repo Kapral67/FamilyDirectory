@@ -66,7 +66,7 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
                                           .isPresent())
         {
             final float fontSize = this.getColumnFittedFontSize(member.getPhones()
-                                                                      .get(PhoneType.MOBILE), STANDARD_FONT);
+                                                                      .get(PhoneType.MOBILE), STANDARD_FONT, STANDARD_FONT_SIZE);
             if (fontSize < phoneFontSize) {
                 phoneFontSize = fontSize;
             }
@@ -76,7 +76,7 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
                               .isPresent())
         {
             final float fontSize = this.getColumnFittedFontSize(spouse.getPhones()
-                                                                      .get(PhoneType.MOBILE), STANDARD_FONT);
+                                                                      .get(PhoneType.MOBILE), STANDARD_FONT, STANDARD_FONT_SIZE);
             if (fontSize < phoneFontSize) {
                 phoneFontSize = fontSize;
             }
@@ -89,7 +89,7 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
                                                       .isPresent())
             {
                 final float fontSize = this.getColumnFittedFontSize(landLineHolder.getPhones()
-                                                                                  .get(PhoneType.LANDLINE), STANDARD_FONT);
+                                                                                  .get(PhoneType.LANDLINE), STANDARD_FONT, STANDARD_FONT_SIZE);
                 if (fontSize < phoneFontSize) {
                     phoneFontSize = fontSize;
                 }
@@ -103,13 +103,13 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
 //  PRINT MEMBER AND SPOUSE EMAILS (MEMBER FIRST)
         float emailFontSize = STANDARD_FONT_SIZE;
         if (nonNull(member.getEmail())) {
-            final float fontSize = this.getColumnFittedFontSize(member.getEmail(), STANDARD_FONT);
+            final float fontSize = this.getColumnFittedFontSize(member.getEmail(), STANDARD_FONT, STANDARD_FONT_SIZE);
             if (fontSize < emailFontSize) {
                 emailFontSize = fontSize;
             }
         }
         if (nonNull(spouse) && nonNull(spouse.getEmail())) {
-            final float fontSize = this.getColumnFittedFontSize(spouse.getEmail(), STANDARD_FONT);
+            final float fontSize = this.getColumnFittedFontSize(spouse.getEmail(), STANDARD_FONT, STANDARD_FONT_SIZE);
             if (fontSize < emailFontSize) {
                 emailFontSize = fontSize;
             }
@@ -150,27 +150,27 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
                 final String header = "%c %s".formatted(BULLET, (nonNull(desc.getDeathday()))
                         ? "%c%s".formatted(DAGGER, desc.getDisplayName())
                         : desc.getDisplayName());
-                final float headerFontSize = this.getColumnFittedFontSize(header, TITLE_FONT);
+                final float headerFontSize = this.getColumnFittedFontSize(header, TITLE_FONT, STANDARD_FONT_SIZE);
                 this.contents.setFont(TITLE_FONT, headerFontSize);
                 this.addColumnAgnosticText(header);
                 this.newLine(STANDARD_LINE_SPACING);
 
 //          ADD DESCENDANT BIRTHDAY
                 this.addColumnRightJustifiedText("%s%s".formatted(TAB, desc.getBirthday()
-                                                                           .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT);
+                                                                           .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT, STANDARD_FONT_SIZE);
                 this.newLine(STANDARD_LINE_SPACING);
 
 //          ADD DESCENDANT DEATHDAY
                 if (nonNull(desc.getDeathday())) {
                     this.addColumnRightJustifiedText("%s%c%s".formatted(TAB, DAGGER, desc.getDeathday()
-                                                                                         .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT);
+                                                                                         .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT, STANDARD_FONT_SIZE);
                     this.newLine(STANDARD_LINE_SPACING);
                 }
 
 //          ADD DESCENDANT EMAIL
                 if (nonNull(desc.getEmail())) {
                     final String email = "%s%s".formatted(TAB, desc.getEmail());
-                    final float fontSize = this.getColumnFittedFontSize(email, STANDARD_FONT);
+                    final float fontSize = this.getColumnFittedFontSize(email, STANDARD_FONT, STANDARD_FONT_SIZE);
                     this.contents.setFont(STANDARD_FONT, fontSize);
                     this.addColumnAgnosticText(email);
                     this.newLine(STANDARD_LINE_SPACING);
@@ -182,7 +182,7 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
                 {
                     final String phone = "%s%s".formatted(TAB, desc.getPhones()
                                                                    .get(PhoneType.MOBILE));
-                    final float fontSize = this.getColumnFittedFontSize(phone, STANDARD_FONT);
+                    final float fontSize = this.getColumnFittedFontSize(phone, STANDARD_FONT, STANDARD_FONT_SIZE);
                     this.contents.setFont(STANDARD_FONT, fontSize);
                     this.addColumnAgnosticText(phone);
                     this.newLine(STANDARD_LINE_SPACING);
@@ -277,7 +277,7 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
             final String header = (nonNull(member.getDeathday()))
                     ? "%c%s".formatted(DAGGER, member.getDisplayName())
                     : member.getDisplayName();
-            this.addColumnCenteredText(header, TITLE_FONT);
+            this.addColumnCenteredText(header, TITLE_FONT, STANDARD_FONT_SIZE);
             this.newLine(STANDARD_LINE_SPACING);
         } else if (member.getLastName()
                          .equals(spouse.getLastName()))
@@ -289,7 +289,7 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
                     ? "%c%s".formatted(DAGGER, spouse.getFirstName())
                     : spouse.getFirstName();
             final String header = "%s & %s %s".formatted(memberFirstName, spouseFirstName, member.getLastName());
-            this.addColumnCenteredText(header, TITLE_FONT);
+            this.addColumnCenteredText(header, TITLE_FONT, STANDARD_FONT_SIZE);
             this.newLine(STANDARD_LINE_SPACING);
         } else {
             final String memberName = (nonNull(member.getDeathday()))
@@ -302,34 +302,34 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
                                                       PDPageHelperModel.getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, memberName))
                     ? Map.entry("%s &".formatted(memberName), spouseName)
                     : Map.entry(memberName, "& %s".formatted(spouseName));
-            this.addColumnCenteredText(header.getKey(), TITLE_FONT);
+            this.addColumnCenteredText(header.getKey(), TITLE_FONT, STANDARD_FONT_SIZE);
             this.newLine(STANDARD_LINE_SPACING);
-            this.addColumnCenteredText(header.getValue(), TITLE_FONT);
+            this.addColumnCenteredText(header.getValue(), TITLE_FONT, STANDARD_FONT_SIZE);
             this.newLine(STANDARD_LINE_SPACING);
         }
 
 //  ADD MEMBER BIRTHDAY
         this.addColumnRightJustifiedText(member.getBirthday()
-                                               .format(DISPLAY_DATE_FORMATTER), STANDARD_FONT);
+                                               .format(DISPLAY_DATE_FORMATTER), STANDARD_FONT, STANDARD_FONT_SIZE);
         this.newLine(STANDARD_LINE_SPACING);
 
 //  ADD MEMBER DEATHDAY
         if (nonNull(member.getDeathday())) {
             this.addColumnRightJustifiedText("%c%s".formatted(DAGGER, member.getDeathday()
-                                                                            .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT);
+                                                                            .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT, STANDARD_FONT_SIZE);
             this.newLine(STANDARD_LINE_SPACING);
         }
 
         if (nonNull(spouse)) {
 //      ADD SPOUSE BIRTHDAY
             this.addColumnRightJustifiedText(spouse.getBirthday()
-                                                   .format(DISPLAY_DATE_FORMATTER), STANDARD_FONT);
+                                                   .format(DISPLAY_DATE_FORMATTER), STANDARD_FONT, STANDARD_FONT_SIZE);
             this.newLine(STANDARD_LINE_SPACING);
 
 //      ADD SPOUSE DEATHDAY
             if (nonNull(spouse.getDeathday())) {
                 this.addColumnRightJustifiedText("%c%s".formatted(DAGGER, spouse.getDeathday()
-                                                                                .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT);
+                                                                                .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT, STANDARD_FONT_SIZE);
                 this.newLine(STANDARD_LINE_SPACING);
             }
         }
@@ -339,7 +339,7 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
     void addAddressToBodyTextBlock (final @NotNull List<String> address) throws IOException {
         float addressFontSize = STANDARD_FONT_SIZE;
         for (final String line : address) {
-            final float fontSize = this.getColumnFittedFontSize(line, STANDARD_FONT);
+            final float fontSize = this.getColumnFittedFontSize(line, STANDARD_FONT, STANDARD_FONT_SIZE);
             if (fontSize < addressFontSize) {
                 addressFontSize = fontSize;
             }

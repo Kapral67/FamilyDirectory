@@ -27,6 +27,7 @@ import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
+import org.familydirectory.assets.lambda.function.stream.helper.models.PDPageHelperModel;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -134,15 +135,6 @@ class PdfHelper implements LambdaFunctionHelper {
         this.logger.log("Create Family Directory Page %d".formatted(this.familyDirectoryPageNumber), LogLevel.INFO);
     }
 
-    private
-    void newBirthdayPage () throws IOException {
-        if (nonNull(this.birthdayPage)) {
-            this.birthdayPage.close();
-        }
-        this.birthdayPage = new PDBirthdayPageHelper(this.birthdayPdf, new PDPage(), this.birthdayTitle, this.date, ++this.birthdayPageNumber);
-        this.logger.log("Create Birthday Page %d".formatted(this.birthdayPageNumber), LogLevel.INFO);
-    }
-
     @Contract("-> new")
     @NotNull
     public
@@ -150,6 +142,7 @@ class PdfHelper implements LambdaFunctionHelper {
         this.newFamilyDirectoryPage();
         this.newBirthdayPage();
         this.traverse(ROOT_MEMBER_ID);
+        this.buildBirthdayPdf();
         this.familyDirectoryPage.close();
         this.birthdayPage.close();
 
@@ -167,8 +160,53 @@ class PdfHelper implements LambdaFunctionHelper {
     }
 
     private
+    void buildBirthdayPdf () throws IOException {
+        for (final Month month : Month.values()) {
+            if (this.birthdayTreeSets.containsKey(month)) {
+                final TreeSet<MemberRecord> recordSet = this.birthdayTreeSets.get(month);
+                try {
+                    this.birthdayPage.addBirthday(recordSet.first(), month);
+                } catch (final PDPageHelperModel.NewPageException e) {
+                    this.newBirthdayPage();
+                    try {
+                        this.birthdayPage.addBirthday(recordSet.first(), month);
+                    } catch (final PDPageHelperModel.NewPageException x) {
+                        final IOException thrown = new IOException(x);
+                        thrown.addSuppressed(e);
+                        throw thrown;
+                    }
+                }
+                recordSet.removeFirst();
+                for (final MemberRecord record : recordSet) {
+                    try {
+                        this.birthdayPage.addBirthday(record);
+                    } catch (final PDPageHelperModel.NewPageException e) {
+                        this.newBirthdayPage();
+                        try {
+                            this.birthdayPage.addBirthday(record);
+                        } catch (final PDPageHelperModel.NewPageException x) {
+                            final IOException thrown = new IOException(x);
+                            thrown.addSuppressed(e);
+                            throw thrown;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private
+    void newBirthdayPage () throws IOException {
+        if (nonNull(this.birthdayPage)) {
+            this.birthdayPage.close();
+        }
+        this.birthdayPage = new PDBirthdayPageHelper(this.birthdayPdf, new PDPage(), this.birthdayTitle, this.date, ++this.birthdayPageNumber);
+        this.logger.log("Create Birthday Page %d".formatted(this.birthdayPageNumber), LogLevel.INFO);
+    }
+
+    private
     void traverse (final @NotNull String id) throws IOException {
-        this.logger.log("[INFO]: Begin Processing Id: %s".formatted(id), LogLevel.INFO);
+        this.logger.log("Begin Processing Id: %s".formatted(id), LogLevel.INFO);
 
         final @NotNull Map<String, AttributeValue> family = this.retrieveFamily(id);
         final @NotNull Member member = this.retrieveMember(id)
@@ -235,11 +273,11 @@ class PdfHelper implements LambdaFunctionHelper {
     void addFamily (final @NotNull Member member, final @Nullable Member spouse, final @Nullable List<Member> descendants, final boolean startOfSection) throws IOException {
         try {
             this.familyDirectoryPage.addBodyTextBlock(member, spouse, descendants, startOfSection);
-        } catch (final PDFamilyDirectoryPageHelper.NewPageException e) {
+        } catch (final PDPageHelperModel.NewPageException e) {
             this.newFamilyDirectoryPage();
             try {
                 this.familyDirectoryPage.addBodyTextBlock(member, spouse, descendants, startOfSection);
-            } catch (final PDFamilyDirectoryPageHelper.NewPageException x) {
+            } catch (final PDPageHelperModel.NewPageException x) {
                 final IOException thrown = new IOException(x);
                 thrown.addSuppressed(e);
                 throw thrown;

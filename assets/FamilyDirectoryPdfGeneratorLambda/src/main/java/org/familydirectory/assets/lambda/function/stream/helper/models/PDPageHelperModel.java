@@ -57,6 +57,12 @@ class PDPageHelperModel implements Closeable {
     }
 
     protected static
+    float getTextSpaceUnits (final @NotNull PDFont font, final @NotNull String text) throws IOException {
+        // https://javadoc.io/static/org.apache.pdfbox/pdfbox/2.0.30/org/apache/pdfbox/pdmodel/font/PDFont.html#getStringWidth-java.lang.String-
+        return font.getStringWidth(text) / 1000.0f;
+    }
+
+    protected static
     float inch2px (final float inch) {
         return inch * PX_IN_INCH;
     }
@@ -66,19 +72,13 @@ class PDPageHelperModel implements Closeable {
         return getTextSpaceUnits(font, text) * fontSize;
     }
 
-    protected static
-    float getTextSpaceUnits (final @NotNull PDFont font, final @NotNull String text) throws IOException {
-        // https://javadoc.io/static/org.apache.pdfbox/pdfbox/2.0.30/org/apache/pdfbox/pdmodel/font/PDFont.html#getStringWidth-java.lang.String-
-        return font.getStringWidth(text) / 1000.0f;
-    }
-
-    protected final
-    float getColumnFittedFontSize (final @NotNull String line, final @NotNull PDFont font) throws IOException {
+    protected
+    float getColumnFittedFontSize (final @NotNull String line, final @NotNull PDFont font, final float defaultFontSize) throws IOException {
         final float fontSize = (this.columnWidth() - STANDARD_LINE_SPACING) / getTextSpaceUnits(font, line);
         if (Float.isNaN(fontSize) || Float.isInfinite(fontSize) || fontSize <= 0.0f) {
             throw new RuntimeException("text: `%s` not single-line-fittable with font: `%s`".formatted(line, font.getName()));
         }
-        return Math.min(STANDARD_FONT_SIZE, fontSize);
+        return Math.min(defaultFontSize, fontSize);
     }
 
     protected final
@@ -221,8 +221,8 @@ class PDPageHelperModel implements Closeable {
     }
 
     protected final
-    void addColumnCenteredText (final @NotNull String line, final @NotNull PDFont font) throws IOException {
-        final float fontSize = this.getColumnFittedFontSize(line, font);
+    void addColumnCenteredText (final @NotNull String line, final @NotNull PDFont font, final float defaultFontSize) throws IOException {
+        final float fontSize = this.getColumnFittedFontSize(line, font, defaultFontSize);
         this.contents.setFont(font, fontSize);
         final float columnCenterX = (this.currentColumn == 1 || this.currentColumn == this.maxColumns)
                 ? (this.columnWidth() - HALF_LINE_SPACING) / 2.0f
@@ -232,8 +232,8 @@ class PDPageHelperModel implements Closeable {
     }
 
     protected final
-    void addColumnRightJustifiedText (final @NotNull String line, final @NotNull PDFont font) throws IOException {
-        final float fontSize = this.getColumnFittedFontSize(line, font);
+    void addColumnRightJustifiedText (final @NotNull String line, final @NotNull PDFont font, final float defaultFontSize) throws IOException {
+        final float fontSize = this.getColumnFittedFontSize(line, font, defaultFontSize);
         this.contents.setFont(font, fontSize);
         final float columnRightX = (this.currentColumn == 1 || this.currentColumn == this.maxColumns)
                 ? this.columnWidth() - HALF_LINE_SPACING
