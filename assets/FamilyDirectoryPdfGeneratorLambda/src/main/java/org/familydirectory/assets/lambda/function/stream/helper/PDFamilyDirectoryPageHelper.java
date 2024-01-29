@@ -8,7 +8,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.member.Member;
-import org.familydirectory.assets.lambda.function.stream.helper.models.IPDPageHelper;
+import org.familydirectory.assets.lambda.function.stream.helper.models.PDPageHelperModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.isNull;
@@ -17,7 +17,7 @@ import static java.util.Optional.ofNullable;
 import static org.familydirectory.assets.ddb.models.member.MemberModel.DAGGER;
 
 final
-class PDFamilyDirectoryPageHelper extends IPDPageHelper {
+class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
 
     PDFamilyDirectoryPageHelper (final @NotNull PDDocument pdf, final @NotNull PDPage page, final @NotNull String title, final @NotNull LocalDate subtitle, final int pageNumber) throws IOException {
         super(pdf, page, title, subtitle, pageNumber);
@@ -298,7 +298,8 @@ class PDFamilyDirectoryPageHelper extends IPDPageHelper {
             final String spouseName = (nonNull(spouse.getDeathday()))
                     ? "%c%s".formatted(DAGGER, spouse.getDisplayName())
                     : spouse.getDisplayName();
-            final Map.Entry<String, String> header = (IPDPageHelper.getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, spouseName) > IPDPageHelper.getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, memberName))
+            final Map.Entry<String, String> header = (PDPageHelperModel.getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, spouseName) >
+                                                      PDPageHelperModel.getTextWidth(TITLE_FONT, STANDARD_FONT_SIZE, memberName))
                     ? Map.entry("%s &".formatted(memberName), spouseName)
                     : Map.entry(memberName, "& %s".formatted(spouseName));
             this.addColumnCenteredText(header.getKey(), TITLE_FONT);

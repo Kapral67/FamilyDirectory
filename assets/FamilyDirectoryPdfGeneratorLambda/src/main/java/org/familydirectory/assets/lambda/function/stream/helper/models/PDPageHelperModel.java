@@ -14,7 +14,7 @@ import static java.util.Objects.requireNonNull;
 import static org.familydirectory.assets.ddb.models.member.MemberModel.DAGGER;
 
 public abstract
-class IPDPageHelper implements Closeable {
+class PDPageHelperModel implements Closeable {
     protected static final float SUBTITLE_FONT_SIZE = 8.0f;
     protected static final PDFont STANDARD_FONT = PDType1Font.HELVETICA;
     protected static final float STANDARD_FONT_SIZE = 10.0f;
@@ -41,7 +41,7 @@ class IPDPageHelper implements Closeable {
     protected int maxColumns;
 
     protected
-    IPDPageHelper (final @NotNull PDDocument pdf, final @NotNull PDPage page, final @NotNull String title, final @NotNull LocalDate subtitle, final int pageNumber) throws IOException {
+    PDPageHelperModel (final @NotNull PDDocument pdf, final @NotNull PDPage page, final @NotNull String title, final @NotNull LocalDate subtitle, final int pageNumber) throws IOException {
         super();
         this.page = requireNonNull(page);
         requireNonNull(pdf).addPage(this.page);
@@ -140,7 +140,7 @@ class IPDPageHelper implements Closeable {
 
     protected final
     void addSubtitle (final @NotNull String subtitle) throws IOException {
-        final float subtitleWidth = IPDPageHelper.getTextWidth(SUBTITLE_FONT, SUBTITLE_FONT_SIZE, subtitle);
+        final float subtitleWidth = PDPageHelperModel.getTextWidth(SUBTITLE_FONT, SUBTITLE_FONT_SIZE, subtitle);
         this.contents.setFont(SUBTITLE_FONT, SUBTITLE_FONT_SIZE);
         this.location.x = this.centerX() - subtitleWidth / 2.0f;
         this.location.y = this.height() - TOP_BOTTOM_MARGIN - STANDARD_LINE_SPACING;
@@ -238,7 +238,7 @@ class IPDPageHelper implements Closeable {
         final float columnRightX = (this.currentColumn == 1 || this.currentColumn == this.maxColumns)
                 ? this.columnWidth() - HALF_LINE_SPACING
                 : this.columnWidth() - STANDARD_LINE_SPACING;
-        this.location.x += columnRightX - IPDPageHelper.getTextWidth(font, fontSize, line);
+        this.location.x += columnRightX - PDPageHelperModel.getTextWidth(font, fontSize, line);
         this.addColumnAgnosticText(line);
     }
 
