@@ -3,6 +3,7 @@ package org.familydirectory.assets.lambda.function.stream.helper;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.Month;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.Locale;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -16,6 +17,9 @@ import static java.util.Objects.nonNull;
 
 final
 class PDBirthdayPageHelper extends PDPageHelperModel {
+    private static final DateTimeFormatter BIRTHDAY_FORMATTER = DateTimeFormatter.ofPattern("d, yyyy");
+    private static final DateTimeFormatter DEATHDAY_FORMATTER = DateTimeFormatter.ofPattern("MMM d, yyyy");
+
     PDBirthdayPageHelper (final @NotNull PDDocument pdf, final @NotNull PDPage page, final @NotNull String title, final @NotNull LocalDate subtitle, final int pageNumber) throws IOException {
         super(pdf, page, title, subtitle, pageNumber);
     }
@@ -52,20 +56,16 @@ class PDBirthdayPageHelper extends PDPageHelperModel {
     String getBirthdayLine (final @NotNull MemberRecord memberRecord) {
         final LocalDate birthday = memberRecord.member()
                                                .getBirthday();
-        final String dayOfMonth = "%d".formatted(birthday.getDayOfMonth());
-        final StringBuilder birthdayLineStringBuilder = new StringBuilder("%s, %d".formatted(TAB + dayOfMonth, birthday.getYear()));
-        if (dayOfMonth.length() > 1) {
-            birthdayLineStringBuilder.append(" ");
-        } else {
+        final StringBuilder birthdayLineStringBuilder = new StringBuilder(TAB + birthday.format(BIRTHDAY_FORMATTER) + TAB);
+        if (birthday.getDayOfMonth() < 10) {
             birthdayLineStringBuilder.append(TAB);
         }
         birthdayLineStringBuilder.append(memberRecord.member()
                                                      .getDisplayName());
-        if (nonNull(memberRecord.member()
-                                .getDeathday()))
-        {
-            birthdayLineStringBuilder.append(" %c%s".formatted(MemberModel.DAGGER, memberRecord.member()
-                                                                                               .getDeathdayString()));
+        final LocalDate deathday = memberRecord.member()
+                                               .getDeathday();
+        if (nonNull(deathday)) {
+            birthdayLineStringBuilder.append(" %c%s".formatted(MemberModel.DAGGER, deathday.format(DEATHDAY_FORMATTER)));
         }
         return birthdayLineStringBuilder.toString();
     }
