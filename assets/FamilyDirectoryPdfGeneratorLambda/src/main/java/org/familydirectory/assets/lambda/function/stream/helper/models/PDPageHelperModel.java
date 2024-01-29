@@ -38,7 +38,6 @@ class PDPageHelperModel implements Closeable {
     protected final @NotNull Location location = new Location(0.0f, 0.0f);
     protected final float bodyContentStartY;
     protected int currentColumn = 1;
-    protected int maxColumns;
 
     protected
     PDPageHelperModel (final @NotNull PDDocument pdf, final @NotNull PDPage page, final @NotNull String title, final @NotNull LocalDate subtitle, final int pageNumber) throws IOException {
@@ -85,7 +84,7 @@ class PDPageHelperModel implements Closeable {
     void addColumnLines () throws IOException {
         this.location.x = LEFT_RIGHT_MARGIN + this.columnWidth();
         this.location.y = this.bodyContentStartY + STANDARD_LINE_SPACING;
-        for (int i = 1; i < this.maxColumns; ++i, this.location.x += this.columnWidth()) {
+        for (int i = 1; i < this.maxColumns(); ++i, this.location.x += this.columnWidth()) {
             this.contents.moveTo(this.location.x, this.location.y);
             this.contents.lineTo(this.location.x, BODY_CONTENT_END_Y - STANDARD_LINE_SPACING);
             this.contents.stroke();
@@ -200,8 +199,11 @@ class PDPageHelperModel implements Closeable {
 
     protected final
     float columnWidth () {
-        return (this.width() - LEFT_RIGHT_MARGIN * 2.0f) / (float) this.maxColumns;
+        return (this.width() - LEFT_RIGHT_MARGIN * 2.0f) / (float) this.maxColumns();
     }
+
+    protected abstract
+    int maxColumns ();
 
     protected final
     float width () {
@@ -211,7 +213,7 @@ class PDPageHelperModel implements Closeable {
 
     protected final
     boolean nextColumn () {
-        if (this.currentColumn >= this.maxColumns) {
+        if (this.currentColumn >= this.maxColumns()) {
             return false;
         }
         ++this.currentColumn;
@@ -224,7 +226,7 @@ class PDPageHelperModel implements Closeable {
     void addColumnCenteredText (final @NotNull String line, final @NotNull PDFont font, final float defaultFontSize) throws IOException {
         final float fontSize = this.getColumnFittedFontSize(line, font, defaultFontSize);
         this.contents.setFont(font, fontSize);
-        final float columnCenterX = (this.currentColumn == 1 || this.currentColumn == this.maxColumns)
+        final float columnCenterX = (this.currentColumn == 1 || this.currentColumn == this.maxColumns())
                 ? (this.columnWidth() - HALF_LINE_SPACING) / 2.0f
                 : (this.columnWidth() - STANDARD_LINE_SPACING) / 2.0f;
         this.location.x += columnCenterX - getTextWidth(font, fontSize, line) / 2.0f;
@@ -235,7 +237,7 @@ class PDPageHelperModel implements Closeable {
     void addColumnRightJustifiedText (final @NotNull String line, final @NotNull PDFont font, final float defaultFontSize) throws IOException {
         final float fontSize = this.getColumnFittedFontSize(line, font, defaultFontSize);
         this.contents.setFont(font, fontSize);
-        final float columnRightX = (this.currentColumn == 1 || this.currentColumn == this.maxColumns)
+        final float columnRightX = (this.currentColumn == 1 || this.currentColumn == this.maxColumns())
                 ? this.columnWidth() - HALF_LINE_SPACING
                 : this.columnWidth() - STANDARD_LINE_SPACING;
         this.location.x += columnRightX - PDPageHelperModel.getTextWidth(font, fontSize, line);

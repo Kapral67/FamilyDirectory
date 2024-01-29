@@ -18,8 +18,6 @@ import static org.familydirectory.assets.ddb.models.member.MemberModel.DAGGER;
 
 final
 class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
-    private final int maxColumns = 4;
-
     PDFamilyDirectoryPageHelper (final @NotNull PDDocument pdf, final @NotNull PDPage page, final @NotNull String title, final @NotNull LocalDate subtitle, final int pageNumber) throws IOException {
         super(pdf, page, title, subtitle, pageNumber);
     }
@@ -39,7 +37,7 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
 //  DRAW LINE BETWEEN SECTIONS
         if (startOfSection && this.location.y < this.bodyContentStartY) {
             this.contents.moveTo(this.location.x, this.location.y);
-            final float linesEnd = (this.currentColumn == 1 || this.currentColumn == this.maxColumns)
+            final float linesEnd = (this.currentColumn == 1 || this.currentColumn == this.maxColumns())
                     ? this.location.x + this.columnWidth() - HALF_LINE_SPACING
                     : this.location.x + this.columnWidth() - STANDARD_LINE_SPACING;
             this.contents.lineTo(linesEnd, this.location.y);
@@ -191,6 +189,12 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
         }
 
         this.newLine(HALF_LINE_SPACING);
+    }
+
+    @Override
+    protected
+    int maxColumns () {
+        return 4;
     }
 
     private static

@@ -15,10 +15,14 @@ import static java.util.Objects.nonNull;
 
 final
 class PDBirthdayPageHelper extends PDPageHelperModel {
-    private final int maxColumns = 3;
-
     PDBirthdayPageHelper (final @NotNull PDDocument pdf, final @NotNull PDPage page, final @NotNull String title, final @NotNull LocalDate subtitle, final int pageNumber) throws IOException {
         super(pdf, page, title, subtitle, pageNumber);
+    }
+
+    @Override
+    protected
+    int maxColumns () {
+        return 3;
     }
 
     void addBirthday (final @NotNull MemberRecord birthday) throws NewPageException, IOException {
