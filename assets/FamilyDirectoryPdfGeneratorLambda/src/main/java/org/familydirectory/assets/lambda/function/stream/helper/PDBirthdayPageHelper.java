@@ -7,6 +7,7 @@ import java.time.format.TextStyle;
 import java.util.Locale;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.familydirectory.assets.ddb.models.member.MemberModel;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.stream.helper.models.PDPageHelperModel;
 import org.jetbrains.annotations.NotNull;
@@ -36,15 +37,36 @@ class PDBirthdayPageHelper extends PDPageHelperModel {
         if (nonNull(month)) {
             this.newLine(HALF_LINE_SPACING);
             final String line = month.getDisplayName(TextStyle.FULL, Locale.US);
-            this.contents.setFont(TITLE_FONT, this.getColumnFittedFontSize(line, TITLE_FONT, TITLE_FONT_SIZE));
+            this.contents.setFont(TITLE_FONT, this.getColumnFittedFontSize(line, TITLE_FONT, STANDARD_FONT_SIZE));
             this.addColumnAgnosticText(line);
             this.newLine(STANDARD_LINE_SPACING);
         }
+        final String birthdayLine = getBirthdayLine(memberRecord);
+        this.contents.setFont(STANDARD_FONT, this.getColumnFittedFontSize(birthdayLine, STANDARD_FONT, STANDARD_FONT_SIZE));
+        this.addColumnAgnosticText(birthdayLine);
+        this.newLine(STANDARD_LINE_SPACING);
+    }
+
+    @NotNull
+    private static
+    String getBirthdayLine (final @NotNull MemberRecord memberRecord) {
         final LocalDate birthday = memberRecord.member()
                                                .getBirthday();
-        final String line = "%s%d, %d".formatted(TAB, birthday.getDayOfMonth(), birthday.getYear());
-        this.contents.setFont(STANDARD_FONT, this.getColumnFittedFontSize(line, STANDARD_FONT, STANDARD_FONT_SIZE));
-        this.addColumnAgnosticText(line);
-        this.newLine(STANDARD_LINE_SPACING);
+        final String dayOfMonth = "%d".formatted(birthday.getDayOfMonth());
+        final StringBuilder birthdayLineStringBuilder = new StringBuilder("%s, %d".formatted(TAB + dayOfMonth, birthday.getYear()));
+        if (dayOfMonth.length() > 1) {
+            birthdayLineStringBuilder.append(" ");
+        } else {
+            birthdayLineStringBuilder.append(TAB);
+        }
+        birthdayLineStringBuilder.append(memberRecord.member()
+                                                     .getDisplayName());
+        if (nonNull(memberRecord.member()
+                                .getDeathday()))
+        {
+            birthdayLineStringBuilder.append(" %c%s".formatted(MemberModel.DAGGER, memberRecord.member()
+                                                                                               .getDeathdayString()));
+        }
+        return birthdayLineStringBuilder.toString();
     }
 }
