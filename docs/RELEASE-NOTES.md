@@ -6,6 +6,8 @@
 
 - After Updating, please trigger Stream Function Invocation by Toggling PDF Generator OFF and ON (use the AdminClient)
 
+- Also, please manually trigger a build for Amplify from the AWS Console
+
 ### Bug Fixes
 
 - Remove Duplicate LogLevel Indicators in CloudWatch
