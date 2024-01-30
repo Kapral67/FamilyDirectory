@@ -19,7 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 public final
 class FamilyDirectoryCdkApp {
-    public static final String VERSION = "0.5";
+    public static final String VERSION = String.valueOf(0.6);
     public static final String DEFAULT_ACCOUNT;
     public static final String DEFAULT_REGION;
     public static final Environment DEFAULT_ENV;
