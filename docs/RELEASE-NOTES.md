@@ -20,6 +20,8 @@
 
 ### Dependency Upgrade Tracking PRs
 
+- #717 - #749
+
 ## v0.42
 
 ### Bug Fixes
