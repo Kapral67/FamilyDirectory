@@ -5,6 +5,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,6 +41,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
+import static org.apache.http.HttpStatus.SC_CONFLICT;
 import static org.apache.http.HttpStatus.SC_FORBIDDEN;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 
@@ -84,33 +86,114 @@ class DeleteHelper extends ApiHelper {
 
     public @NotNull
     TransactWriteItemsRequest buildDeleteTransaction (final @NotNull Caller caller, final @NotNull EventWrapper eventWrapper) {
-        final Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), DdbTable.FAMILY)).orElseThrow();
         final List<TransactWriteItem> transactionItems;
 
-        if (caller.memberId()
-                  .equals(caller.familyId()) && ofNullable(callerFamily.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
-                                                                                                                         .filter(s -> s.equals(eventWrapper.ddbMemberId()))
-                                                                                                                         .isPresent())
-        {
-            final Update callerFamilyUpdateSpouse = Update.builder()
-                                                          .tableName(DdbTable.FAMILY.name())
-                                                          .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(caller.familyId())))
-                                                          .updateExpression("REMOVE %s".formatted(FamilyTableParameter.SPOUSE.jsonFieldName()))
-                                                          .build();
-            this.logger.log("<MEMBER,`%s`> remove <SPOUSE,`%s`> from <FAMILY,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId(), caller.familyId()), INFO);
-            final Delete ddbMemberDelete = Delete.builder()
-                                                 .tableName(DdbTable.MEMBER.name())
-                                                 .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbMemberId())))
-                                                 .build();
-            this.logger.log("<MEMBER,`%s`> delete <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
-            transactionItems = List.of(TransactWriteItem.builder()
-                                                        .update(callerFamilyUpdateSpouse)
-                                                        .build(), TransactWriteItem.builder()
-                                                                                   .delete(ddbMemberDelete)
-                                                                                   .build());
+        if (caller.isAdmin()) {
+            if (eventWrapper.ddbMemberId()
+                            .equals(eventWrapper.ddbFamilyId()))
+            {
+                // NATIVE
+                final Map<String, AttributeValue> familyMap = requireNonNull(this.getDdbItem(eventWrapper.ddbFamilyId(), DdbTable.FAMILY));
+                ofNullable(familyMap.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
+                                                                                      .filter(Predicate.not(String::isBlank))
+                                                                                      .ifPresent(spouse -> {
+                                                                                          this.logger.log("ADMIN <MEMBER,`%s`> attempted to delete <MEMBER,`%s`> BUT <SPOUSE,`%s`> EXISTED".formatted(
+                                                                                                  caller.memberId(), eventWrapper.ddbMemberId(), spouse), WARN);
+                                                                                          throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
+                                                                                                                                                        .withBody("Member Cannot Be Deleted Because " +
+                                                                                                                                                                  "Member's Family has a SPOUSE"));
+                                                                                      });
+                ofNullable(familyMap.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
+                                                                                           .filter(Predicate.not(List::isEmpty))
+                                                                                           .ifPresent(descendants -> {
+                                                                                               this.logger.log(
+                                                                                                       "ADMIN <MEMBER,`%s`> attempted to delete <MEMBER,`%s`> BUT <DESCENDANTS,`%s`> EXISTED".formatted(
+                                                                                                               caller.memberId(), eventWrapper.ddbMemberId(), Arrays.toString(descendants.toArray())),
+                                                                                                       WARN);
+                                                                                               throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
+                                                                                                                                                             .withBody("Member Cannot Be Deleted " +
+                                                                                                                                                                       "Because Member's Family has " +
+                                                                                                                                                                       "DESCENDANTS"));
+                                                                                           });
+                final Delete deleteFamily = Delete.builder()
+                                                  .tableName(DdbTable.FAMILY.name())
+                                                  .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbFamilyId())))
+                                                  .build();
+                final Delete deleteMember = Delete.builder()
+                                                  .tableName(DdbTable.MEMBER.name())
+                                                  .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbMemberId())))
+                                                  .build();
+
+                final String ancestorId = ofNullable(familyMap.get(FamilyTableParameter.ANCESTOR.jsonFieldName())).map(AttributeValue::s)
+                                                                                                                  .filter(Predicate.not(String::isBlank))
+                                                                                                                  .orElseThrow();
+                final List<String> ancestorFamilyDescendantsList = ofNullable(this.getDdbItem(ancestorId, DdbTable.FAMILY)).map(m -> m.get(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
+                                                                                                                           .map(AttributeValue::ss)
+                                                                                                                           .filter(Predicate.not(List::isEmpty))
+                                                                                                                           .filter(l -> l.contains(eventWrapper.ddbMemberId()))
+                                                                                                                           .orElseThrow();
+
+                final Update.Builder updateAncestorFamilyBuilder = Update.builder()
+                                                                         .tableName(DdbTable.FAMILY.name())
+                                                                         .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(ancestorId)));
+                if (ancestorFamilyDescendantsList.size() == 1) {
+                    updateAncestorFamilyBuilder.updateExpression("REMOVE %s".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName()));
+                } else {
+                    updateAncestorFamilyBuilder.updateExpression("DELETE %s :descendants".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
+                                               .expressionAttributeValues(singletonMap(":descendants", AttributeValue.fromSs(singletonList(eventWrapper.ddbMemberId()))));
+                }
+
+                transactionItems = List.of(TransactWriteItem.builder()
+                                                            .delete(deleteFamily)
+                                                            .build(), TransactWriteItem.builder()
+                                                                                       .delete(deleteMember)
+                                                                                       .build(), TransactWriteItem.builder()
+                                                                                                                  .update(updateAncestorFamilyBuilder.build())
+                                                                                                                  .build());
+            } else {
+                // NATURALIZED
+                final Update update = Update.builder()
+                                            .tableName(DdbTable.FAMILY.name())
+                                            .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbFamilyId())))
+                                            .updateExpression("REMOVE %s".formatted(FamilyTableParameter.SPOUSE.jsonFieldName()))
+                                            .build();
+                final Delete delete = Delete.builder()
+                                            .tableName(DdbTable.MEMBER.name())
+                                            .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbMemberId())))
+                                            .build();
+                transactionItems = List.of(TransactWriteItem.builder()
+                                                            .update(update)
+                                                            .build(), TransactWriteItem.builder()
+                                                                                       .delete(delete)
+                                                                                       .build());
+            }
         } else {
-            this.logger.log("<MEMBER,`%s`> attempted to delete <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), WARN);
-            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
+            final Map<String, AttributeValue> callerFamily = requireNonNull(this.getDdbItem(caller.familyId(), DdbTable.FAMILY));
+            if (caller.memberId()
+                      .equals(caller.familyId()) && ofNullable(callerFamily.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
+                                                                                                                             .filter(s -> s.equals(eventWrapper.ddbMemberId()))
+                                                                                                                             .isPresent())
+            {
+                final Update callerFamilyUpdateSpouse = Update.builder()
+                                                              .tableName(DdbTable.FAMILY.name())
+                                                              .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(caller.familyId())))
+                                                              .updateExpression("REMOVE %s".formatted(FamilyTableParameter.SPOUSE.jsonFieldName()))
+                                                              .build();
+                this.logger.log("<MEMBER,`%s`> remove <SPOUSE,`%s`> from <FAMILY,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId(), caller.familyId()), INFO);
+                final Delete ddbMemberDelete = Delete.builder()
+                                                     .tableName(DdbTable.MEMBER.name())
+                                                     .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbMemberId())))
+                                                     .build();
+                this.logger.log("<MEMBER,`%s`> delete <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
+                transactionItems = List.of(TransactWriteItem.builder()
+                                                            .update(callerFamilyUpdateSpouse)
+                                                            .build(), TransactWriteItem.builder()
+                                                                                       .delete(ddbMemberDelete)
+                                                                                       .build());
+            } else {
+                this.logger.log("<MEMBER,`%s`> attempted to delete <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), WARN);
+                throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
+            }
         }
 
         return TransactWriteItemsRequest.builder()

@@ -111,10 +111,10 @@ class UpdateHelper extends ApiHelper {
 
     public @NotNull
     PutItemRequest getPutRequest (final @NotNull Caller caller, final @NotNull EventWrapper eventWrapper) {
-        final Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), DdbTable.FAMILY)).orElseThrow();
-
-        if (caller.memberId()
-                  .equals(eventWrapper.ddbMemberId()))
+        if (caller.isAdmin()) {
+            this.logger.log("ADMIN <MEMBER,`%s`> update <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()));
+        } else if (caller.memberId()
+                         .equals(eventWrapper.ddbMemberId()))
         {
             this.logger.log("<MEMBER,`%s`> update SELF".formatted(caller.memberId()), INFO);
         } else if (caller.memberId()
@@ -122,10 +122,12 @@ class UpdateHelper extends ApiHelper {
                                                                       .equals(eventWrapper.ddbMemberId()))
         {
             this.logger.log("<MEMBER,`%s`> update <SPOUSE,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
-        } else if (!eventWrapper.ddbMemberIsAdult() && ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
-                                                                                                                                     .filter(Predicate.not(List::isEmpty))
-                                                                                                                                     .filter(ss -> ss.contains(eventWrapper.ddbMemberId()))
-                                                                                                                                     .isPresent())
+        } else if (!eventWrapper.ddbMemberIsAdult() &&
+                   ofNullable(requireNonNull(this.getDdbItem(caller.familyId(), DdbTable.FAMILY)).get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
+                                                                                                                                                        .filter(Predicate.not(List::isEmpty))
+                                                                                                                                                        .filter(ss -> ss.contains(
+                                                                                                                                                                eventWrapper.ddbMemberId()))
+                                                                                                                                                        .isPresent())
         {
             this.logger.log("<MEMBER,`%s`> update <DESCENDANT,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
         } else {

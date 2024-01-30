@@ -23,8 +23,10 @@ import software.amazon.awscdk.services.cognito.AuthFlow;
 import software.amazon.awscdk.services.cognito.AutoVerifiedAttrs;
 import software.amazon.awscdk.services.cognito.ClientAttributes;
 import software.amazon.awscdk.services.cognito.CustomDomainOptions;
+import software.amazon.awscdk.services.cognito.DeviceTracking;
 import software.amazon.awscdk.services.cognito.KeepOriginalAttrs;
 import software.amazon.awscdk.services.cognito.Mfa;
+import software.amazon.awscdk.services.cognito.MfaSecondFactor;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
 import software.amazon.awscdk.services.cognito.OAuthScope;
 import software.amazon.awscdk.services.cognito.OAuthSettings;
@@ -88,6 +90,10 @@ class FamilyDirectoryCognitoStack extends Stack {
     public static final boolean COGNITO_SIGN_IN_CASE_SENSITIVE = false;
     public static final boolean COGNITO_SELF_SIGN_UP_ENABLED = true;
     public static final boolean COGNITO_USER_POOL_CLIENT_GENERATE_SECRET = false;
+    public static final boolean COGNITO_USER_POOL_DEVICE_TRACKING_CHALLENGE_REQUIRED_ON_NEW_DEVICE = true;
+    public static final boolean COGNITO_USER_POOL_DEVICE_TRACKING_DEVICE_ONLY_REMEMBERED_ON_USER_PROMPT = true;
+    public static final boolean COGNITO_USER_POOL_MFA_SECOND_FACTOR_OTP_ENABLED = true;
+    public static final boolean COGNITO_USER_POOL_MFA_SECOND_FACTOR_SMS_ENABLED = false;
     private static final StandardAttribute EMAIL_ATTRIBUTE_PROPERTIES = StandardAttribute.builder()
                                                                                          .required(COGNITO_EMAIL_REQUIRE_ATTRIBUTE)
                                                                                          .mutable(COGNITO_EMAIL_MUTABLE_ATTRIBUTE)
@@ -115,6 +121,10 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                       .phone(FALSE)
                                                                                       .build())
                                                          .deletionProtection(TRUE)
+                                                         .deviceTracking(DeviceTracking.builder()
+                                                                                       .challengeRequiredOnNewDevice(COGNITO_USER_POOL_DEVICE_TRACKING_CHALLENGE_REQUIRED_ON_NEW_DEVICE)
+                                                                                       .deviceOnlyRememberedOnUserPrompt(COGNITO_USER_POOL_DEVICE_TRACKING_DEVICE_ONLY_REMEMBERED_ON_USER_PROMPT)
+                                                                                       .build())
                                                          .email(UserPoolEmail.withSES(UserPoolSESOptions.builder()
                                                                                                         .configurationSetName(FamilyDirectorySesStack.SES_CONFIGURATION_SET_NAME)
                                                                                                         .fromEmail(COGNITO_FROM_EMAIL_ADDRESS)
@@ -125,7 +135,11 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                         .email(TRUE)
                                                                                         .phone(FALSE)
                                                                                         .build())
-                                                         .mfa(Mfa.OFF)
+                                                         .mfa(Mfa.REQUIRED)
+                                                         .mfaSecondFactor(MfaSecondFactor.builder()
+                                                                                         .otp(COGNITO_USER_POOL_MFA_SECOND_FACTOR_OTP_ENABLED)
+                                                                                         .sms(COGNITO_USER_POOL_MFA_SECOND_FACTOR_SMS_ENABLED)
+                                                                                         .build())
                                                          .passwordPolicy(PasswordPolicy.builder()
                                                                                        .minLength(COGNITO_MIN_PASSWORD_LENGTH)
                                                                                        .requireLowercase(COGNITO_REQUIRE_LOWERCASE_IN_PASSWORD)

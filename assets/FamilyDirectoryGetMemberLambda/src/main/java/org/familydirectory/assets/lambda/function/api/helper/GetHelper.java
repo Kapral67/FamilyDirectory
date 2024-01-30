@@ -88,6 +88,9 @@ class GetHelper extends ApiHelper {
             }
         }
 
+        responseBodyMap.put("memberIsAdmin", this.isMemberAdmin(memberMap.get(MemberTableParameter.ID.jsonFieldName())
+                                                                         .s()));
+
         return this.objectMapper.writeValueAsString(responseBodyMap);
     }
 

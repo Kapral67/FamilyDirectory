@@ -7,7 +7,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Scanner;
 import org.familydirectory.sdk.adminclient.enums.Commands;
+import org.familydirectory.sdk.adminclient.enums.cognito.CognitoManagementOptions;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
+import org.familydirectory.sdk.adminclient.events.cognito.CognitoManagementEvent;
 import org.familydirectory.sdk.adminclient.events.create.CreateEvent;
 import org.familydirectory.sdk.adminclient.events.delete.DeleteEvent;
 import org.familydirectory.sdk.adminclient.events.model.Executable;
@@ -85,6 +87,7 @@ class AdminClient {
                     case UPDATE -> new UpdateEvent(scanner);
                     case DELETE -> new DeleteEvent(scanner);
                     case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(scanner);
+                    case COGNITO_MANAGEMENT -> new CognitoManagementEvent(scanner, CognitoManagementOptions.values()[ordinal]);
                     case TOOLKIT_CLEANER -> new ToolkitCleanerEvent(scanner);
                     case EXIT -> null;
                 })

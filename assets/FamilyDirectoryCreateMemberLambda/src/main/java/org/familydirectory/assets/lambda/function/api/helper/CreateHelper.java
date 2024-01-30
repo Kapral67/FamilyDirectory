@@ -120,55 +120,107 @@ class CreateHelper extends ApiHelper {
     public @NotNull
     TransactWriteItemsRequest buildCreateTransaction (final @NotNull Caller caller, final @NotNull CreateEvent createEvent) {
         final List<TransactWriteItem> transactionItems = new ArrayList<>();
-        final Map<String, AttributeValue> callerFamily = ofNullable(this.getDdbItem(caller.familyId(), DdbTable.FAMILY)).orElseThrow();
         final String inputFamilyId;
-        if (caller.memberId()
-                  .equals(caller.familyId()) && createEvent.isSpouse())
-        {
-            if (ofNullable(callerFamily.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
-                                                                                         .filter(Predicate.not(String::isBlank))
-                                                                                         .isEmpty())
+        if (caller.isAdmin() && nonNull(createEvent.ancestor())) {
+            final Map<String, AttributeValue> ancestorFamily = requireNonNull(this.getDdbItem(createEvent.ancestor(), DdbTable.FAMILY));
+            if (createEvent.isSpouse()) {
+                this.logger.log("ADMIN <MEMBER,`%s`> Creating Spouse for <MEMBER,`%s`>".formatted(caller.memberId(), createEvent.ancestor()), INFO);
+                if (ofNullable(ancestorFamily.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
+                                                                                               .filter(Predicate.not(String::isBlank))
+                                                                                               .isEmpty())
+                {
+                    inputFamilyId = ofNullable(ancestorFamily.get(FamilyTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
+                                                                                                           .filter(Predicate.not(String::isBlank))
+                                                                                                           .orElseThrow();
+                    transactionItems.add(TransactWriteItem.builder()
+                                                          .update(Update.builder()
+                                                                        .tableName(DdbTable.FAMILY.name())
+                                                                        .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(inputFamilyId)))
+                                                                        .updateExpression("SET %s = :spouseKey".formatted(FamilyTableParameter.SPOUSE.jsonFieldName()))
+                                                                        .expressionAttributeValues(singletonMap(":spouseKey", AttributeValue.fromS(this.inputMemberId.toString())))
+                                                                        .build())
+                                                          .build());
+                } else {
+                    this.logger.log("<MEMBER,`%s` Spouse already exists".formatted(createEvent.ancestor()), WARN);
+                    throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT));
+                }
+            } else {
+                this.logger.log("ADMIN <MEMBER,`%s`> Creating Descendant for <MEMBER,`%s`>".formatted(caller.memberId(), createEvent.ancestor()), INFO);
+                inputFamilyId = this.inputMemberId.toString();
+                final String descendantsUpdateExpression = (ofNullable(ancestorFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
+                                                                                                                                            .filter(Predicate.not(List::isEmpty))
+                                                                                                                                            .isEmpty())
+                        ? "SET %s = :descendants".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName())
+                        : "ADD %s :descendants".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName());
+                final String ancestorFamilyId = ofNullable(ancestorFamily.get(FamilyTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
+                                                                                                                       .filter(Predicate.not(String::isBlank))
+                                                                                                                       .orElseThrow();
+                transactionItems.add(TransactWriteItem.builder()
+                                                      .update(Update.builder()
+                                                                    .tableName(DdbTable.FAMILY.name())
+                                                                    .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(ancestorFamilyId)))
+                                                                    .updateExpression(descendantsUpdateExpression)
+                                                                    .expressionAttributeValues(singletonMap(":descendants", AttributeValue.fromSs(singletonList(inputFamilyId))))
+                                                                    .build())
+                                                      .build());
+                transactionItems.add(TransactWriteItem.builder()
+                                                      .put(Put.builder()
+                                                              .tableName(DdbTable.FAMILY.name())
+                                                              .item(Map.of(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(inputFamilyId), FamilyTableParameter.ANCESTOR.jsonFieldName(),
+                                                                           AttributeValue.fromS(ancestorFamilyId)))
+                                                              .build())
+                                                      .build());
+            }
+        } else {
+            final Map<String, AttributeValue> callerFamily = requireNonNull(this.getDdbItem(caller.familyId(), DdbTable.FAMILY));
+            if (caller.memberId()
+                      .equals(caller.familyId()) && createEvent.isSpouse())
             {
-                this.logger.log("<MEMBER,`%s`> Creating Spouse".formatted(caller.memberId()), INFO);
-                inputFamilyId = caller.familyId();
+                if (ofNullable(callerFamily.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
+                                                                                             .filter(Predicate.not(String::isBlank))
+                                                                                             .isEmpty())
+                {
+                    this.logger.log("<MEMBER,`%s`> Creating Spouse".formatted(caller.memberId()), INFO);
+                    inputFamilyId = caller.familyId();
+                    transactionItems.add(TransactWriteItem.builder()
+                                                          .update(Update.builder()
+                                                                        .tableName(DdbTable.FAMILY.name())
+                                                                        .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(caller.familyId())))
+                                                                        .updateExpression("SET %s = :spouseKey".formatted(FamilyTableParameter.SPOUSE.jsonFieldName()))
+                                                                        .expressionAttributeValues(singletonMap(":spouseKey", AttributeValue.fromS(this.inputMemberId.toString())))
+                                                                        .build())
+                                                          .build());
+                } else {
+                    this.logger.log("<MEMBER,`%s`> Spouse already exists".formatted(caller.memberId()), WARN);
+                    throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT));
+                }
+            } else if (!createEvent.isSpouse()) {
+                this.logger.log("<MEMBER,`%s`> Creating Descendant".formatted(caller.memberId()), INFO);
+                inputFamilyId = this.inputMemberId.toString();
+                final String descendantsUpdateExpression = (ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
+                                                                                                                                          .filter(Predicate.not(List::isEmpty))
+                                                                                                                                          .isEmpty())
+                        ? "SET %s = :descendants".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName())
+                        : "ADD %s :descendants".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName());
                 transactionItems.add(TransactWriteItem.builder()
                                                       .update(Update.builder()
                                                                     .tableName(DdbTable.FAMILY.name())
                                                                     .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(caller.familyId())))
-                                                                    .updateExpression("SET %s = :spouseKey".formatted(FamilyTableParameter.SPOUSE.jsonFieldName()))
-                                                                    .expressionAttributeValues(singletonMap(":spouseKey", AttributeValue.fromS(this.inputMemberId.toString())))
+                                                                    .updateExpression(descendantsUpdateExpression)
+                                                                    .expressionAttributeValues(singletonMap(":descendants", AttributeValue.fromSs(singletonList(inputFamilyId))))
                                                                     .build())
                                                       .build());
+                transactionItems.add(TransactWriteItem.builder()
+                                                      .put(Put.builder()
+                                                              .tableName(DdbTable.FAMILY.name())
+                                                              .item(Map.of(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(inputFamilyId), FamilyTableParameter.ANCESTOR.jsonFieldName(),
+                                                                           AttributeValue.fromS(caller.familyId())))
+                                                              .build())
+                                                      .build());
             } else {
-                this.logger.log("<MEMBER,`%s`> Spouse already exists".formatted(caller.memberId()), WARN);
-                throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT));
+                this.logger.log("<MEMBER,`%s`> Denied Request to Create New Member".formatted(caller.memberId()), WARN);
+                throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
             }
-        } else if (!createEvent.isSpouse()) {
-            this.logger.log("<MEMBER,`%s`> Creating Descendant".formatted(caller.memberId()), INFO);
-            inputFamilyId = this.inputMemberId.toString();
-            final String descendantsUpdateExpression = (ofNullable(callerFamily.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
-                                                                                                                                      .filter(Predicate.not(List::isEmpty))
-                                                                                                                                      .isEmpty())
-                    ? "SET %s = :descendants".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName())
-                    : "ADD %s :descendants".formatted(FamilyTableParameter.DESCENDANTS.jsonFieldName());
-            transactionItems.add(TransactWriteItem.builder()
-                                                  .update(Update.builder()
-                                                                .tableName(DdbTable.FAMILY.name())
-                                                                .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(caller.familyId())))
-                                                                .updateExpression(descendantsUpdateExpression)
-                                                                .expressionAttributeValues(singletonMap(":descendants", AttributeValue.fromSs(singletonList(inputFamilyId))))
-                                                                .build())
-                                                  .build());
-            transactionItems.add(TransactWriteItem.builder()
-                                                  .put(Put.builder()
-                                                          .tableName(DdbTable.FAMILY.name())
-                                                          .item(Map.of(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(inputFamilyId), FamilyTableParameter.ANCESTOR.jsonFieldName(),
-                                                                       AttributeValue.fromS(caller.familyId())))
-                                                          .build())
-                                                  .build());
-        } else {
-            this.logger.log("<MEMBER,`%s`> Denied Request to Create New Member".formatted(caller.memberId()), WARN);
-            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
         }
         transactionItems.add(TransactWriteItem.builder()
                                               .put(Put.builder()

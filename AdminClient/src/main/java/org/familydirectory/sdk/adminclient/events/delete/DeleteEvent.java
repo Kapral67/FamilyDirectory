@@ -98,8 +98,9 @@ class DeleteEvent implements EventHelper {
                                                                                                                                           .toString())))
                                               .build();
 
-            final String ancestorId = familyMap.get(FamilyTableParameter.ANCESTOR.jsonFieldName())
-                                               .s();
+            final String ancestorId = ofNullable(familyMap.get(FamilyTableParameter.ANCESTOR.jsonFieldName())).map(AttributeValue::s)
+                                                                                                              .filter(Predicate.not(String::isBlank))
+                                                                                                              .orElseThrow();
             final List<String> ancestorFamilyDescendantsList = ofNullable(this.getDdbItem(ancestorId, DdbTable.FAMILY)).map(m -> m.get(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
                                                                                                                        .map(AttributeValue::ss)
                                                                                                                        .filter(Predicate.not(List::isEmpty))
@@ -155,7 +156,6 @@ class DeleteEvent implements EventHelper {
 
     private
     void deleteCognitoAccountAndNotify (final @NotNull String memberId) {
-        final String userPoolId = this.getUserPoolId();
         final QueryRequest cognitoMemberQueryRequest = QueryRequest.builder()
                                                                    .tableName(DdbTable.COGNITO.name())
                                                                    .indexName(requireNonNull(CognitoTableParameter.MEMBER.gsiProps()).getIndexName())
@@ -181,13 +181,15 @@ class DeleteEvent implements EventHelper {
                                                             .key(singletonMap(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(ddbMemberCognitoSub)))
                                                             .build());
 
+            final String userPoolId = this.getUserPoolId();
+
             final ListUsersRequest listUsersRequest = ListUsersRequest.builder()
                                                                       .filter("sub = \"%s\"".formatted(ddbMemberCognitoSub))
                                                                       .limit(1)
                                                                       .userPoolId(userPoolId)
                                                                       .build();
-            final UserType ddbMemberCognitoUser = ofNullable(this.cognitoClient.listUsers(listUsersRequest)).filter(ListUsersResponse::hasUsers)
-                                                                                                            .map(ListUsersResponse::users)
+            final UserType ddbMemberCognitoUser = ofNullable(this.cognitoClient.listUsers(listUsersRequest)).map(ListUsersResponse::users)
+                                                                                                            .filter(Predicate.not(List::isEmpty))
                                                                                                             .map(List::getFirst)
                                                                                                             .orElseThrow();
             final String ddbMemberCognitoUsername = Optional.of(ddbMemberCognitoUser)
@@ -200,8 +202,8 @@ class DeleteEvent implements EventHelper {
                                                                      .build());
 
             final String ddbMemberCognitoEmail = Optional.of(ddbMemberCognitoUser)
-                                                         .filter(UserType::hasAttributes)
                                                          .map(UserType::attributes)
+                                                         .filter(Predicate.not(List::isEmpty))
                                                          .orElseThrow()
                                                          .stream()
                                                          .filter(attr -> attr.name()
@@ -214,7 +216,7 @@ class DeleteEvent implements EventHelper {
         }
     }
 
-    private static
+    public static
     void sendDeletionNoticeEmail (final @NotNull List<String> addresses) {
         final Message message = Message.builder()
                                        .subject(Content.builder()
@@ -252,7 +254,8 @@ class DeleteEvent implements EventHelper {
     }
 
     @Override
-    public @NotNull
+    @NotNull
+    public
     DynamoDbClient getDynamoDbClient () {
         return this.dynamoDbClient;
     }

@@ -247,14 +247,19 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
     @NotNull
     default
     MemberRecord getExistingMember (final @NotNull String message) {
-        final List<MemberRecord> records = MemberPicker.getEntries();
+        return this.getExistingMember(message, MemberPicker.getEntries());
+    }
+
+    @NotNull
+    default
+    MemberRecord getExistingMember (final @NotNull String message, final @NotNull List<MemberRecord> memberRecordList) {
         int index = -1;
-        while (index < 0 || index >= records.size()) {
+        while (index < 0 || index >= memberRecordList.size()) {
             Logger.customLine(requireNonNull(message), Ansi.BOLD, Ansi.BLUE);
-            for (int i = 0; i < records.size(); ++i) {
-                Logger.customLine("%d) %s".formatted(i, records.get(i)
-                                                               .member()
-                                                               .getFullName()));
+            for (int i = 0; i < memberRecordList.size(); ++i) {
+                Logger.customLine("%d) %s".formatted(i, memberRecordList.get(i)
+                                                                        .member()
+                                                                        .getFullName()));
             }
             final String token = this.scanner()
                                      .nextLine()
@@ -264,12 +269,12 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
             } catch (final NumberFormatException ignored) {
                 index = -1;
             }
-            if (index < 0 || index >= records.size()) {
+            if (index < 0 || index >= memberRecordList.size()) {
                 Logger.error("Invalid Member");
             }
             System.out.println();
         }
-        return records.get(index);
+        return memberRecordList.get(index);
     }
 
     default
