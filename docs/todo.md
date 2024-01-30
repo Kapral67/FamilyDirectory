@@ -1,4 +1,4 @@
-## Jan 03 2024
+## Jan 29 2024
 
 ---
 
@@ -12,9 +12,3 @@
         - apis would acquire this lock at the end of their function
         - generating functions would acquire this lock at the start of their function
     - **Look into DDB Streams**
-
-### PDFs
-
-- Birthday Views
-    - By Standard Family Traversal
-    - By Month
