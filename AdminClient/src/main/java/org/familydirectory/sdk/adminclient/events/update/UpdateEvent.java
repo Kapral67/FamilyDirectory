@@ -2,8 +2,8 @@ package org.familydirectory.sdk.adminclient.events.update;
 
 import java.util.Scanner;
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
-import org.familydirectory.sdk.adminclient.events.model.MemberRecord;
 import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.MemberPicker;
 import org.jetbrains.annotations.NotNull;

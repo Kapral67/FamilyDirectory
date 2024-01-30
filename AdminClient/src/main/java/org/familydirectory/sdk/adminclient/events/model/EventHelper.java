@@ -13,6 +13,7 @@ import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
+import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
 import org.familydirectory.sdk.adminclient.utility.Logger;
@@ -79,7 +80,7 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
     @NotNull
     @Deprecated
     default
-    String getPdfS3Key () {
+    String getPdfS3Key (final @NotNull String rootMemberSurname) {
         throw new UnsupportedOperationException("Admin Client Does Not Implement GET Requests");
     }
 

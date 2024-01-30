@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.utils.SdkAutoCloseable;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonMap;
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 public
@@ -25,12 +26,17 @@ interface LambdaFunctionHelper extends SdkAutoCloseable {
 
     @NotNull
     default
-    String getPdfS3Key () {
-        final String rootMemberSurname = ofNullable(this.getDdbItem(getenv(LambdaUtils.EnvVar.ROOT_ID.name()), DdbTable.MEMBER)).map(m -> m.get(MemberTableParameter.LAST_NAME.jsonFieldName()))
-                                                                                                                                .map(AttributeValue::s)
-                                                                                                                                .filter(Predicate.not(String::isBlank))
-                                                                                                                                .orElseThrow();
-        return "%sFamilyDirectory.pdf".formatted(rootMemberSurname);
+    String getPdfS3Key (final @NotNull String rootMemberSurname) {
+        return "%sFamily.zip".formatted(requireNonNull(rootMemberSurname));
+    }
+
+    @NotNull
+    default
+    String getRootMemberSurname () {
+        return ofNullable(this.getDdbItem(getenv(LambdaUtils.EnvVar.ROOT_ID.name()), DdbTable.MEMBER)).map(m -> m.get(MemberTableParameter.LAST_NAME.jsonFieldName()))
+                                                                                                      .map(AttributeValue::s)
+                                                                                                      .filter(Predicate.not(String::isBlank))
+                                                                                                      .orElseThrow();
     }
 
     @Nullable

@@ -1,4 +1,4 @@
-package org.familydirectory.sdk.adminclient.events.model;
+package org.familydirectory.assets.ddb.models.member;
 
 import java.util.UUID;
 import org.familydirectory.assets.ddb.member.Member;

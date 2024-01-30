@@ -15,6 +15,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.lambda.model.EventSourceMappingConfiguration;
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration;
+import software.amazon.awssdk.services.lambda.model.InvocationType;
+import software.amazon.awssdk.services.lambda.model.InvokeRequest;
 import software.amazon.awssdk.services.lambda.model.ListEventSourceMappingsRequest;
 import software.amazon.awssdk.services.lambda.model.UpdateEventSourceMappingRequest;
 import static java.lang.Thread.sleep;
@@ -88,6 +90,10 @@ class TogglePdfGeneratorEvent implements EventHelper {
                 }
                 if (--sleepSec <= 0L) {
                     System.out.printf("\r%s\r", " ".repeat(maxCounterLength));
+                    this.lambdaClient.invoke(InvokeRequest.builder()
+                                                          .functionName(functionName)
+                                                          .invocationType(InvocationType.EVENT)
+                                                          .build());
                 }
             }
 

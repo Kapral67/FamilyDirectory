@@ -42,7 +42,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                                  .get("email")).filter(s -> s.contains("@"))
                                                                .map(String::toLowerCase)
                                                                .orElseThrow(() -> {
-                                                                   logger.log("ERROR: Cognito <USER,`%s`> Email Not Found".formatted(event.getUserName()), ERROR);
+                                                                   logger.log("Cognito <USER,`%s`> Email Not Found".formatted(event.getUserName()), ERROR);
                                                                    final IllegalStateException e = new IllegalStateException();
                                                                    adminDisableUser(cognitoClient, logger, event.getUserPoolId(), event.getUserName(), null, e);
                                                                    return e;
@@ -51,7 +51,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                                .getUserAttributes()
                                                .get("sub")).filter(Predicate.not(String::isBlank))
                                                            .orElseThrow(() -> {
-                                                               logger.log("ERROR: Cognito <EMAIL,`%s`> Sub Not Found".formatted(email), ERROR);
+                                                               logger.log("Cognito <EMAIL,`%s`> Sub Not Found".formatted(email), ERROR);
                                                                final IllegalStateException e = new IllegalStateException();
                                                                adminDisableUser(cognitoClient, logger, event.getUserPoolId(), event.getUserName(), email, e);
                                                                return e;
@@ -87,7 +87,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
             if (memberEmailQueryResponse.items()
                                         .isEmpty())
             {
-                logger.log("ERROR: No Member Found for <EMAIL,`%s`>".formatted(email), ERROR);
+                logger.log("No Member Found for <EMAIL,`%s`>".formatted(email), ERROR);
                 final IllegalStateException e = new IllegalStateException();
                 adminDisableUser(cognitoClient, logger, event.getUserPoolId(), event.getUserName(), email, e);
                 throw e;
@@ -95,7 +95,7 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                                .size() > 1)
 
             {
-                logger.log("ERROR: Multiple Members Found for <EMAIL,`%s`>".formatted(email), ERROR);
+                logger.log("Multiple Members Found for <EMAIL,`%s`>".formatted(email), ERROR);
                 final IllegalStateException e = new IllegalStateException();
                 adminDisableUser(cognitoClient, logger, event.getUserPoolId(), event.getUserName(), email, e);
                 throw e;
@@ -152,13 +152,13 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
                                                                       .username(userName)
                                                                       .build());
             } catch (final Throwable x) {
-                logger.log("FATAL: Failed to Disable User <USERNAME,`%s`>".formatted(userName), FATAL);
+                logger.log("Failed to Disable User <USERNAME,`%s`>".formatted(userName), FATAL);
                 throw x;
             }
             ofNullable(email).ifPresent(em -> {
                 final String body = "Your Account Has Been Suspended. Please Contact Your Administrator For Assistance.";
                 final String emailId = LambdaUtils.sendEmail(singletonList(em), "Notice of Account Suspension", body);
-                logger.log("INFO: Sent Account Suspension Notice To <EMAIL,`%s`>: <MESSAGE_ID,`%s`>".formatted(em, emailId), INFO);
+                logger.log("Sent Account Suspension Notice To <EMAIL,`%s`>: <MESSAGE_ID,`%s`>".formatted(em, emailId), INFO);
             });
         } catch (final Throwable x) {
             ofNullable(e).ifPresent(t -> t.addSuppressed(x));

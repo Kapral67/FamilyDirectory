@@ -1,5 +1,25 @@
 # FamilyDirectory Release Notes
 
+## v0.5
+
+### IMPORTANT UPDATE INFO
+
+- After Updating, please trigger Stream Function Invocation by Toggling PDF Generator OFF and ON (use the AdminClient)
+
+### Bug Fixes
+
+- Remove Duplicate LogLevel Indicators in CloudWatch
+
+- Toggling PDF Generator ON triggers an asynchronous invocation of the PDF Generator Lambda
+
+### Features
+
+- Added Birthdays Pdf Organizing Members by Birth Month
+
+- Downloads Are Now a Zip file of new Birthdays Pdf and Standard Directory Pdf
+
+### Dependency Upgrade Tracking PRs
+
 ## v0.42
 
 ### Bug Fixes
