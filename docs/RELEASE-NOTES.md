@@ -19,6 +19,8 @@
 - Admin Cognito Users may call any API upon any Member (essentially Admin Cognito Users have same capabilities as
   AdminClient as far as CREATE, UPDATE, and DELETE go)
 
+- MFA for Cognito Users is now Enforced, Existing Users will be forced to Onboard at Next Sign-In
+
 ### Dependency Upgrade Tracking PRs
 
 - ==PLACEHOLDER==
