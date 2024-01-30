@@ -23,7 +23,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
     implementation 'org.jetbrains:annotations:24.1.0'
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
-    implementation 'org.slf4j:slf4j-nop:2.0.10'
+    implementation 'org.slf4j:slf4j-nop:2.0.11'
     implementation 'software.amazon.awscdk:aws-cdk-lib:2.124.0'
     implementation platform('software.amazon.awssdk:bom:2.23.13')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
