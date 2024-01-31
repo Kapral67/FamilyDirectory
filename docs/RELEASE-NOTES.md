@@ -12,6 +12,8 @@
 
 - Normalize throws of type NullPointerException versus NoSuchElementException across codebase
 
+- Use gsiProps().getPartitionKey().getName() over jsonFieldName() for QueryRequests against an index
+
 ### Features
 
 - Added Ability to Enable certain Cognito Users as Admin from AdminClient
