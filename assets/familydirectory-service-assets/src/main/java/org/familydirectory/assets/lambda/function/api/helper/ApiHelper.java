@@ -97,9 +97,10 @@ class ApiHelper implements LambdaFunctionHelper {
         final List<Map<String, AttributeValue>> items = this.getDynamoDbClient()
                                                             .query(queryRequest)
                                                             .items();
-        return !items.isEmpty() && ofNullable(items.getFirst()
-                                                   .get(CognitoTableParameter.IS_ADMIN.jsonFieldName())).map(AttributeValue::bool)
-                                                                                                        .orElse(false);
+        return !items.isEmpty() && ofNullable(requireNonNull(this.getDdbItem(items.getFirst()
+                                                                                  .get(CognitoTableParameter.ID.jsonFieldName())
+                                                                                  .s(), DdbTable.COGNITO)).get(CognitoTableParameter.IS_ADMIN.jsonFieldName())).map(AttributeValue::bool)
+                                                                                                                                                               .orElse(false);
     }
 
     public
