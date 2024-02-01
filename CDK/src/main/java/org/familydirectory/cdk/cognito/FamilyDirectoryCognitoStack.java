@@ -169,6 +169,7 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                  .generateSecret(COGNITO_USER_POOL_CLIENT_GENERATE_SECRET)
                                                                                  .oAuth(OAuthSettings.builder()
                                                                                                      .callbackUrls(singletonList(FamilyDirectoryCdkApp.HTTPS_PREFIX + hostedZone.getZoneName()))
+                                                                                                     .logoutUrls(singletonList(FamilyDirectoryCdkApp.HTTPS_PREFIX + hostedZone.getZoneName()))
                                                                                                      .flows(OAuthFlows.builder()
                                                                                                                       .authorizationCodeGrant(TRUE)
                                                                                                                       .build())

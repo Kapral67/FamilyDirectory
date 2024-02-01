@@ -50,7 +50,7 @@ class DeleteHelper extends ApiHelper {
     private final @NotNull ObjectMapper objectMapper = new ObjectMapper();
     private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
     private final @NotNull CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create();
-    private final @NotNull String userPoolId = getenv(LambdaUtils.EnvVar.COGNITO_USER_POOL_ID.name());
+    private final @NotNull String userPoolId = requireNonNull(getenv(LambdaUtils.EnvVar.COGNITO_USER_POOL_ID.name()));
     private final @NotNull LambdaLogger logger;
     private final @NotNull APIGatewayProxyRequestEvent requestEvent;
 
@@ -90,6 +90,12 @@ class DeleteHelper extends ApiHelper {
 
         if (caller.isAdmin()) {
             if (eventWrapper.ddbMemberId()
+                            .equals(requireNonNull(getenv(LambdaUtils.EnvVar.ROOT_ID.name()))))
+            {
+                this.logger.log("ADMIN <MEMBER,`%s`> attempted to delete ROOT MEMBER".formatted(caller.memberId()), WARN);
+                throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
+            }
+            if (eventWrapper.ddbMemberId()
                             .equals(eventWrapper.ddbFamilyId()))
             {
                 // NATIVE
@@ -100,7 +106,8 @@ class DeleteHelper extends ApiHelper {
                                                                                           this.logger.log("ADMIN <MEMBER,`%s`> attempted to delete <MEMBER,`%s`> BUT <SPOUSE,`%s`> EXISTED".formatted(
                                                                                                   caller.memberId(), eventWrapper.ddbMemberId(), spouse), WARN);
                                                                                           throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
-                                                                                                                                                        .withBody("Member Cannot Be Deleted Because " +
+                                                                                                                                                        .withBody("Member Cannot Be Deleted Because" +
+                                                                                                                                                                  " " +
                                                                                                                                                                   "Member's Family has a SPOUSE"));
                                                                                       });
                 ofNullable(familyMap.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
@@ -112,8 +119,8 @@ class DeleteHelper extends ApiHelper {
                                                                                                        WARN);
                                                                                                throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
                                                                                                                                                              .withBody("Member Cannot Be Deleted " +
-                                                                                                                                                                       "Because Member's Family has " +
-                                                                                                                                                                       "DESCENDANTS"));
+                                                                                                                                                                       "Because Member's Family " +
+                                                                                                                                                                       "has " + "DESCENDANTS"));
                                                                                            });
                 final Delete deleteFamily = Delete.builder()
                                                   .tableName(DdbTable.FAMILY.name())

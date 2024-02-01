@@ -41,12 +41,12 @@ import static java.util.Optional.ofNullable;
 
 public final
 class PdfHelper implements LambdaFunctionHelper {
-    private static final String ROOT_MEMBER_ID = getenv(LambdaUtils.EnvVar.ROOT_ID.name());
-    private static final Comparator<Map.Entry<String, Member>> DESCENDANT_COMPARATOR = Comparator.comparing(entry -> entry.getValue()
-                                                                                                                          .getBirthday());
-    private static final Comparator<MemberRecord> DAY_OF_MONTH_COMPARATOR = Comparator.comparing(entry -> entry.member()
-                                                                                                               .getBirthday()
-                                                                                                               .getDayOfMonth());
+    private static final @NotNull String ROOT_MEMBER_ID = requireNonNull(getenv(LambdaUtils.EnvVar.ROOT_ID.name()));
+    private static final @NotNull Comparator<Map.Entry<String, Member>> DESCENDANT_COMPARATOR = Comparator.comparing(entry -> entry.getValue()
+                                                                                                                                   .getBirthday());
+    private static final @NotNull Comparator<MemberRecord> DAY_OF_MONTH_COMPARATOR = Comparator.comparing(entry -> entry.member()
+                                                                                                                        .getBirthday()
+                                                                                                                        .getDayOfMonth());
     @NotNull
     private final PDDocument familyDirectoryPdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly());
     @NotNull
