@@ -1,6 +1,7 @@
 package org.familydirectory.sdk.adminclient.enums;
 
 import java.util.List;
+import org.familydirectory.sdk.adminclient.enums.cognito.CognitoManagementOptions;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -13,6 +14,7 @@ enum Commands {
     UPDATE(null),
     DELETE(null),
     TOGGLE_PDF_GENERATOR(null),
+    COGNITO_MANAGEMENT(List.of(CognitoManagementOptions.values())),
     TOOLKIT_CLEANER(null),
     EXIT(null);
 

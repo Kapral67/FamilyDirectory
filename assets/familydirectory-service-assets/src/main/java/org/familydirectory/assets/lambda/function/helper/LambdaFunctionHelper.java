@@ -33,10 +33,10 @@ interface LambdaFunctionHelper extends SdkAutoCloseable {
     @NotNull
     default
     String getRootMemberSurname () {
-        return ofNullable(this.getDdbItem(getenv(LambdaUtils.EnvVar.ROOT_ID.name()), DdbTable.MEMBER)).map(m -> m.get(MemberTableParameter.LAST_NAME.jsonFieldName()))
-                                                                                                      .map(AttributeValue::s)
-                                                                                                      .filter(Predicate.not(String::isBlank))
-                                                                                                      .orElseThrow();
+        return ofNullable(this.getDdbItem(requireNonNull(getenv(LambdaUtils.EnvVar.ROOT_ID.name())), DdbTable.MEMBER)).map(m -> m.get(MemberTableParameter.LAST_NAME.jsonFieldName()))
+                                                                                                                      .map(AttributeValue::s)
+                                                                                                                      .filter(Predicate.not(String::isBlank))
+                                                                                                                      .orElseThrow();
     }
 
     @Nullable

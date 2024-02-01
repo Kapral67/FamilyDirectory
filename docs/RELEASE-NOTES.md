@@ -1,5 +1,30 @@
 # FamilyDirectory Release Notes
 
+## v0.6
+
+### IMPORTANT UPDATE INFO
+
+- If Updating from v0.42 or below, please follow **IMPORTANT UPDATE INFO** from v0.5
+
+- If Updating from v0.5, make sure to manually trigger a front-end build for Amplify from the AWS Console
+
+### Bug Fixes
+
+- Normalize throws of type NullPointerException versus NoSuchElementException across codebase
+
+- Use gsiProps().getPartitionKey().getName() over jsonFieldName() for QueryRequests against an index
+
+### Features
+
+- Added Ability to Enable certain Cognito Users as Admin from AdminClient
+
+- Admin Cognito Users may call any API upon any Member (essentially Admin Cognito Users have same capabilities as
+  AdminClient as far as CREATE, UPDATE, and DELETE go)
+
+### Dependency Upgrade Tracking PRs
+
+- ==PLACEHOLDER==
+
 ## v0.5
 
 ### IMPORTANT UPDATE INFO

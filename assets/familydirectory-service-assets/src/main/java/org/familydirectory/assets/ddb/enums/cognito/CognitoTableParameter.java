@@ -19,7 +19,8 @@ enum CognitoTableParameter implements DdbTableParameter {
                                                                                   .type(STRING)
                                                                                   .build())
                                                            .projectionType(KEYS_ONLY)
-                                                           .build());
+                                                           .build()),
+    IS_ADMIN(DdbType.BOOL, "isAdmin", null);
 
     @NotNull
     private final DdbType ddbType;

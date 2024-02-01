@@ -79,7 +79,9 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
             final QueryRequest memberEmailQueryRequest = QueryRequest.builder()
                                                                      .tableName(DdbTable.MEMBER.name())
                                                                      .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())
-                                                                     .keyConditionExpression("%s = :email".formatted(MemberTableParameter.EMAIL.jsonFieldName()))
+                                                                     .keyConditionExpression("%s = :email".formatted(MemberTableParameter.EMAIL.gsiProps()
+                                                                                                                                               .getPartitionKey()
+                                                                                                                                               .getName()))
                                                                      .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(email)))
                                                                      .limit(2)
                                                                      .build();

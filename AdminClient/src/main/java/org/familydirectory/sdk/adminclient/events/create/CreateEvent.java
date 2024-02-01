@@ -37,7 +37,7 @@ class CreateEvent implements EventHelper {
     CreateEvent (final @NotNull Scanner scanner, final @NotNull CreateOptions createOption) {
         super();
         this.scanner = requireNonNull(scanner);
-        this.createOption = createOption;
+        this.createOption = requireNonNull(createOption);
     }
 
     @Override

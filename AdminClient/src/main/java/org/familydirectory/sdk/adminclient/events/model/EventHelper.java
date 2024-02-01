@@ -6,11 +6,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
+import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
@@ -20,9 +23,26 @@ import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.MemberPicker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUserPoolsRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.sesv2.SesV2Client;
+import software.amazon.awssdk.services.sesv2.model.Body;
+import software.amazon.awssdk.services.sesv2.model.Content;
+import software.amazon.awssdk.services.sesv2.model.Destination;
+import software.amazon.awssdk.services.sesv2.model.EmailContent;
+import software.amazon.awssdk.services.sesv2.model.Message;
+import software.amazon.awssdk.services.sesv2.model.SendEmailRequest;
+import static java.lang.System.getenv;
+import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -67,6 +87,88 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
         }
 
         return member;
+    }
+
+    default
+    void deleteCognitoAccountAndNotify (final @NotNull CognitoIdentityProviderClient cognitoClient, final @NotNull String sub) {
+        this.getDynamoDbClient()
+            .deleteItem(DeleteItemRequest.builder()
+                                         .tableName(DdbTable.COGNITO.name())
+                                         .key(singletonMap(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(requireNonNull(sub))))
+                                         .build());
+        final String userPoolId = getUserPoolId(requireNonNull(cognitoClient));
+        final UserType cognitoUser = getCognitoUserType(cognitoClient, userPoolId, sub);
+        final String cognitoUserName = Optional.of(cognitoUser)
+                                               .map(UserType::username)
+                                               .filter(Predicate.not(String::isBlank))
+                                               .orElseThrow();
+        cognitoClient.adminDeleteUser(AdminDeleteUserRequest.builder()
+                                                            .userPoolId(userPoolId)
+                                                            .username(cognitoUserName)
+                                                            .build());
+        final String cognitoEmail = Optional.of(cognitoUser)
+                                            .map(UserType::attributes)
+                                            .filter(Predicate.not(List::isEmpty))
+                                            .orElseThrow()
+                                            .stream()
+                                            .filter(attr -> attr.name()
+                                                                .equalsIgnoreCase("email"))
+                                            .findFirst()
+                                            .map(AttributeType::value)
+                                            .filter(s -> s.contains("@"))
+                                            .orElseThrow();
+        sendDeletionNoticeEmail(singletonList(cognitoEmail));
+    }
+
+    static
+    void sendDeletionNoticeEmail (final @NotNull List<String> addresses) {
+        final Message message = Message.builder()
+                                       .subject(Content.builder()
+                                                       .data("Notice of Account Deletion")
+                                                       .build())
+                                       .body(Body.builder()
+                                                 .text(Content.builder()
+                                                              .data("Your account has been irreversibly deleted.")
+                                                              .build())
+                                                 .build())
+                                       .build();
+        try (final SesV2Client sesClient = SesV2Client.create()) {
+            sesClient.sendEmail(SendEmailRequest.builder()
+                                                .destination(Destination.builder()
+                                                                        .toAddresses(requireNonNull(addresses))
+                                                                        .build())
+                                                .content(EmailContent.builder()
+                                                                     .simple(message)
+                                                                     .build())
+                                                .fromEmailAddress("no-reply@%s".formatted(requireNonNull(getenv("ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME"))))
+                                                .build());
+        }
+    }
+
+    @NotNull
+    static
+    UserType getCognitoUserType (final @NotNull CognitoIdentityProviderClient cognitoClient, final @NotNull String userPoolId, final @NotNull String sub) {
+        final ListUsersRequest listUsersRequest = ListUsersRequest.builder()
+                                                                  .filter("sub = \"%s\"".formatted(requireNonNull(sub)))
+                                                                  .limit(1)
+                                                                  .userPoolId(requireNonNull(userPoolId))
+                                                                  .build();
+        return ofNullable(requireNonNull(cognitoClient).listUsers(listUsersRequest)).map(ListUsersResponse::users)
+                                                                                    .filter(Predicate.not(List::isEmpty))
+                                                                                    .map(List::getFirst)
+                                                                                    .orElseThrow();
+    }
+
+    @NotNull
+    static
+    String getUserPoolId (final @NotNull CognitoIdentityProviderClient cognitoClient) {
+        return ofNullable(requireNonNull(cognitoClient).listUserPools(ListUserPoolsRequest.builder()
+                                                                                          .maxResults(1)
+                                                                                          .build())
+                                                       .userPools()).filter(Predicate.not(List::isEmpty))
+                                                                    .map(l -> l.getFirst()
+                                                                               .id())
+                                                                    .orElseThrow();
     }
 
     @Override
@@ -247,14 +349,19 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
     @NotNull
     default
     MemberRecord getExistingMember (final @NotNull String message) {
-        final List<MemberRecord> records = MemberPicker.getEntries();
+        return this.getExistingMember(message, MemberPicker.getEntries());
+    }
+
+    @NotNull
+    default
+    MemberRecord getExistingMember (final @NotNull String message, final @NotNull List<MemberRecord> memberRecordList) {
         int index = -1;
-        while (index < 0 || index >= records.size()) {
+        while (index < 0 || index >= memberRecordList.size()) {
             Logger.customLine(requireNonNull(message), Ansi.BOLD, Ansi.BLUE);
-            for (int i = 0; i < records.size(); ++i) {
-                Logger.customLine("%d) %s".formatted(i, records.get(i)
-                                                               .member()
-                                                               .getFullName()));
+            for (int i = 0; i < memberRecordList.size(); ++i) {
+                Logger.customLine("%d) %s".formatted(i, memberRecordList.get(i)
+                                                                        .member()
+                                                                        .getFullName()));
             }
             final String token = this.scanner()
                                      .nextLine()
@@ -264,12 +371,12 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
             } catch (final NumberFormatException ignored) {
                 index = -1;
             }
-            if (index < 0 || index >= records.size()) {
+            if (index < 0 || index >= memberRecordList.size()) {
                 Logger.error("Invalid Member");
             }
             System.out.println();
         }
-        return records.get(index);
+        return memberRecordList.get(index);
     }
 
     default
