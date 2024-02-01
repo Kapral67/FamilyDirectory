@@ -10,7 +10,7 @@ import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
-import org.familydirectory.sdk.adminclient.utility.MemberPicker;
+import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;

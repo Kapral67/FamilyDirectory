@@ -20,7 +20,7 @@ import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
 import org.familydirectory.sdk.adminclient.utility.Logger;
-import org.familydirectory.sdk.adminclient.utility.MemberPicker;
+import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;

@@ -12,7 +12,7 @@ import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.utility.Logger;
-import org.familydirectory.sdk.adminclient.utility.MemberPicker;
+import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
