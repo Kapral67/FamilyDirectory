@@ -10,6 +10,7 @@ import org.familydirectory.assets.ddb.enums.SuffixType;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -50,10 +51,10 @@ class MemberModel {
     public abstract @Nullable
     String getEmail ();
 
-    public abstract @Nullable
+    public abstract @Nullable @UnmodifiableView
     List<String> getAddress ();
 
-    public @Nullable
+    public @Nullable @UnmodifiableView
     Map<String, AttributeValue> getPhonesDdbMap () {
         return (isNull(this.getPhones()))
                 ? null
@@ -64,7 +65,7 @@ class MemberModel {
                                                                .name(), entry -> AttributeValue.fromS(entry.getValue())));
     }
 
-    public abstract @Nullable
+    public abstract @Nullable @UnmodifiableView
     Map<PhoneType, String> getPhones ();
 
     public

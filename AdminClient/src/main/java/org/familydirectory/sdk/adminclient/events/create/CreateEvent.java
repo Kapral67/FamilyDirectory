@@ -32,12 +32,14 @@ class CreateEvent implements EventHelper {
     private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
     private final @NotNull CreateOptions createOption;
     private final @NotNull Scanner scanner;
+    private final @NotNull MemberPicker memberPicker;
 
     public
-    CreateEvent (final @NotNull Scanner scanner, final @NotNull CreateOptions createOption) {
+    CreateEvent (final @NotNull Scanner scanner, final @NotNull CreateOptions createOption, final @NotNull MemberPicker memberPicker) {
         super();
         this.scanner = requireNonNull(scanner);
         this.createOption = requireNonNull(createOption);
+        this.memberPicker = requireNonNull(memberPicker);
     }
 
     @Override
@@ -53,8 +55,15 @@ class CreateEvent implements EventHelper {
     }
 
     @Override
+    @NotNull
     public
-    void execute () {
+    List<MemberRecord> getPickerEntries () {
+        return this.memberPicker.getEntries();
+    }
+
+    @Override
+    public
+    void run () {
         final UUID id;
         final MemberRecord memberRecord;
         switch (this.createOption) {
@@ -67,7 +76,7 @@ class CreateEvent implements EventHelper {
                 memberRecord = this.buildMemberRecord(id, id);
             }
             case SPOUSE -> {
-                if (MemberPicker.isEmpty()) {
+                if (this.memberPicker.isEmpty()) {
                     throw new IllegalStateException("ROOT Member Must Exist");
                 }
                 Logger.info("SPOUSE Creation Events are for Creating Non-Native Members.");
@@ -83,7 +92,7 @@ class CreateEvent implements EventHelper {
                 memberRecord = this.buildMemberRecord(UUID.randomUUID(), id);
             }
             case DESCENDANT -> {
-                if (MemberPicker.isEmpty()) {
+                if (this.memberPicker.isEmpty()) {
                     throw new IllegalStateException("ROOT Member Must Exist");
                 }
                 Logger.info("DESCENDANT Creation Events are for Creating Native Members.");
@@ -100,7 +109,7 @@ class CreateEvent implements EventHelper {
 
         this.dynamoDbClient.transactWriteItems(this.buildCreateTransaction(memberRecord, id));
 
-        MemberPicker.addEntry(memberRecord);
+        this.memberPicker.addEntry(memberRecord);
     }
 
     private @NotNull

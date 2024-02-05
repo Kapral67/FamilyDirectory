@@ -20,7 +20,7 @@ import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
 import org.familydirectory.sdk.adminclient.utility.Logger;
-import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
+import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
@@ -132,17 +132,17 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
                                                               .build())
                                                  .build())
                                        .build();
-        try (final SesV2Client sesClient = SesV2Client.create()) {
-            sesClient.sendEmail(SendEmailRequest.builder()
-                                                .destination(Destination.builder()
-                                                                        .toAddresses(requireNonNull(addresses))
-                                                                        .build())
-                                                .content(EmailContent.builder()
-                                                                     .simple(message)
-                                                                     .build())
-                                                .fromEmailAddress("no-reply@%s".formatted(requireNonNull(getenv("ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME"))))
-                                                .build());
-        }
+        SdkClientProvider.getSdkClientProvider()
+                         .getSdkClient(SesV2Client.class)
+                         .sendEmail(SendEmailRequest.builder()
+                                                    .destination(Destination.builder()
+                                                                            .toAddresses(requireNonNull(addresses))
+                                                                            .build())
+                                                    .content(EmailContent.builder()
+                                                                         .simple(message)
+                                                                         .build())
+                                                    .fromEmailAddress("no-reply@%s".formatted(requireNonNull(getenv("ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME"))))
+                                                    .build());
     }
 
     @NotNull
@@ -349,8 +349,11 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
     @NotNull
     default
     MemberRecord getExistingMember (final @NotNull String message) {
-        return this.getExistingMember(message, MemberPicker.getEntries());
+        return this.getExistingMember(message, this.getPickerEntries());
     }
+
+    @NotNull
+    List<MemberRecord> getPickerEntries ();
 
     @NotNull
     default

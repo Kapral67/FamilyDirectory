@@ -1,8 +1,11 @@
 package org.familydirectory.sdk.adminclient.utility.pickers;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
@@ -10,9 +13,12 @@ import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
+import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
@@ -29,127 +35,123 @@ import static java.util.Optional.ofNullable;
 public final
 class CognitoUserPicker implements PickerModel {
     @NotNull
-    private final Map<MemberRecord, String> entries;
+    private final Map<MemberRecord, String> entriesMap;
+    @NotNull
+    private final List<MemberRecord> entriesList;
+    @NotNull
+    private final DynamoDbClient dynamoDbClient;
 
-    private
+    public
     CognitoUserPicker () {
         super();
-        this.entries = new HashMap<>();
-        try (final DynamoDbClient dbClient = DynamoDbClient.create()) {
-            Map<String, AttributeValue> lastEvaluatedKey = emptyMap();
-            do {
-                final ScanRequest.Builder scanRequestBuilder = ScanRequest.builder()
-                                                                          .tableName(DdbTable.COGNITO.name())
-                                                                          .consistentRead(true);
-                if (!lastEvaluatedKey.isEmpty()) {
-                    scanRequestBuilder.exclusiveStartKey(lastEvaluatedKey);
-                }
-                final ScanResponse scanResponse = dbClient.scan(scanRequestBuilder.build());
+        this.entriesMap = new HashMap<>();
+        this.entriesList = new ArrayList<>();
+        this.dynamoDbClient = SdkClientProvider.getSdkClientProvider()
+                                               .getSdkClient(DynamoDbClient.class);
+    }
 
-                for (final Map<String, AttributeValue> cognitoEntry : scanResponse.items()) {
-                    final String sub = requireNonNull(cognitoEntry.get(CognitoTableParameter.ID.jsonFieldName())
-                                                                  .s());
-                    final String memberId = requireNonNull(cognitoEntry.get(CognitoTableParameter.MEMBER.jsonFieldName())
-                                                                       .s());
-                    final Map<String, AttributeValue> ddbMember = dbClient.getItem(GetItemRequest.builder()
-                                                                                                 .tableName(DdbTable.MEMBER.name())
-                                                                                                 .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(memberId)))
-                                                                                                 .build())
-                                                                          .item();
-                    this.add_or_overwrite_entry(new MemberRecord(UUID.fromString(memberId), Member.convertDdbMap(ddbMember), UUID.fromString(
-                            ddbMember.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
-                                     .s())));
-                }
+    @NotNull
+    public
+    String getCognitoSub (final @NotNull MemberRecord memberRecord) throws NoSuchElementException {
+        return ofNullable(this.entriesMap.get(requireNonNull(memberRecord))).orElseThrow();
+    }
 
-                lastEvaluatedKey = scanResponse.lastEvaluatedKey();
-            } while (!lastEvaluatedKey.isEmpty());
+    @Override
+    public
+    void run () {
+        this.entriesMap.clear();
+        this.entriesList.clear();
+        Map<String, AttributeValue> lastEvaluatedKey = emptyMap();
+        do {
+            final ScanRequest.Builder scanRequestBuilder = ScanRequest.builder()
+                                                                      .tableName(DdbTable.COGNITO.name())
+                                                                      .consistentRead(true);
+            if (!lastEvaluatedKey.isEmpty()) {
+                scanRequestBuilder.exclusiveStartKey(lastEvaluatedKey);
+            }
+            final ScanResponse scanResponse = this.dynamoDbClient.scan(scanRequestBuilder.build());
+
+            for (final Map<String, AttributeValue> cognitoEntry : scanResponse.items()) {
+                final String sub = requireNonNull(cognitoEntry.get(CognitoTableParameter.ID.jsonFieldName())
+                                                              .s());
+                final String memberId = requireNonNull(cognitoEntry.get(CognitoTableParameter.MEMBER.jsonFieldName())
+                                                                   .s());
+                final Map<String, AttributeValue> ddbMember = this.dynamoDbClient.getItem(GetItemRequest.builder()
+                                                                                                        .tableName(DdbTable.MEMBER.name())
+                                                                                                        .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(memberId)))
+                                                                                                        .build())
+                                                                                 .item();
+                this.addEntry(new MemberRecord(UUID.fromString(memberId), Member.convertDdbMap(ddbMember), UUID.fromString(ddbMember.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
+                                                                                                                                    .s())));
+            }
+
+            lastEvaluatedKey = scanResponse.lastEvaluatedKey();
+        } while (!lastEvaluatedKey.isEmpty());
+        this.entriesList.sort(LAST_NAME_COMPARATOR);
+    }
+
+    @Override
+    public
+    boolean isEmpty () {
+        if (this.entriesList.size() != this.entriesMap.size()) {
+            throw new IllegalStateException("CognitoUserPicker Entries Have Incongruent Size");
+        }
+        return this.entriesList.isEmpty();
+    }
+
+    @Override
+    public
+    void removeEntry (final @NotNull MemberRecord memberRecord) {
+        if (nonNull(this.entriesMap.remove(memberRecord))) {
+            this.entriesList.remove(memberRecord);
         }
     }
 
-    private
-    void add_or_overwrite_entry (final @NotNull MemberRecord entry) {
-        this.entries.remove(entry);
-        final String sub = getCognitoSubFromMemberRecord(entry);
+    @Override
+    public
+    void addEntry (final @NotNull MemberRecord memberRecord) {
+        this.removeEntry(memberRecord);
+        final String sub = this.getCognitoSubFromMemberRecord(memberRecord);
         if (nonNull(sub)) {
-            this.entries.put(entry, sub);
+            this.entriesMap.put(memberRecord, sub);
+            this.entriesList.add(memberRecord);
         }
     }
 
     @Nullable
-    private static
+    private
     String getCognitoSubFromMemberRecord (final @NotNull MemberRecord memberRecord) {
-        try (final DynamoDbClient dbClient = DynamoDbClient.create()) {
-            final QueryRequest cognitoMemberQueryRequest = QueryRequest.builder()
-                                                                       .tableName(DdbTable.COGNITO.name())
-                                                                       .indexName(requireNonNull(CognitoTableParameter.MEMBER.gsiProps()).getIndexName())
-                                                                       .keyConditionExpression("#memberId = :memberId")
-                                                                       .expressionAttributeNames(singletonMap("#memberId", CognitoTableParameter.MEMBER.gsiProps()
-                                                                                                                                                       .getPartitionKey()
-                                                                                                                                                       .getName()))
-                                                                       .expressionAttributeValues(singletonMap(":memberId", AttributeValue.fromS(memberRecord.id()
-                                                                                                                                                             .toString())))
-                                                                       .limit(1)
-                                                                       .build();
-            final QueryResponse cognitoMemberQueryResponse = dbClient.query(cognitoMemberQueryRequest);
-            if (!cognitoMemberQueryResponse.items()
-                                           .isEmpty())
-            {
-                return ofNullable(cognitoMemberQueryResponse.items()
-                                                            .getFirst()
-                                                            .get(CognitoTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
-                                                                                                           .filter(Predicate.not(String::isBlank))
-                                                                                                           .orElseThrow();
-            } else {
-                return null;
-            }
+        final QueryRequest cognitoMemberQueryRequest = QueryRequest.builder()
+                                                                   .tableName(DdbTable.COGNITO.name())
+                                                                   .indexName(requireNonNull(CognitoTableParameter.MEMBER.gsiProps()).getIndexName())
+                                                                   .keyConditionExpression("#memberId = :memberId")
+                                                                   .expressionAttributeNames(singletonMap("#memberId", CognitoTableParameter.MEMBER.gsiProps()
+                                                                                                                                                   .getPartitionKey()
+                                                                                                                                                   .getName()))
+                                                                   .expressionAttributeValues(singletonMap(":memberId", AttributeValue.fromS(memberRecord.id()
+                                                                                                                                                         .toString())))
+                                                                   .limit(1)
+                                                                   .build();
+        final QueryResponse cognitoMemberQueryResponse = this.dynamoDbClient.query(cognitoMemberQueryRequest);
+        if (!cognitoMemberQueryResponse.items()
+                                       .isEmpty())
+        {
+            return ofNullable(cognitoMemberQueryResponse.items()
+                                                        .getFirst()
+                                                        .get(CognitoTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
+                                                                                                       .filter(Predicate.not(String::isBlank))
+                                                                                                       .orElseThrow();
+        } else {
+            return null;
         }
     }
 
-    public static
-    boolean isEmpty () {
-        return Singleton.getInstance().entries.isEmpty();
-    }
-
+    @Override
+    @Contract(pure = true)
     @NotNull
-    public static
+    @UnmodifiableView
+    public
     List<MemberRecord> getEntries () {
-        return Singleton.getInstance().entries.keySet()
-                                              .stream()
-                                              .sorted(LAST_NAME_COMPARATOR)
-                                              .toList();
-    }
-
-    @NotNull
-    public static
-    String getCognitoSub (final @NotNull MemberRecord memberRecord) {
-        return ofNullable(Singleton.getInstance().entries.get(requireNonNull(memberRecord))).orElseThrow();
-    }
-
-    public static
-    void removeEntry (final @NotNull MemberRecord entry) {
-        Singleton.getInstance()
-                 .remove_entry(entry);
-    }
-
-    private
-    void remove_entry (final @NotNull MemberRecord entry) {
-        this.entries.remove(entry);
-    }
-
-    public static
-    void addEntry (final @NotNull MemberRecord entry) {
-        Singleton.getInstance()
-                 .add_or_overwrite_entry(entry);
-    }
-
-    private
-    enum Singleton {
-        ;
-        private static final CognitoUserPicker INSTANCE = new CognitoUserPicker();
-
-        private static
-        CognitoUserPicker getInstance () {
-            return INSTANCE;
-        }
+        return Collections.unmodifiableList(this.entriesList);
     }
 }

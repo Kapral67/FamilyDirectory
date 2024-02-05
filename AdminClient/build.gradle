@@ -33,10 +33,11 @@ dependencies {
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:cloudformation'
     implementation 'io.leego:banana:2.1.0'
+    implementation 'com.googlecode.lanterna:lanterna:3.1.1'
 }
 
 application {
-    mainClass = 'org.familydirectory.sdk.adminclient.AdminClient'
+    mainClass = 'org.familydirectory.sdk.adminclient.Tutorial04'
 }
 
 run {

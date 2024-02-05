@@ -95,7 +95,7 @@ class AdminClient {
                     if (isNull(exec)) {
                         return;
                     }
-                    exec.execute();
+                    exec.run();
                 }
             }
         } catch (final Throwable e) {

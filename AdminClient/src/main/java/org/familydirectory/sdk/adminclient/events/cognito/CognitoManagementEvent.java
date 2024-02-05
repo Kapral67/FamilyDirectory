@@ -12,7 +12,6 @@ import org.familydirectory.sdk.adminclient.enums.cognito.CognitoManagementOption
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.pickers.CognitoUserPicker;
-import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUserPoolsRequest;
@@ -28,12 +27,14 @@ class CognitoManagementEvent implements EventHelper {
     private final @NotNull CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create();
     private final @NotNull Scanner scanner;
     private final @NotNull CognitoManagementOptions cognitoManagementOption;
+    private final @NotNull CognitoUserPicker cognitoUserPicker;
 
     public
-    CognitoManagementEvent (final @NotNull Scanner scanner, final @NotNull CognitoManagementOptions cognitoManagementOption) {
+    CognitoManagementEvent (final @NotNull Scanner scanner, final @NotNull CognitoManagementOptions cognitoManagementOption, final @NotNull CognitoUserPicker cognitoUserPicker) {
         super();
         this.scanner = requireNonNull(scanner);
         this.cognitoManagementOption = requireNonNull(cognitoManagementOption);
+        this.cognitoUserPicker = cognitoUserPicker;
     }
 
     @Override
@@ -52,25 +53,25 @@ class CognitoManagementEvent implements EventHelper {
 
     @Override
     public
-    void execute () {
+    void run () {
         switch (this.cognitoManagementOption) {
             case DELETE_COGNITO_USER -> {
-                if (CognitoUserPicker.isEmpty()) {
+                if (this.cognitoUserPicker.isEmpty()) {
                     throw new IllegalStateException("No Cognito Users Exist to Delete");
                 }
                 final MemberRecord memberRecord = this.getExistingMember("Please Select Existing Cognito User to Delete:");
-                this.deleteCognitoAccountAndNotify(this.cognitoClient, CognitoUserPicker.getCognitoSub(memberRecord));
-                MemberPicker.addEntry(memberRecord);
+                this.deleteCognitoAccountAndNotify(this.cognitoClient, this.cognitoUserPicker.getCognitoSub(memberRecord));
+                this.cognitoUserPicker.removeEntry(memberRecord);
             }
             case DEMOTE_COGNITO_USER -> {
-                if (CognitoUserPicker.isEmpty()) {
+                if (this.cognitoUserPicker.isEmpty()) {
                     throw new IllegalStateException("No Cognito Users Exist to Demote");
                 }
                 final MemberRecord memberRecord = this.getExistingMember("Please Select Existing Cognito User to Demote:");
                 this.demoteCognitoAccount(memberRecord);
             }
             case ELEVATE_COGNITO_USER -> {
-                if (CognitoUserPicker.isEmpty()) {
+                if (this.cognitoUserPicker.isEmpty()) {
                     throw new IllegalStateException("No Cognito Users Exist to Elevate");
                 }
                 final MemberRecord memberRecord = this.getExistingMember("Please Select Existing Cognito User to Elevate:");
@@ -82,7 +83,7 @@ class CognitoManagementEvent implements EventHelper {
 
     private
     void elevateCognitoAccount (final @NotNull MemberRecord memberRecord) {
-        final String cognitoSub = CognitoUserPicker.getCognitoSub(memberRecord);
+        final String cognitoSub = this.cognitoUserPicker.getCognitoSub(memberRecord);
         final boolean cognitoUserIsAdmin = ofNullable(requireNonNull(this.getDdbItem(cognitoSub, DdbTable.COGNITO)).get(CognitoTableParameter.IS_ADMIN.jsonFieldName())).map(AttributeValue::bool)
                                                                                                                                                                         .orElse(false);
         if (!cognitoUserIsAdmin) {
@@ -102,7 +103,7 @@ class CognitoManagementEvent implements EventHelper {
 
     private
     void demoteCognitoAccount (final @NotNull MemberRecord memberRecord) {
-        final String cognitoSub = CognitoUserPicker.getCognitoSub(memberRecord);
+        final String cognitoSub = this.cognitoUserPicker.getCognitoSub(memberRecord);
         final boolean cognitoUserIsAdmin = ofNullable(requireNonNull(this.getDdbItem(cognitoSub, DdbTable.COGNITO)).get(CognitoTableParameter.IS_ADMIN.jsonFieldName())).map(AttributeValue::bool)
                                                                                                                                                                         .orElse(false);
         if (cognitoUserIsAdmin) {
@@ -140,9 +141,8 @@ class CognitoManagementEvent implements EventHelper {
     }
 
     @Override
-    @NotNull
-    public
-    MemberRecord getExistingMember (final @NotNull String message) {
-        return this.getExistingMember(message, CognitoUserPicker.getEntries());
+    public @NotNull
+    List<MemberRecord> getPickerEntries () {
+        return this.cognitoUserPicker.getEntries();
     }
 }

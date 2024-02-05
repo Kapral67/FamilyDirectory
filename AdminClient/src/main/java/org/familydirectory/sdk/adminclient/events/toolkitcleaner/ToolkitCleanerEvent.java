@@ -2,22 +2,28 @@ package org.familydirectory.sdk.adminclient.events.toolkitcleaner;
 
 import io.leego.banana.Ansi;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.enums.ByteDivisor;
-import org.familydirectory.sdk.adminclient.events.model.EventHelper;
+import org.familydirectory.sdk.adminclient.events.model.Executable;
 import org.familydirectory.sdk.adminclient.records.ToolkitCleanerResponse;
 import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest;
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksResponse;
 import software.amazon.awssdk.services.cloudformation.model.GetTemplateRequest;
 import software.amazon.awssdk.services.cloudformation.model.Stack;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -29,7 +35,7 @@ import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 public final
-class ToolkitCleanerEvent implements EventHelper {
+class ToolkitCleanerEvent implements Executable {
     private static final int HASH_LENGTH = 64;
     private static final Pattern CFN_TEMPLATE_HASHES_PATTERN = Pattern.compile("[a-f0-9]{%d}".formatted(HASH_LENGTH));
     private static final String ASSET_BUCKET_PREFIX = "cdk";
@@ -57,20 +63,28 @@ class ToolkitCleanerEvent implements EventHelper {
     @Deprecated
     @NotNull
     public
-    DynamoDbClient getDynamoDbClient () {
+    MemberRecord getExistingMember (final @NotNull String message) {
+        throw new UnsupportedOperationException("Existing Members Unavailable; Picket Not Implemented");
+    }
+
+    @Override
+    @Deprecated
+    @NotNull
+    public
+    List<MemberRecord> getPickerEntries () {
+        throw new UnsupportedOperationException("Picker Not Implemented");
+    }
+
+    @Override
+    @Deprecated
+    public
+    void validateMemberEmailIsUnique (final @Nullable String memberEmail) {
         throw new UnsupportedOperationException("DynamoDbClient Not Implemented");
     }
 
     @Override
     public
-    void close () {
-        this.s3Client.close();
-        this.cfnClient.close();
-    }
-
-    @Override
-    public
-    void execute () {
+    void run () {
         Logger.customLine("Clean CDK S3 Assets? (Y/n)", Ansi.BOLD, Ansi.BLUE);
         final String choice = this.scanner.nextLine()
                                           .trim();
@@ -99,7 +113,7 @@ class ToolkitCleanerEvent implements EventHelper {
     }
 
     @NotNull
-    public
+    private
     Set<String> getStackNames () {
         final Set<String> stacks = new HashSet<>();
         String nextToken = null;
@@ -122,7 +136,7 @@ class ToolkitCleanerEvent implements EventHelper {
     }
 
     @NotNull
-    public
+    private
     Set<String> extractTemplateHashes (final @NotNull Set<String> stackNames) {
         final Set<String> hashes = new HashSet<>();
         stackNames.forEach(stackName -> {
@@ -139,7 +153,7 @@ class ToolkitCleanerEvent implements EventHelper {
     }
 
     @NotNull
-    public
+    private
     ToolkitCleanerResponse cleanObjects (final @NotNull Set<String> assetHashes) {
         final Set<String> buckets = this.s3Client.listBuckets()
                                                  .buckets()
@@ -194,5 +208,28 @@ class ToolkitCleanerEvent implements EventHelper {
             } while (nonNull(keyMarker) || nonNull(versionIdMarker));
         });
         return new ToolkitCleanerResponse(this.deletedItems[0], this.reclaimedBytes[0]);
+    }
+
+    @Override
+    @Deprecated
+    @Nullable
+    public
+    Map<String, AttributeValue> getDdbItem (final @NotNull String primaryKey, final @NotNull DdbTable ddbTable) {
+        throw new UnsupportedOperationException("DynamoDbClient Not Implemented");
+    }
+
+    @Override
+    @Deprecated
+    @NotNull
+    public
+    DynamoDbClient getDynamoDbClient () {
+        throw new UnsupportedOperationException("DynamoDbClient Not Implemented");
+    }
+
+    @Override
+    public
+    void close () {
+        this.s3Client.close();
+        this.cfnClient.close();
     }
 }
