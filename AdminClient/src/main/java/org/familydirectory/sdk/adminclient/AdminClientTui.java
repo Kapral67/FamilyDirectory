@@ -3,7 +3,8 @@ package org.familydirectory.sdk.adminclient;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
-import com.googlecode.lanterna.gui2.dialogs.ActionListDialogBuilder;
+import com.googlecode.lanterna.gui2.dialogs.ListSelectDialog;
+import com.googlecode.lanterna.gui2.dialogs.ListSelectDialogBuilder;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import java.io.IOException;
@@ -14,6 +15,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import org.familydirectory.sdk.adminclient.enums.Commands;
+import org.familydirectory.sdk.adminclient.enums.cognito.CognitoManagementOptions;
+import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.familydirectory.sdk.adminclient.events.cognito.CognitoManagementEvent;
 import org.familydirectory.sdk.adminclient.events.create.CreateEvent;
 import org.familydirectory.sdk.adminclient.events.delete.DeleteEvent;
@@ -27,10 +30,14 @@ import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
 import org.jetbrains.annotations.NotNull;
 import static java.lang.System.getenv;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 public final
 class AdminClientTui {
+    @NotNull
+    public static final Set<Window.Hint> EXTRA_WINDOW_HINTS = Set.of(Window.Hint.CENTERED, Window.Hint.MODAL);
     @NotNull
     private static final String AWS_REGION = requireNonNull(getenv("AWS_REGION"));
     @NotNull
@@ -52,23 +59,49 @@ class AdminClientTui {
             try (final Screen screen = terminalFactory.createScreen()) {
                 screen.startScreen();
                 // TODO: Investigate WindowManager & Component (background) for alternate MultiWindowTextGui ctor
-                final WindowBasedTextGUI windowBasedTextGUI = new MultiWindowTextGUI(screen);
+                final WindowBasedTextGUI gui = new MultiWindowTextGUI(screen);
 
                 while (true) {
-                    final ActionListDialogBuilder commandListDialogBuilder = new ActionListDialogBuilder().setTitle("AdminClient")
-                                                                                                          .setDescription("Choose a Command")
-                                                                                                          .setCanCancel(false)
-                                                                                                          .setExtraWindowHints(Set.of(Window.Hint.CENTERED, Window.Hint.MODAL));
-                    for (final Commands cmd : Commands.values()) {
-                        switch (cmd) {
-                            case CREATE -> commandListDialogBuilder.addAction(cmd.name(), new CreateEvent());
-                            case UPDATE -> commandListDialogBuilder.addAction(cmd.name(), new UpdateEvent());
-                            case DELETE -> commandListDialogBuilder.addAction(cmd.name(), new DeleteEvent());
-                            case TOGGLE_PDF_GENERATOR -> commandListDialogBuilder.addAction(cmd.name(), new TogglePdfGeneratorEvent());
-                            case COGNITO_MANAGEMENT -> commandListDialogBuilder.addAction(cmd.name(), new CognitoManagementEvent());
-                            case TOOLKIT_CLEANER -> commandListDialogBuilder.addAction(cmd.name(), new ToolkitCleanerEvent());
-                            case EXIT -> commandListDialogBuilder.addAction(cmd.name(), () -> { /* EXIT */ });
+                    final ListSelectDialog<Commands> cmdListDialog = new ListSelectDialogBuilder<Commands>().setTitle("AdminClient")
+                                                                                                            .setDescription("Choose a Command")
+                                                                                                            .setCanCancel(false)
+                                                                                                            .setExtraWindowHints(EXTRA_WINDOW_HINTS)
+                                                                                                            .addListItems(Commands.values())
+                                                                                                            .build();
+                    final Commands cmd = cmdListDialog.showDialog(gui);
+                    final Enum<?>[] options = cmd.options();
+                    Enum<?> option = null;
+                    if (nonNull(options)) {
+                        final ListSelectDialog<Enum<?>> optionsListDialog = new ListSelectDialogBuilder<Enum<?>>().setTitle(cmd.name())
+                                                                                                                  .setDescription("Choose an Option")
+                                                                                                                  .setCanCancel(false)
+                                                                                                                  .setExtraWindowHints(EXTRA_WINDOW_HINTS)
+                                                                                                                  .addListItems(options)
+                                                                                                                  .build();
+                        option = optionsListDialog.showDialog(gui);
+                    }
+
+                    try (final Runnable runner = switch (cmd) {
+                        case CREATE -> {
+                            if (isNull(option)) {
+                                throw new IllegalStateException(); // control should not reach this
+                            }
+                            memberThreadPicker.thread()
+                                              .join();
+                            yield new CreateEvent(gui, (CreateOptions) option, memberThreadPicker.picker());
                         }
+                        case UPDATE -> new UpdateEvent(scanner);
+                        case DELETE -> new DeleteEvent(scanner);
+                        case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(scanner);
+                        case COGNITO_MANAGEMENT -> new CognitoManagementEvent(scanner, CognitoManagementOptions.values()[ordinal]);
+                        case TOOLKIT_CLEANER -> new ToolkitCleanerEvent(scanner);
+                        case EXIT -> null;
+                    })
+                    {
+                        if (isNull(runner)) {
+                            return;
+                        }
+                        runner.run();
                     }
                 }
 
@@ -99,6 +132,6 @@ class AdminClientTui {
     }
 
     private
-    record ThreadPicker<P extends PickerModel>(@NotNull Thread pickerThread, @NotNull P picker) {
+    record ThreadPicker<P extends PickerModel>(@NotNull Thread thread, @NotNull P picker) {
     }
 }

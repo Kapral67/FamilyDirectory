@@ -1,13 +1,14 @@
 package org.familydirectory.sdk.adminclient.events.model;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.ListSelectDialog;
+import com.googlecode.lanterna.gui2.dialogs.ListSelectDialogBuilder;
 import io.leego.banana.Ansi;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Scanner;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
@@ -16,13 +17,16 @@ import org.familydirectory.assets.ddb.enums.SuffixType;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
+import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
-import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
+import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
@@ -30,8 +34,11 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUserPoo
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.sesv2.SesV2Client;
@@ -49,7 +56,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 public
-interface EventHelper extends LambdaFunctionHelper, Executable {
+interface EventHelper extends Runnable {
     long MILLIS_IN_SEC = 1000L;
     String ROOT_ID = DdbUtils.ROOT_MEMBER_ID;
 
@@ -89,23 +96,25 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
         return member;
     }
 
-    default
-    void deleteCognitoAccountAndNotify (final @NotNull CognitoIdentityProviderClient cognitoClient, final @NotNull String sub) {
-        this.getDynamoDbClient()
-            .deleteItem(DeleteItemRequest.builder()
-                                         .tableName(DdbTable.COGNITO.name())
-                                         .key(singletonMap(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(requireNonNull(sub))))
-                                         .build());
-        final String userPoolId = getUserPoolId(requireNonNull(cognitoClient));
-        final UserType cognitoUser = getCognitoUserType(cognitoClient, userPoolId, sub);
+    static
+    void deleteCognitoAccountAndNotify (final @NotNull String sub) {
+        final SdkClientProvider sdkClientProvider = SdkClientProvider.getSdkClientProvider();
+        sdkClientProvider.getSdkClient(DynamoDbClient.class)
+                         .deleteItem(DeleteItemRequest.builder()
+                                                      .tableName(DdbTable.COGNITO.name())
+                                                      .key(singletonMap(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(requireNonNull(sub))))
+                                                      .build());
+        final String userPoolId = getUserPoolId();
+        final UserType cognitoUser = getCognitoUserType(userPoolId, sub);
         final String cognitoUserName = Optional.of(cognitoUser)
                                                .map(UserType::username)
                                                .filter(Predicate.not(String::isBlank))
                                                .orElseThrow();
-        cognitoClient.adminDeleteUser(AdminDeleteUserRequest.builder()
-                                                            .userPoolId(userPoolId)
-                                                            .username(cognitoUserName)
-                                                            .build());
+        sdkClientProvider.getSdkClient(CognitoIdentityProviderClient.class)
+                         .adminDeleteUser(AdminDeleteUserRequest.builder()
+                                                                .userPoolId(userPoolId)
+                                                                .username(cognitoUserName)
+                                                                .build());
         final String cognitoEmail = Optional.of(cognitoUser)
                                             .map(UserType::attributes)
                                             .filter(Predicate.not(List::isEmpty))
@@ -147,43 +156,71 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
 
     @NotNull
     static
-    UserType getCognitoUserType (final @NotNull CognitoIdentityProviderClient cognitoClient, final @NotNull String userPoolId, final @NotNull String sub) {
+    UserType getCognitoUserType (final @NotNull String userPoolId, final @NotNull String sub) {
         final ListUsersRequest listUsersRequest = ListUsersRequest.builder()
                                                                   .filter("sub = \"%s\"".formatted(requireNonNull(sub)))
                                                                   .limit(1)
                                                                   .userPoolId(requireNonNull(userPoolId))
                                                                   .build();
-        return ofNullable(requireNonNull(cognitoClient).listUsers(listUsersRequest)).map(ListUsersResponse::users)
-                                                                                    .filter(Predicate.not(List::isEmpty))
-                                                                                    .map(List::getFirst)
-                                                                                    .orElseThrow();
+        return ofNullable(SdkClientProvider.getSdkClientProvider()
+                                           .getSdkClient(CognitoIdentityProviderClient.class)
+                                           .listUsers(listUsersRequest)).map(ListUsersResponse::users)
+                                                                        .filter(Predicate.not(List::isEmpty))
+                                                                        .map(List::getFirst)
+                                                                        .orElseThrow();
     }
 
     @NotNull
     static
-    String getUserPoolId (final @NotNull CognitoIdentityProviderClient cognitoClient) {
-        return ofNullable(requireNonNull(cognitoClient).listUserPools(ListUserPoolsRequest.builder()
-                                                                                          .maxResults(1)
-                                                                                          .build())
-                                                       .userPools()).filter(Predicate.not(List::isEmpty))
-                                                                    .map(l -> l.getFirst()
-                                                                               .id())
-                                                                    .orElseThrow();
+    String getUserPoolId () {
+        return ofNullable(SdkClientProvider.getSdkClientProvider()
+                                           .getSdkClient(CognitoIdentityProviderClient.class)
+                                           .listUserPools(ListUserPoolsRequest.builder()
+                                                                              .maxResults(1)
+                                                                              .build())
+                                           .userPools()).filter(Predicate.not(List::isEmpty))
+                                                        .map(l -> l.getFirst()
+                                                                   .id())
+                                                        .orElseThrow();
     }
 
-    @Override
-    @NotNull
-    default
-    LambdaLogger getLogger () {
-        return new Logger();
+    static
+    void validateMemberEmailIsUnique (final @Nullable String memberEmail) {
+        if (nonNull(memberEmail) && !memberEmail.isBlank()) {
+            final QueryRequest emailRequest = QueryRequest.builder()
+                                                          .tableName(DdbTable.MEMBER.name())
+                                                          .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())
+                                                          .keyConditionExpression("%s = :email".formatted(MemberTableParameter.EMAIL.gsiProps()
+                                                                                                                                    .getPartitionKey()
+                                                                                                                                    .getName()))
+                                                          .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(memberEmail)))
+                                                          .limit(1)
+                                                          .build();
+            final QueryResponse emailResponse = SdkClientProvider.getSdkClientProvider()
+                                                                 .getSdkClient(DynamoDbClient.class)
+                                                                 .query(emailRequest);
+            if (!emailResponse.items()
+                              .isEmpty())
+            {
+                throw new IllegalStateException("EMAIL %s already claimed by Existing Member".formatted(memberEmail));
+            }
+        }
     }
 
-    @Override
-    @NotNull
-    @Deprecated
-    default
-    String getPdfS3Key (final @NotNull String rootMemberSurname) {
-        throw new UnsupportedOperationException("Admin Client Does Not Implement GET Requests");
+    @Nullable
+    static
+    Map<String, AttributeValue> getDdbItem (final @NotNull String primaryKey, final @NotNull DdbTable ddbTable) {
+        final GetItemRequest request = GetItemRequest.builder()
+                                                     .tableName(ddbTable.name())
+                                                     .key(singletonMap(DdbTableParameter.PK.getName(), AttributeValue.fromS(primaryKey)))
+                                                     .build();
+        final GetItemResponse response = SdkClientProvider.getSdkClientProvider()
+                                                          .getSdkClient(DynamoDbClient.class)
+                                                          .getItem(request);
+        return (response.item()
+                        .isEmpty())
+                ? null
+                : response.item();
     }
 
     @NotNull
@@ -344,63 +381,27 @@ interface EventHelper extends LambdaFunctionHelper, Executable {
     }
 
     @NotNull
-    Scanner scanner ();
-
-    @NotNull
     default
-    MemberRecord getExistingMember (final @NotNull String message) {
-        return this.getExistingMember(message, this.getPickerEntries());
+    MemberRecord getExistingMember (final @NotNull String title, final @NotNull String description) {
+        return this.getExistingMember(title, description, this.getPickerEntries());
     }
 
-    @NotNull
+    @Contract(pure = true)
+    @NotNull @UnmodifiableView
     List<MemberRecord> getPickerEntries ();
 
     @NotNull
     default
-    MemberRecord getExistingMember (final @NotNull String message, final @NotNull List<MemberRecord> memberRecordList) {
-        int index = -1;
-        while (index < 0 || index >= memberRecordList.size()) {
-            Logger.customLine(requireNonNull(message), Ansi.BOLD, Ansi.BLUE);
-            for (int i = 0; i < memberRecordList.size(); ++i) {
-                Logger.customLine("%d) %s".formatted(i, memberRecordList.get(i)
-                                                                        .member()
-                                                                        .getFullName()));
-            }
-            final String token = this.scanner()
-                                     .nextLine()
-                                     .trim();
-            try {
-                index = Integer.parseInt(token);
-            } catch (final NumberFormatException ignored) {
-                index = -1;
-            }
-            if (index < 0 || index >= memberRecordList.size()) {
-                Logger.error("Invalid Member");
-            }
-            System.out.println();
-        }
-        return memberRecordList.get(index);
+    MemberRecord getExistingMember (final @NotNull String title, final @NotNull String description, final @NotNull List<MemberRecord> memberRecordList) {
+        final ListSelectDialog<MemberRecord> memberRecordListDialog = new ListSelectDialogBuilder<MemberRecord>().setTitle(title)
+                                                                                                                 .setDescription(description)
+                                                                                                                 .setCanCancel(false)
+                                                                                                                 .setExtraWindowHints(AdminClientTui.EXTRA_WINDOW_HINTS)
+                                                                                                                 .addListItems(memberRecordList.toArray(MemberRecord[]::new))
+                                                                                                                 .build();
+        return memberRecordListDialog.showDialog(this.getGui());
     }
 
-    default
-    void validateMemberEmailIsUnique (final @Nullable String memberEmail) {
-        if (nonNull(memberEmail) && !memberEmail.isBlank()) {
-            final QueryRequest emailRequest = QueryRequest.builder()
-                                                          .tableName(DdbTable.MEMBER.name())
-                                                          .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())
-                                                          .keyConditionExpression("%s = :email".formatted(MemberTableParameter.EMAIL.gsiProps()
-                                                                                                                                    .getPartitionKey()
-                                                                                                                                    .getName()))
-                                                          .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(memberEmail)))
-                                                          .limit(1)
-                                                          .build();
-            final QueryResponse emailResponse = this.getDynamoDbClient()
-                                                    .query(emailRequest);
-            if (!emailResponse.items()
-                              .isEmpty())
-            {
-                throw new IllegalStateException("EMAIL %s already claimed by Existing Member".formatted(memberEmail));
-            }
-        }
-    }
+    @NotNull
+    WindowBasedTextGUI getGui ();
 }

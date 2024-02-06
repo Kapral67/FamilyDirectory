@@ -1,9 +1,9 @@
 package org.familydirectory.sdk.adminclient.events.create;
 
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
@@ -12,9 +12,12 @@ import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.utility.Logger;
+import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.Put;
@@ -29,36 +32,32 @@ import static java.util.Optional.ofNullable;
 
 public final
 class CreateEvent implements EventHelper {
-    private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
+    private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull CreateOptions createOption;
-    private final @NotNull Scanner scanner;
     private final @NotNull MemberPicker memberPicker;
 
     public
-    CreateEvent (final @NotNull Scanner scanner, final @NotNull CreateOptions createOption, final @NotNull MemberPicker memberPicker) {
+    CreateEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull CreateOptions createOption, final @NotNull MemberPicker memberPicker) {
         super();
-        this.scanner = requireNonNull(scanner);
+        this.gui = requireNonNull(gui);
         this.createOption = requireNonNull(createOption);
         this.memberPicker = requireNonNull(memberPicker);
     }
 
     @Override
-    public @NotNull
-    DynamoDbClient getDynamoDbClient () {
-        return this.dynamoDbClient;
-    }
-
-    @Override
-    public @NotNull
-    Scanner scanner () {
-        return this.scanner;
+    @Contract(pure = true)
+    @NotNull
+    @UnmodifiableView
+    public
+    List<MemberRecord> getPickerEntries () {
+        return this.memberPicker.getEntries();
     }
 
     @Override
     @NotNull
     public
-    List<MemberRecord> getPickerEntries () {
-        return this.memberPicker.getEntries();
+    WindowBasedTextGUI getGui () {
+        return this.gui;
     }
 
     @Override
@@ -68,7 +67,7 @@ class CreateEvent implements EventHelper {
         final MemberRecord memberRecord;
         switch (this.createOption) {
             case ROOT -> {
-                if (nonNull(this.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
+                if (nonNull(EventHelper.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
                     throw new IllegalStateException("ROOT Member Already Exists");
                 }
                 Logger.info("ROOT Creation Event is for Creating the Oldest Native Member in the Family Directory.");
@@ -82,7 +81,7 @@ class CreateEvent implements EventHelper {
                 Logger.info("SPOUSE Creation Events are for Creating Non-Native Members.");
                 final MemberRecord nativeSpouse = this.getExistingMember("To Create a SPOUSE for an Existing Member, Please Select the Existing Member:");
                 id = nativeSpouse.familyId();
-                final Map<String, AttributeValue> family = requireNonNull(this.getDdbItem(id.toString(), DdbTable.FAMILY));
+                final Map<String, AttributeValue> family = requireNonNull(EventHelper.getDdbItem(id.toString(), DdbTable.FAMILY));
                 if (ofNullable(family.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
                                                                                        .filter(Predicate.not(String::isBlank))
                                                                                        .isPresent())
@@ -104,10 +103,12 @@ class CreateEvent implements EventHelper {
             default -> throw new IllegalStateException("Unhandled CreateOption: %s".formatted(this.createOption.name()));
         }
 
-        this.validateMemberEmailIsUnique(memberRecord.member()
-                                                     .getEmail());
+        EventHelper.validateMemberEmailIsUnique(memberRecord.member()
+                                                            .getEmail());
 
-        this.dynamoDbClient.transactWriteItems(this.buildCreateTransaction(memberRecord, id));
+        SdkClientProvider.getSdkClientProvider()
+                         .getSdkClient(DynamoDbClient.class)
+                         .transactWriteItems(this.buildCreateTransaction(memberRecord, id));
 
         this.memberPicker.addEntry(memberRecord);
     }
