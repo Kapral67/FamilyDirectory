@@ -82,14 +82,7 @@ class AdminClientTui {
                     }
 
                     try (final Runnable runner = switch (cmd) {
-                        case CREATE -> {
-                            if (isNull(option)) {
-                                throw new IllegalStateException(); // control should not reach this
-                            }
-                            memberThreadPicker.thread()
-                                              .join();
-                            yield new CreateEvent(gui, (CreateOptions) option, memberThreadPicker.picker());
-                        }
+                        case CREATE -> new CreateEvent(gui, (CreateOptions) requireNonNull(option), memberThreadPicker.picker(), memberThreadPicker.thread());
                         case UPDATE -> new UpdateEvent(scanner);
                         case DELETE -> new DeleteEvent(scanner);
                         case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(scanner);

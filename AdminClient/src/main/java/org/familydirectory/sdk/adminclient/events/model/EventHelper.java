@@ -7,6 +7,7 @@ import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.gui2.dialogs.TextInputDialogResultValidator;
+import com.googlecode.lanterna.gui2.dialogs.WaitingDialog;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.PhoneType;
@@ -412,12 +416,39 @@ interface EventHelper extends Runnable {
     @NotNull
     default
     MemberRecord getExistingMember (final @NotNull String title, final @NotNull String description, final @NotNull List<MemberRecord> memberRecordList) {
+        final WindowBasedTextGUI gui = this.getGui();
+        final Thread pickerThread = this.getPickerThread();
+        if (pickerThread.isAlive()) {
+            final WaitingDialog waitingDialog = WaitingDialog.createDialog("Fetching Members from AWS", "Please Wait");
+            waitingDialog.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
+            try (final ScheduledExecutorService waitingDialogScheduledCloseService = Executors.newSingleThreadScheduledExecutor()) {
+                waitingDialogScheduledCloseService.scheduleAtFixedRate(() -> {
+                    if (nonNull(waitingDialog.getTextGUI())) {
+                        waitingDialogScheduledCloseService.shutdownNow();
+                        try {
+                            pickerThread.join();
+                            waitingDialog.close();
+                        } catch (final InterruptedException e) {
+                            Thread.currentThread()
+                                  .interrupt();
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }, 0, 1, TimeUnit.MILLISECONDS);
+            }
+            waitingDialog.showDialog(gui, true);
+        }
         final ListSelectDialog<MemberRecord> memberRecordListDialog = new ListSelectDialogBuilder<MemberRecord>().setTitle(title)
                                                                                                                  .setDescription(description)
                                                                                                                  .setCanCancel(false)
                                                                                                                  .setExtraWindowHints(AdminClientTui.EXTRA_WINDOW_HINTS)
                                                                                                                  .addListItems(memberRecordList.toArray(MemberRecord[]::new))
                                                                                                                  .build();
-        return memberRecordListDialog.showDialog(this.getGui());
+        return memberRecordListDialog.showDialog(gui);
     }
+
+    @NotNull
+    Thread getPickerThread ();
+
+    void newPickerThread ();
 }

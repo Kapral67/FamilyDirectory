@@ -35,13 +35,22 @@ class CreateEvent implements EventHelper {
     private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull CreateOptions createOption;
     private final @NotNull MemberPicker memberPicker;
+    private volatile @NotNull Thread pickerThread;
 
     public
-    CreateEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull CreateOptions createOption, final @NotNull MemberPicker memberPicker) {
+    CreateEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull CreateOptions createOption, final @NotNull MemberPicker memberPicker, final @NotNull Thread pickerThread) {
         super();
         this.gui = requireNonNull(gui);
         this.createOption = requireNonNull(createOption);
         this.memberPicker = requireNonNull(memberPicker);
+        this.pickerThread = requireNonNull(pickerThread);
+    }
+
+    @Override
+    @NotNull
+    public
+    WindowBasedTextGUI getGui () {
+        return this.gui;
     }
 
     @Override
@@ -56,8 +65,17 @@ class CreateEvent implements EventHelper {
     @Override
     @NotNull
     public
-    WindowBasedTextGUI getGui () {
-        return this.gui;
+    Thread getPickerThread () {
+        return this.pickerThread;
+    }
+
+    @Override
+    public
+    void newPickerThread () {
+        if (!this.pickerThread.isAlive()) {
+            this.pickerThread = new Thread(this.memberPicker);
+            this.pickerThread.start();
+        }
     }
 
     @Override
