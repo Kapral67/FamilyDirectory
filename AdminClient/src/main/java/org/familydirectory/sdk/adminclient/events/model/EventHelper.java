@@ -3,7 +3,11 @@ package org.familydirectory.sdk.adminclient.events.model;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.ListSelectDialog;
 import com.googlecode.lanterna.gui2.dialogs.ListSelectDialogBuilder;
-import io.leego.banana.Ansi;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
+import com.googlecode.lanterna.gui2.dialogs.TextInputDialogResultValidator;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,8 +25,9 @@ import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
-import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
+import org.familydirectory.sdk.adminclient.utility.dialogs.SkippableListSelectDialog;
+import org.familydirectory.sdk.adminclient.utility.dialogs.SkippableTextInputDialog;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -51,6 +56,7 @@ import software.amazon.awssdk.services.sesv2.model.SendEmailRequest;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
@@ -226,148 +232,158 @@ interface EventHelper extends Runnable {
     @NotNull
     default
     MemberRecord buildMemberRecord (final @NotNull UUID memberId, final @NotNull UUID familyId) {
+        final WindowBasedTextGUI gui = this.getGui();
         final Member.Builder memberBuilder = Member.builder();
-        Logger.info("Please Standby to Build This Member...");
-        Logger.info("[Required] attributes will error if skipped");
-        Logger.info("[Optional] attributes can be skipped by pressing Enter");
-        System.out.println();
         boolean breakLoop = false;
+        LocalDate birthday = null;
         for (final MemberTableParameter param : MemberTableParameter.values()) {
             if (breakLoop) {
                 break;
             }
+            final LocalDate finalBirthday = birthday;
             switch (param) {
                 case FIRST_NAME -> {
-                    Logger.warn("%s may contain A-Z a-z - _ or '".formatted(param.jsonFieldName()));
-                    Logger.info("_ & - characters result in the immediate succeeding character being capitalized");
-                    Logger.info("_ characters are removed, useful for names like McDonald (input: mc_donald)");
-                    Logger.customLine("[Required] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
-                    memberBuilder.firstName(this.scanner()
-                                                .nextLine());
-                    System.out.println();
+                    final String desc = "Must match pattern: ^A-Za-z\\-_'$%nMust NOT match pattern: ^['_-]+[A-Za-z\\-'_]*$%n_ & - chars result in the immediate succeeding char being " +
+                                        "capitalized%n_ chars are removed, useful for names like McDonald (input: mc_donald)%n%n[Required] Please Enter %s:".formatted(param.jsonFieldName());
+                    final TextInputDialogResultValidator validator = (content) -> {
+                        try {
+                            Member.builder()
+                                  .firstName(content);
+                            return null;
+                        } catch (final RuntimeException e) {
+                            return e.getMessage();
+                        }
+                    };
+                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, false, validator);
+                    memberBuilder.firstName(requireNonNull(dialog.showDialog(gui)));
                 }
                 case MIDDLE_NAME -> {
-                    Logger.warn("%s may contain A-Z a-z - _ or '".formatted(param.jsonFieldName()));
-                    Logger.info("_ & - characters result in the immediate succeeding character being capitalized");
-                    Logger.info("_ characters are removed, useful for names like McDonald (input: mc_donald)");
-                    Logger.customLine("[Optional] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
-                    final String middleName = this.scanner()
-                                                  .nextLine()
-                                                  .trim();
-                    if (!middleName.isEmpty()) {
-                        memberBuilder.middleName(middleName);
-                        System.out.println();
-                    }
+                    final String desc = "Must match pattern: ^A-Za-z\\-_'$%nMust NOT match pattern: ^['_-]+[A-Za-z\\-'_]*$%n_ & - chars result in the immediate succeeding char being " +
+                                        "capitalized%n_ chars are removed, useful for names like McDonald (input: mc_donald)%n%n[Optional] Please Enter %s:".formatted(param.jsonFieldName());
+                    final TextInputDialogResultValidator validator = (content) -> {
+                        try {
+                            Member.builder()
+                                  .middleName(content);
+                            return null;
+                        } catch (final RuntimeException e) {
+                            return e.getMessage();
+                        }
+                    };
+                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, true, validator);
+                    memberBuilder.middleName(dialog.showDialog(gui));
                 }
                 case LAST_NAME -> {
-                    Logger.warn("%s may contain A-Z a-z - _ or '".formatted(param.jsonFieldName()));
-                    Logger.info("_ & - characters result in the immediate succeeding character being capitalized");
-                    Logger.info("_ characters are removed, useful for names like McDonald (input: mc_donald)");
-                    Logger.customLine("[Required] Please Enter %s:%n".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
-                    memberBuilder.lastName(this.scanner()
-                                               .nextLine());
-                    System.out.println();
+                    final String desc = "Must match pattern: ^A-Za-z\\-_'$%nMust NOT match pattern: ^['_-]+[A-Za-z\\-'_]*$%n_ & - chars result in the immediate succeeding char being " +
+                                        "capitalized%n_ chars are removed, useful for names like McDonald (input: mc_donald)%n%n[Required] Please Enter %s:".formatted(param.jsonFieldName());
+                    final TextInputDialogResultValidator validator = (content) -> {
+                        try {
+                            Member.builder()
+                                  .lastName(content);
+                            return null;
+                        } catch (final RuntimeException e) {
+                            return e.getMessage();
+                        }
+                    };
+                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, false, validator);
+                    memberBuilder.lastName(requireNonNull(dialog.showDialog(gui)));
                 }
                 case SUFFIX -> {
-                    int ordinal = -1;
-                    while (ordinal < 0 || ordinal >= SuffixType.values().length) {
-                        Logger.customLine("[Optional] Please Choose A Suffix:", Ansi.BOLD, Ansi.BLUE);
-                        for (final SuffixType sfx : SuffixType.values()) {
-                            Logger.customLine("%d) %s".formatted(sfx.ordinal(), sfx.name()));
-                        }
-                        final String token = this.scanner()
-                                                 .nextLine()
-                                                 .trim();
-                        try {
-                            ordinal = Integer.parseInt(token);
-                        } catch (final NumberFormatException ignored) {
-                            if (!token.isEmpty()) {
-                                ordinal = -1;
-                            } else {
-                                break;
-                            }
-                        }
-                        if (ordinal < 0 || ordinal >= SuffixType.values().length) {
-                            Logger.error("Invalid Suffix");
-                            System.out.println();
-                        } else {
-                            memberBuilder.suffix(SuffixType.values()[ordinal]);
-                            System.out.println();
-                            break;
-                        }
-                    }
+                    final SkippableListSelectDialog<SuffixType> dialog = new SkippableListSelectDialog<>(param.jsonFieldName(), null, true, List.of(SuffixType.values()));
+                    memberBuilder.suffix(dialog.showDialog(gui));
                 }
                 case BIRTHDAY -> {
-                    Logger.warn("%s must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)".formatted(param.jsonFieldName()));
-                    Logger.customLine("[Required] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
-                    memberBuilder.birthday(Member.convertStringToDate(this.scanner()
-                                                                          .nextLine()
-                                                                          .trim()));
-                    System.out.println();
+                    final String desc = "Must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)%n%n[Required] Please Enter %s:".formatted(param.jsonFieldName());
+                    final TextInputDialogResultValidator validator = (content) -> {
+                        try {
+                            Member.builder()
+                                  .birthday(Member.convertStringToDate(content));
+                            return null;
+                        } catch (final RuntimeException e) {
+                            return e.getMessage();
+                        }
+                    };
+                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, false, validator);
+                    birthday = Member.convertStringToDate(requireNonNull(dialog.showDialog(gui)));
+                    memberBuilder.birthday(birthday);
                 }
                 case DEATHDAY -> {
-                    Logger.warn("%s must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)".formatted(param.jsonFieldName()));
-                    Logger.customLine("[Optional] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
-                    final String deathDay = this.scanner()
-                                                .nextLine()
-                                                .trim();
-                    if (!deathDay.isEmpty()) {
-                        memberBuilder.deathday(Member.convertStringToDate(deathDay));
-                        System.out.println();
+                    final String desc = "Must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)%n%n[Optional] Please Enter %s:".formatted(param.jsonFieldName());
+                    final TextInputDialogResultValidator validator = (content) -> {
+                        if (isNull(content)) {
+                            return null;
+                        }
+                        try {
+                            Member.builder()
+                                  .birthday(requireNonNull(finalBirthday))
+                                  .deathday(Member.convertStringToDate(content));
+                            return null;
+                        } catch (final RuntimeException e) {
+                            return e.getMessage();
+                        }
+                    };
+                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, true, validator);
+                    final String deathdayString = dialog.showDialog(gui);
+                    if (nonNull(deathdayString)) {
+                        final LocalDate deathday = Member.convertStringToDate(deathdayString);
+                        memberBuilder.deathday(deathday);
                         breakLoop = true;
                     }
                 }
                 case EMAIL -> {
-                    Logger.customLine("[Optional] Please Enter %s:".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
-                    final String email = this.scanner()
-                                             .nextLine()
-                                             .trim();
-                    if (!email.isEmpty()) {
-                        memberBuilder.email(email);
-                        System.out.println();
-                    }
+                    final String desc = "[Optional] Please Enter %s:".formatted(param.jsonFieldName());
+                    final TextInputDialogResultValidator validator = (content) -> {
+                        try {
+                            Member.builder()
+                                  .email(content);
+                            return null;
+                        } catch (final RuntimeException e) {
+                            return e.getMessage();
+                        }
+                    };
+                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, true, validator);
+                    memberBuilder.email(dialog.showDialog(gui));
                 }
                 case PHONES -> {
-                    Logger.customLine("[Optional] Add %s to this Member? (y/N)".formatted(param.jsonFieldName()), Ansi.BOLD, Ansi.BLUE);
-                    final String addPhone = this.scanner()
-                                                .nextLine()
-                                                .trim();
-                    System.out.println();
-                    if (addPhone.equalsIgnoreCase("y")) {
-                        Logger.warn("For US numbers: Do Not Include + or Country Code");
-                        Logger.warn("For International numbers: + and Country Code are required");
+                    final MessageDialog msgDialog = new MessageDialogBuilder().setTitle(param.jsonFieldName())
+                                                                              .setText("Would You Like to Add %s to this Member?".formatted(param.jsonFieldName()))
+                                                                              .addButton(MessageDialogButton.Yes)
+                                                                              .addButton(MessageDialogButton.No)
+                                                                              .build();
+                    if (msgDialog.showDialog(gui)
+                                 .equals(MessageDialogButton.Yes))
+                    {
+                        final String descPrefix = "For US numbers: '+' & Country Code are Optional%nFor Int'l Numbers: '+' & Country Code are Required".formatted();
+                        final TextInputDialogResultValidator validator = (content) -> {
+                            try {
+                                DdbUtils.normalizePhoneNumber(content);
+                                return null;
+                            } catch (final RuntimeException e) {
+                                return e.getMessage();
+                            }
+                        };
                         final Map<PhoneType, String> phones = new HashMap<>();
                         for (final PhoneType phoneType : PhoneType.values()) {
-                            Logger.customLine("[Optional] Please Enter %s Phone Number:".formatted(phoneType.name()), Ansi.BOLD, Ansi.BLUE);
-                            final String phone = this.scanner()
-                                                     .nextLine()
-                                                     .trim();
-                            if (!phone.isEmpty()) {
-                                phones.put(phoneType, phone);
-                                System.out.println();
+                            final String desc = "%s%n%n[Optional] Please Enter %s %s:".formatted(descPrefix, phoneType.name(), param.jsonFieldName());
+                            final SkippableTextInputDialog dialog = new SkippableTextInputDialog(phoneType.name(), desc, true, validator);
+                            final String content = dialog.showDialog(gui);
+                            if (nonNull(content)) {
+                                phones.put(phoneType, DdbUtils.normalizePhoneNumber(content));
                             }
                         }
-                        if (!phones.isEmpty()) {
-                            memberBuilder.phones(phones);
-                        }
+                        memberBuilder.phones(phones);
                     }
                 }
                 case ADDRESS -> {
                     final List<String> addressLines = new ArrayList<>();
-                    for (int i = 1; i <= Member.REQ_NON_NULL_ADDRESS_SIZE; ++i) {
-                        if (i == 1) {
-                            Logger.customLine("[Optional] Please Enter %s line %d:".formatted(param.jsonFieldName(), i), Ansi.BOLD, Ansi.BLUE);
-                        } else {
-                            Logger.customLine("[Required] Please Enter %s line %d:".formatted(param.jsonFieldName(), i), Ansi.BOLD, Ansi.BLUE);
+                    for (int i = 1; i <= Member.REQ_NON_NULL_ADDRESS_SIZE && (i == 1 || !addressLines.isEmpty()); ++i) {
+                        final String desc = "[%s] Please Enter %s Line %d:".formatted((i == 1)
+                                                                                              ? "Optional"
+                                                                                              : "Required", param.jsonFieldName(), i);
+                        final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, i == 1, null);
+                        final String addressLine = dialog.showDialog(gui);
+                        if (nonNull(addressLine)) {
+                            addressLines.add(addressLine);
                         }
-                        final String addressLineText = this.scanner()
-                                                           .nextLine()
-                                                           .trim();
-                        if (addressLineText.isEmpty()) {
-                            break;
-                        }
-                        System.out.println();
-                        addressLines.add(addressLineText);
                     }
                     if (!addressLines.isEmpty()) {
                         memberBuilder.address(addressLines);
@@ -379,6 +395,9 @@ interface EventHelper extends Runnable {
         }
         return new MemberRecord(memberId, memberBuilder.build(), familyId);
     }
+
+    @NotNull
+    WindowBasedTextGUI getGui ();
 
     @NotNull
     default
@@ -401,7 +420,4 @@ interface EventHelper extends Runnable {
                                                                                                                  .build();
         return memberRecordListDialog.showDialog(this.getGui());
     }
-
-    @NotNull
-    WindowBasedTextGUI getGui ();
 }
