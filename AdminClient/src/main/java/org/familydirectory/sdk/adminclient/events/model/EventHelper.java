@@ -1,8 +1,6 @@
 package org.familydirectory.sdk.adminclient.events.model;
 
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
-import com.googlecode.lanterna.gui2.dialogs.ListSelectDialog;
-import com.googlecode.lanterna.gui2.dialogs.ListSelectDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
@@ -15,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
@@ -24,11 +23,11 @@ import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
-import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.dialogs.RefreshableListSelectDialog;
 import org.familydirectory.sdk.adminclient.utility.dialogs.SkippableListSelectDialog;
 import org.familydirectory.sdk.adminclient.utility.dialogs.SkippableTextInputDialog;
+import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -403,37 +402,33 @@ interface EventHelper extends Runnable {
     @NotNull
     default
     MemberRecord getExistingMember (final @NotNull String title, final @Nullable String description, final @Nullable String waitText) {
-        return this.getExistingMember(title, description, waitText, this.getPickerEntries());
+        return this.getExistingMember(title, description, waitText, this::getPickerEntries, () -> this.getPicker()
+                                                                                                      .run());
     }
 
     @Contract(pure = true)
-    @NotNull @UnmodifiableView
-    List<MemberRecord> getPickerEntries ();
+    @NotNull
+    @UnmodifiableView
+    default
+    List<MemberRecord> getPickerEntries () {
+        return this.getPicker()
+                   .getEntries();
+    }
+
+    @NotNull
+    PickerModel getPicker ();
 
     @NotNull
     default
-    MemberRecord getExistingMember (final @NotNull String title, final @Nullable String description, final @Nullable String waitText, final @NotNull List<MemberRecord> memberRecordList) {
+    MemberRecord getExistingMember (final @NotNull String title, final @Nullable String description, final @Nullable String waitText,
+                                    final @NotNull Supplier<List<MemberRecord>> memberRecordListSupplier, final @NotNull Runnable memberRecordListRefreshAction)
+    {
         final WindowBasedTextGUI gui = this.getGui();
-        final Thread pickerThread = this.getPickerThread();
-        if (pickerThread.isAlive()) {
-            try {
-                pickerThread.join();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        final RefreshableListSelectDialog<MemberRecord> memberRecordListDialog = new RefreshableListSelectDialog<>(title, description, )
-        final ListSelectDialog<MemberRecord> memberRecordListDialog = new ListSelectDialogBuilder<MemberRecord>().setTitle(title)
-                                                                                                                 .setDescription(description)
-                                                                                                                 .setCanCancel(false)
-                                                                                                                 .setExtraWindowHints(AdminClientTui.EXTRA_WINDOW_HINTS)
-                                                                                                                 .addListItems(memberRecordList.toArray(MemberRecord[]::new))
-                                                                                                                 .build();
+        final RefreshableListSelectDialog<MemberRecord> memberRecordListDialog = new RefreshableListSelectDialog<>(title, description, waitText, memberRecordListSupplier,
+                                                                                                                   memberRecordListRefreshAction, this.getPickerThread());
         return memberRecordListDialog.showDialog(gui);
     }
 
     @NotNull
     Thread getPickerThread ();
-
-    void refreshPicker ();
 }

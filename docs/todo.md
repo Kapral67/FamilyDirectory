@@ -1,6 +1,14 @@
-## Feb 02 2024
+## Feb 06 2024
 
 - update gradle
+
+### AdminClient
+
+- Simplify Event constructors by further abstracting EventHelper (abstract class)
+
+- Implement logic to detect Termux and set /path/to/stty accordingly
+
+- Better Thread Interrupt Handling
 
 ---
 

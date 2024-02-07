@@ -53,7 +53,7 @@ class AdminClientTui {
         final List<String> arguments = Arrays.asList(args);
         try (final SdkClientProvider sdkClientProvider = SdkClientProvider.getSdkClientProvider()) {
             final ThreadPicker<MemberPicker> memberThreadPicker = initializePicker(MemberPicker.class);
-            final ThreadPicker<CognitoUserPicker> cognitoThreadPicker = initializePicker(CognitoUserPicker.class);
+            ThreadPicker<CognitoUserPicker> cognitoThreadPicker = initializePicker(CognitoUserPicker.class);
 
             final DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
             try (final Screen screen = terminalFactory.createScreen()) {
@@ -83,8 +83,8 @@ class AdminClientTui {
 
                     try (final Runnable runner = switch (cmd) {
                         case CREATE -> new CreateEvent(gui, (CreateOptions) requireNonNull(option), memberThreadPicker.picker(), memberThreadPicker.thread());
-                        case UPDATE -> new UpdateEvent(scanner);
-                        case DELETE -> new DeleteEvent(scanner);
+                        case UPDATE -> new UpdateEvent(gui, memberThreadPicker.picker(), memberThreadPicker.thread());
+                        case DELETE -> new DeleteEvent(gui, memberThreadPicker.picker(), memberThreadPicker.thread());
                         case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(scanner);
                         case COGNITO_MANAGEMENT -> new CognitoManagementEvent(scanner, CognitoManagementOptions.values()[ordinal]);
                         case TOOLKIT_CLEANER -> new ToolkitCleanerEvent(scanner);
@@ -92,16 +92,21 @@ class AdminClientTui {
                     })
                     {
                         if (isNull(runner)) {
-                            return;
+                            break;
                         }
+
                         runner.run();
+
+                        if (cmd.equals(Commands.DELETE)) {
+                            cognitoThreadPicker = reinitializePicker(cognitoThreadPicker.picker());
+                        }
                     }
                 }
-
+//      DO NOT PLACE ANY CODE HERE
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
-
+//      DO NOT PLACE ANY CODE HERE
         } catch (final Throwable e) {
             Logger.error(e.getMessage());
             if (arguments.contains("-d") || arguments.contains("--debug")) {
@@ -109,7 +114,9 @@ class AdminClientTui {
                 e.printStackTrace(new PrintWriter(stringWriter));
                 Logger.trace(stringWriter.toString());
             }
+            System.exit(1);
         }
+        System.exit(0);
     }
 
     @NotNull
@@ -120,6 +127,15 @@ class AdminClientTui {
         final P picker = requireNonNull(pickerClass).getDeclaredConstructor()
                                                     .newInstance();
         final Thread pickerThread = new Thread(picker);
+        pickerThread.start();
+        return new ThreadPicker<>(pickerThread, picker);
+    }
+
+    @NotNull
+    private static
+    <P extends PickerModel> ThreadPicker<P> reinitializePicker (final @NotNull P picker, final @NotNull Thread previous) {
+        final Thread pickerThread = new Thread(picker);
+        previous.interrupt();
         pickerThread.start();
         return new ThreadPicker<>(pickerThread, picker);
     }

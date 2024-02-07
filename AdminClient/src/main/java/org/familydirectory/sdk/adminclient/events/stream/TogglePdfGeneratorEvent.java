@@ -1,41 +1,27 @@
 package org.familydirectory.sdk.adminclient.events.stream;
 
 import io.leego.banana.Ansi;
-import java.util.Map;
-import java.util.Scanner;
-import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
-import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.utility.Logger;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.lambda.model.EventSourceMappingConfiguration;
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration;
 import software.amazon.awssdk.services.lambda.model.InvocationType;
 import software.amazon.awssdk.services.lambda.model.InvokeRequest;
 import software.amazon.awssdk.services.lambda.model.ListEventSourceMappingsRequest;
 import software.amazon.awssdk.services.lambda.model.UpdateEventSourceMappingRequest;
-import static java.lang.Thread.sleep;
-import static java.util.Objects.requireNonNull;
 
 public final
-class TogglePdfGeneratorEvent implements EventHelper {
-    private final @NotNull LambdaClient lambdaClient = LambdaClient.create();
-    private final @NotNull Scanner scanner;
+class TogglePdfGeneratorEvent implements Runnable {
 
     public
-    TogglePdfGeneratorEvent (final @NotNull Scanner scanner) {
+    TogglePdfGeneratorEvent () {
         super();
-        this.scanner = requireNonNull(scanner);
     }
 
     @Override
     public
-    void execute () {
+    void run () {
         final String functionName = this.lambdaClient.listFunctions()
                                                      .functions()
                                                      .stream()
@@ -121,41 +107,5 @@ class TogglePdfGeneratorEvent implements EventHelper {
         } else {
             Logger.customLine("SWITCHED OFF", Ansi.BOLD, Ansi.RED);
         }
-    }
-
-    @Override
-    @NotNull
-    public
-    Scanner scanner () {
-        return this.scanner;
-    }
-
-    @Override
-    @Deprecated
-    public
-    void validateMemberEmailIsUnique (final @Nullable String memberEmail) {
-        throw new UnsupportedOperationException("DynamoDbClient Not Implemented");
-    }
-
-    @Override
-    @Deprecated
-    @Nullable
-    public
-    Map<String, AttributeValue> getDdbItem (final @NotNull String primaryKey, final @NotNull DdbTable ddbTable) {
-        throw new UnsupportedOperationException("DynamoDbClient Not Implemented");
-    }
-
-    @Override
-    @Deprecated
-    @NotNull
-    public
-    DynamoDbClient getDynamoDbClient () {
-        throw new UnsupportedOperationException("DynamoDbClient Not Implemented");
-    }
-
-    @Override
-    public
-    void close () {
-        this.lambdaClient.close();
     }
 }

@@ -37,7 +37,7 @@ dependencies {
 }
 
 application {
-    mainClass = 'org.familydirectory.sdk.adminclient.Tutorial04'
+    mainClass = 'org.familydirectory.sdk.adminclient.AdminClientTui'
 }
 
 run {

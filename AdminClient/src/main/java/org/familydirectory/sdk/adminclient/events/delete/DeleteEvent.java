@@ -1,18 +1,20 @@
 package org.familydirectory.sdk.adminclient.events.delete;
 
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
+import org.familydirectory.sdk.adminclient.enums.Commands;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
+import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
+import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
 import org.jetbrains.annotations.NotNull;
-import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.Delete;
@@ -28,37 +30,40 @@ import static java.util.Optional.ofNullable;
 
 public final
 class DeleteEvent implements EventHelper {
-    private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
-    private final @NotNull CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create();
-    private final @NotNull Scanner scanner;
+    private final @NotNull WindowBasedTextGUI gui;
+    private final @NotNull MemberPicker memberPicker;
+    private final @NotNull Thread pickerThread;
 
     public
-    DeleteEvent (final @NotNull Scanner scanner) {
+    DeleteEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull MemberPicker memberPicker, final @NotNull Thread pickerThread) {
         super();
-        this.scanner = requireNonNull(scanner);
-    }
-
-    @Override
-    public @NotNull
-    Scanner scanner () {
-        return this.scanner;
+        this.gui = requireNonNull(gui);
+        this.memberPicker = requireNonNull(memberPicker);
+        this.pickerThread = requireNonNull(pickerThread);
     }
 
     @Override
     public
-    void execute () {
-        if (MemberPicker.isEmpty()) {
+    void run () {
+        if (this.pickerThread.isAlive()) {
+            try {
+                this.pickerThread.join();
+            } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if (this.memberPicker.isEmpty()) {
             throw new IllegalStateException("No Members Exist to Delete");
         }
-        final MemberRecord memberRecord = this.getExistingMember("Please Select Existing Member to DELETE:");
+        final MemberRecord memberRecord = this.getExistingMember(Commands.DELETE.name(), "Please Select an Existing Member:", "Retrieving Members from AWS, Please Wait");
 
         final List<TransactWriteItem> transactionItems;
         if (memberRecord.id()
                         .equals(memberRecord.familyId()))
         {
             // NATIVE
-            final Map<String, AttributeValue> familyMap = requireNonNull(this.getDdbItem(memberRecord.familyId()
-                                                                                                     .toString(), DdbTable.FAMILY));
+            final Map<String, AttributeValue> familyMap = requireNonNull(EventHelper.getDdbItem(memberRecord.familyId()
+                                                                                                            .toString(), DdbTable.FAMILY));
             ofNullable(familyMap.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
                                                                                   .filter(Predicate.not(String::isBlank))
                                                                                   .ifPresent(spouse -> {
@@ -85,12 +90,12 @@ class DeleteEvent implements EventHelper {
             final String ancestorId = ofNullable(familyMap.get(FamilyTableParameter.ANCESTOR.jsonFieldName())).map(AttributeValue::s)
                                                                                                               .filter(Predicate.not(String::isBlank))
                                                                                                               .orElseThrow();
-            final List<String> ancestorFamilyDescendantsList = ofNullable(this.getDdbItem(ancestorId, DdbTable.FAMILY)).map(m -> m.get(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
-                                                                                                                       .map(AttributeValue::ss)
-                                                                                                                       .filter(Predicate.not(List::isEmpty))
-                                                                                                                       .filter(l -> l.contains(memberRecord.id()
-                                                                                                                                                           .toString()))
-                                                                                                                       .orElseThrow();
+            final List<String> ancestorFamilyDescendantsList = ofNullable(EventHelper.getDdbItem(ancestorId, DdbTable.FAMILY)).map(m -> m.get(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
+                                                                                                                              .map(AttributeValue::ss)
+                                                                                                                              .filter(Predicate.not(List::isEmpty))
+                                                                                                                              .filter(l -> l.contains(memberRecord.id()
+                                                                                                                                                                  .toString()))
+                                                                                                                              .orElseThrow();
 
             final Update.Builder updateAncestorFamilyBuilder = Update.builder()
                                                                      .tableName(DdbTable.FAMILY.name())
@@ -130,15 +135,17 @@ class DeleteEvent implements EventHelper {
                                                                                    .build());
         }
 
-        this.dynamoDbClient.transactWriteItems(TransactWriteItemsRequest.builder()
-                                                                        .transactItems(transactionItems)
-                                                                        .build());
-        MemberPicker.removeEntry(memberRecord);
-        this.deleteCognitoAccountAndNotify(memberRecord.id()
-                                                       .toString());
+        SdkClientProvider.getSdkClientProvider()
+                         .getSdkClient(DynamoDbClient.class)
+                         .transactWriteItems(TransactWriteItemsRequest.builder()
+                                                                      .transactItems(transactionItems)
+                                                                      .build());
+        this.memberPicker.removeEntry(memberRecord);
+        deleteCognitoAccountAndNotify(memberRecord.id()
+                                                  .toString());
     }
 
-    private
+    private static
     void deleteCognitoAccountAndNotify (final @NotNull String memberId) {
         final QueryRequest cognitoMemberQueryRequest = QueryRequest.builder()
                                                                    .tableName(DdbTable.COGNITO.name())
@@ -150,7 +157,9 @@ class DeleteEvent implements EventHelper {
                                                                    .expressionAttributeValues(singletonMap(":memberId", AttributeValue.fromS(memberId)))
                                                                    .limit(1)
                                                                    .build();
-        final QueryResponse cognitoMemberQueryResponse = this.dynamoDbClient.query(cognitoMemberQueryRequest);
+        final QueryResponse cognitoMemberQueryResponse = SdkClientProvider.getSdkClientProvider()
+                                                                          .getSdkClient(DynamoDbClient.class)
+                                                                          .query(cognitoMemberQueryRequest);
         if (!cognitoMemberQueryResponse.items()
                                        .isEmpty())
         {
@@ -159,21 +168,25 @@ class DeleteEvent implements EventHelper {
                                                                                     .get(CognitoTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
                                                                                                                                    .filter(Predicate.not(String::isBlank))
                                                                                                                                    .orElseThrow();
-            this.deleteCognitoAccountAndNotify(this.cognitoClient, ddbMemberCognitoSub);
+            EventHelper.deleteCognitoAccountAndNotify(ddbMemberCognitoSub);
         }
     }
 
     @Override
-    @NotNull
-    public
-    DynamoDbClient getDynamoDbClient () {
-        return this.dynamoDbClient;
+    public @NotNull
+    WindowBasedTextGUI getGui () {
+        return this.gui;
     }
 
     @Override
-    public
-    void close () {
-        EventHelper.super.close();
-        this.cognitoClient.close();
+    public @NotNull
+    PickerModel getPicker () {
+        return this.memberPicker;
+    }
+
+    @Override
+    public @NotNull
+    Thread getPickerThread () {
+        return this.pickerThread;
     }
 }

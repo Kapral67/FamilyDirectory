@@ -69,6 +69,13 @@ class CognitoUserPicker implements PickerModel {
             if (!lastEvaluatedKey.isEmpty()) {
                 scanRequestBuilder.exclusiveStartKey(lastEvaluatedKey);
             }
+
+            if (Thread.currentThread()
+                      .isInterrupted())
+            {
+                return;
+            }
+
             final ScanResponse scanResponse = this.dynamoDbClient.scan(scanRequestBuilder.build());
 
             for (final Map<String, AttributeValue> cognitoEntry : scanResponse.items()) {
@@ -76,6 +83,13 @@ class CognitoUserPicker implements PickerModel {
                                                               .s());
                 final String memberId = requireNonNull(cognitoEntry.get(CognitoTableParameter.MEMBER.jsonFieldName())
                                                                    .s());
+
+                if (Thread.currentThread()
+                          .isInterrupted())
+                {
+                    return;
+                }
+
                 final Map<String, AttributeValue> ddbMember = this.dynamoDbClient.getItem(GetItemRequest.builder()
                                                                                                         .tableName(DdbTable.MEMBER.name())
                                                                                                         .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(memberId)))
@@ -87,6 +101,13 @@ class CognitoUserPicker implements PickerModel {
 
             lastEvaluatedKey = scanResponse.lastEvaluatedKey();
         } while (!lastEvaluatedKey.isEmpty());
+
+        if (Thread.currentThread()
+                  .isInterrupted())
+        {
+            return;
+        }
+
         this.entriesList.sort(LAST_NAME_COMPARATOR);
     }
 

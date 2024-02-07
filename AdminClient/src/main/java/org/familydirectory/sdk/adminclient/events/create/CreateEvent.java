@@ -13,10 +13,9 @@ import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
-import org.jetbrains.annotations.Contract;
+import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.Put;
@@ -25,6 +24,7 @@ import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import software.amazon.awssdk.services.dynamodb.model.Update;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
@@ -34,7 +34,7 @@ class CreateEvent implements EventHelper {
     private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull CreateOptions createOption;
     private final @NotNull MemberPicker memberPicker;
-    private volatile @NotNull Thread pickerThread;
+    private final @NotNull Thread pickerThread;
 
     public
     CreateEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull CreateOptions createOption, final @NotNull MemberPicker memberPicker, final @NotNull Thread pickerThread) {
@@ -53,12 +53,9 @@ class CreateEvent implements EventHelper {
     }
 
     @Override
-    @Contract(pure = true)
-    @NotNull
-    @UnmodifiableView
-    public
-    List<MemberRecord> getPickerEntries () {
-        return this.memberPicker.getEntries();
+    public @NotNull
+    PickerModel getPicker () {
+        return this.memberPicker;
     }
 
     @Override
@@ -66,15 +63,6 @@ class CreateEvent implements EventHelper {
     public
     Thread getPickerThread () {
         return this.pickerThread;
-    }
-
-    @Override
-    public
-    void refreshPicker () {
-        if (!this.pickerThread.isAlive()) {
-            this.pickerThread = new Thread(this.memberPicker);
-            this.pickerThread.start();
-        }
     }
 
     @Override
@@ -91,15 +79,10 @@ class CreateEvent implements EventHelper {
                 memberRecord = this.buildMemberRecord(id, id);
             }
             case SPOUSE -> {
-                try {
-                    this.pickerThread.join();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                if (this.memberPicker.isEmpty()) {
+                if (isNull(EventHelper.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
                     throw new IllegalStateException("ROOT Member Must Exist");
                 }
-                final MemberRecord nativeSpouse = this.getExistingMember(this.createOption.name(), "Please Select the Existing Member:");
+                final MemberRecord nativeSpouse = this.getExistingMember(this.createOption.name(), "Please Select the Existing Member:", "Retrieving Members from AWS, Please Wait");
                 id = nativeSpouse.familyId();
                 final Map<String, AttributeValue> family = requireNonNull(EventHelper.getDdbItem(id.toString(), DdbTable.FAMILY));
                 if (ofNullable(family.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
@@ -111,15 +94,10 @@ class CreateEvent implements EventHelper {
                 memberRecord = this.buildMemberRecord(UUID.randomUUID(), id);
             }
             case DESCENDANT -> {
-                try {
-                    this.pickerThread.join();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                if (this.memberPicker.isEmpty()) {
+                if (isNull(EventHelper.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
                     throw new IllegalStateException("ROOT Member Must Exist");
                 }
-                final MemberRecord parent = this.getExistingMember(this.createOption.name(), "Please Select a Parent:");
+                final MemberRecord parent = this.getExistingMember(this.createOption.name(), "Please Select a Parent:", "Retrieving Parents From AWS, Please Wait");
                 id = parent.familyId();
                 final UUID descendantId = UUID.randomUUID();
                 memberRecord = this.buildMemberRecord(descendantId, descendantId);
@@ -162,7 +140,7 @@ class CreateEvent implements EventHelper {
                                                                                .build())
                                                                  .build());
             case DESCENDANT -> {
-                final Map<String, AttributeValue> ancestorMap = requireNonNull(this.getDdbItem(requireNonNull(ancestorId).toString(), DdbTable.FAMILY));
+                final Map<String, AttributeValue> ancestorMap = requireNonNull(EventHelper.getDdbItem(requireNonNull(ancestorId).toString(), DdbTable.FAMILY));
                 final String descendantsUpdateExpression = (ofNullable(ancestorMap.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
                                                                                                                                          .filter(Predicate.not(List::isEmpty))
                                                                                                                                          .isEmpty())

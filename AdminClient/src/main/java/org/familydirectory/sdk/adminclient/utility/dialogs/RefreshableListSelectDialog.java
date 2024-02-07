@@ -56,11 +56,13 @@ class RefreshableListSelectDialog<T> extends DialogWindow {
     @NotNull
     private final Runnable refreshAction;
     @Nullable
+    private Thread preStartedRefreshAction;
+    @Nullable
     private T result;
 
     public
     RefreshableListSelectDialog (final @NotNull String title, final @Nullable String description, final @Nullable String waitText, final @NotNull Supplier<List<T>> contentSupplier,
-                                 final @NotNull Runnable refreshAction)
+                                 final @NotNull Runnable refreshAction, final @Nullable Thread preStartedRefreshAction)
     {
         super(title);
         this.setHints(Set.of(Hint.MODAL, Hint.CENTERED));
@@ -69,12 +71,23 @@ class RefreshableListSelectDialog<T> extends DialogWindow {
         this.waitText = waitText;
         this.contentSupplier = requireNonNull(contentSupplier);
         this.refreshAction = requireNonNull(refreshAction);
+        this.preStartedRefreshAction = preStartedRefreshAction;
         this.refresh(false);
     }
 
     private
     void refresh (final boolean doRunAction) {
         this.setComponent(Panels.horizontal(new Label(this.waitText), AnimatedLabel.createClassicSpinningLine()));
+        if (nonNull(this.preStartedRefreshAction)) {
+            if (this.preStartedRefreshAction.isAlive()) {
+                try {
+                    this.preStartedRefreshAction.join();
+                } catch (final InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            this.preStartedRefreshAction = null;
+        }
         if (doRunAction) {
             this.refreshAction.run();
         }
