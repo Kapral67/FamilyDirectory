@@ -11,7 +11,6 @@ import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
-import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
 import org.jetbrains.annotations.Contract;
@@ -71,7 +70,7 @@ class CreateEvent implements EventHelper {
 
     @Override
     public
-    void newPickerThread () {
+    void refreshPicker () {
         if (!this.pickerThread.isAlive()) {
             this.pickerThread = new Thread(this.memberPicker);
             this.pickerThread.start();
@@ -88,16 +87,19 @@ class CreateEvent implements EventHelper {
                 if (nonNull(EventHelper.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
                     throw new IllegalStateException("ROOT Member Already Exists");
                 }
-                Logger.info("ROOT Creation Event is for Creating the Oldest Native Member in the Family Directory.");
                 id = UUID.fromString(ROOT_ID);
                 memberRecord = this.buildMemberRecord(id, id);
             }
             case SPOUSE -> {
+                try {
+                    this.pickerThread.join();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 if (this.memberPicker.isEmpty()) {
                     throw new IllegalStateException("ROOT Member Must Exist");
                 }
-                Logger.info("SPOUSE Creation Events are for Creating Non-Native Members.");
-                final MemberRecord nativeSpouse = this.getExistingMember("To Create a SPOUSE for an Existing Member, Please Select the Existing Member:");
+                final MemberRecord nativeSpouse = this.getExistingMember(this.createOption.name(), "Please Select the Existing Member:");
                 id = nativeSpouse.familyId();
                 final Map<String, AttributeValue> family = requireNonNull(EventHelper.getDdbItem(id.toString(), DdbTable.FAMILY));
                 if (ofNullable(family.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
@@ -109,11 +111,15 @@ class CreateEvent implements EventHelper {
                 memberRecord = this.buildMemberRecord(UUID.randomUUID(), id);
             }
             case DESCENDANT -> {
+                try {
+                    this.pickerThread.join();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 if (this.memberPicker.isEmpty()) {
                     throw new IllegalStateException("ROOT Member Must Exist");
                 }
-                Logger.info("DESCENDANT Creation Events are for Creating Native Members.");
-                final MemberRecord parent = this.getExistingMember("To Create a DESCENDANT, Please Select any Parent of this DESCENDANT:");
+                final MemberRecord parent = this.getExistingMember(this.createOption.name(), "Please Select a Parent:");
                 id = parent.familyId();
                 final UUID descendantId = UUID.randomUUID();
                 memberRecord = this.buildMemberRecord(descendantId, descendantId);

@@ -7,7 +7,6 @@ import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.gui2.dialogs.TextInputDialogResultValidator;
-import com.googlecode.lanterna.gui2.dialogs.WaitingDialog;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,9 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.PhoneType;
@@ -30,6 +26,7 @@ import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
+import org.familydirectory.sdk.adminclient.utility.dialogs.RefreshableListSelectDialog;
 import org.familydirectory.sdk.adminclient.utility.dialogs.SkippableListSelectDialog;
 import org.familydirectory.sdk.adminclient.utility.dialogs.SkippableTextInputDialog;
 import org.jetbrains.annotations.Contract;
@@ -405,8 +402,8 @@ interface EventHelper extends Runnable {
 
     @NotNull
     default
-    MemberRecord getExistingMember (final @NotNull String title, final @NotNull String description) {
-        return this.getExistingMember(title, description, this.getPickerEntries());
+    MemberRecord getExistingMember (final @NotNull String title, final @Nullable String description, final @Nullable String waitText) {
+        return this.getExistingMember(title, description, waitText, this.getPickerEntries());
     }
 
     @Contract(pure = true)
@@ -415,29 +412,17 @@ interface EventHelper extends Runnable {
 
     @NotNull
     default
-    MemberRecord getExistingMember (final @NotNull String title, final @NotNull String description, final @NotNull List<MemberRecord> memberRecordList) {
+    MemberRecord getExistingMember (final @NotNull String title, final @Nullable String description, final @Nullable String waitText, final @NotNull List<MemberRecord> memberRecordList) {
         final WindowBasedTextGUI gui = this.getGui();
         final Thread pickerThread = this.getPickerThread();
         if (pickerThread.isAlive()) {
-            final WaitingDialog waitingDialog = WaitingDialog.createDialog("Fetching Members from AWS", "Please Wait");
-            waitingDialog.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
-            try (final ScheduledExecutorService waitingDialogScheduledCloseService = Executors.newSingleThreadScheduledExecutor()) {
-                waitingDialogScheduledCloseService.scheduleAtFixedRate(() -> {
-                    if (nonNull(waitingDialog.getTextGUI())) {
-                        waitingDialogScheduledCloseService.shutdownNow();
-                        try {
-                            pickerThread.join();
-                            waitingDialog.close();
-                        } catch (final InterruptedException e) {
-                            Thread.currentThread()
-                                  .interrupt();
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }, 0, 1, TimeUnit.MILLISECONDS);
+            try {
+                pickerThread.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-            waitingDialog.showDialog(gui, true);
         }
+        final RefreshableListSelectDialog<MemberRecord> memberRecordListDialog = new RefreshableListSelectDialog<>(title, description, )
         final ListSelectDialog<MemberRecord> memberRecordListDialog = new ListSelectDialogBuilder<MemberRecord>().setTitle(title)
                                                                                                                  .setDescription(description)
                                                                                                                  .setCanCancel(false)
@@ -450,5 +435,5 @@ interface EventHelper extends Runnable {
     @NotNull
     Thread getPickerThread ();
 
-    void newPickerThread ();
+    void refreshPicker ();
 }
