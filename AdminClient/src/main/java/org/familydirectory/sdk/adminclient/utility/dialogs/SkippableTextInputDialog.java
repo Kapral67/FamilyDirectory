@@ -37,6 +37,7 @@ import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
 
 /**
  * {@link com.googlecode.lanterna.gui2.dialogs.TextInputDialog}
@@ -56,7 +57,7 @@ class SkippableTextInputDialog extends DialogWindow {
 
     public
     SkippableTextInputDialog (final @NotNull String title, final @Nullable String description, final boolean allowSkip, final @Nullable TextInputDialogResultValidator validator) {
-        super(title);
+        super(requireNonNull(title));
         this.setHints(Set.of(Hint.MODAL, Hint.CENTERED));
         this.textBox = new TextBox();
         this.validator = validator;

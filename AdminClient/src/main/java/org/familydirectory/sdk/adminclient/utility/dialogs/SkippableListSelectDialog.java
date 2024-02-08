@@ -34,6 +34,7 @@ import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
 
 /**
  * {@link com.googlecode.lanterna.gui2.dialogs.ListSelectDialog}
@@ -48,7 +49,7 @@ class SkippableListSelectDialog<T> extends DialogWindow {
 
     public
     SkippableListSelectDialog (final @NotNull String title, final @Nullable String description, final boolean allowSkip, final @NotNull List<T> content) {
-        super(title);
+        super(requireNonNull(title));
         this.result = null;
         this.setHints(Set.of(Hint.MODAL, Hint.CENTERED));
         if (content.isEmpty()) {

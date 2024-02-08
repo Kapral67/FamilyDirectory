@@ -24,14 +24,12 @@ import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
-import org.familydirectory.sdk.adminclient.utility.dialogs.RefreshableListSelectDialog;
+import org.familydirectory.sdk.adminclient.utility.dialogs.PickerListSelectDialog;
 import org.familydirectory.sdk.adminclient.utility.dialogs.SkippableListSelectDialog;
 import org.familydirectory.sdk.adminclient.utility.dialogs.SkippableTextInputDialog;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
@@ -402,21 +400,10 @@ interface EventHelper extends Runnable {
     @NotNull
     default
     MemberRecord getExistingMember (final @NotNull String title, final @Nullable String description, final @Nullable String waitText) {
-        return this.getExistingMember(title, description, waitText, this::getPickerEntries, () -> this.getPicker()
-                                                                                                      .run());
+        return this.getExistingMember(title, description, waitText, () -> this.getPicker()
+                                                                              .getEntries(), () -> this.getPicker()
+                                                                                                       .run());
     }
-
-    @Contract(pure = true)
-    @NotNull
-    @UnmodifiableView
-    default
-    List<MemberRecord> getPickerEntries () {
-        return this.getPicker()
-                   .getEntries();
-    }
-
-    @NotNull
-    PickerModel getPicker ();
 
     @NotNull
     default
@@ -424,11 +411,11 @@ interface EventHelper extends Runnable {
                                     final @NotNull Supplier<List<MemberRecord>> memberRecordListSupplier, final @NotNull Runnable memberRecordListRefreshAction)
     {
         final WindowBasedTextGUI gui = this.getGui();
-        final RefreshableListSelectDialog<MemberRecord> memberRecordListDialog = new RefreshableListSelectDialog<>(title, description, waitText, memberRecordListSupplier,
-                                                                                                                   memberRecordListRefreshAction, this.getPickerThread());
+        final PickerListSelectDialog<MemberRecord> memberRecordListDialog = new PickerListSelectDialog<>(title, description, waitText, memberRecordListSupplier, memberRecordListRefreshAction,
+                                                                                                         this.getPicker());
         return memberRecordListDialog.showDialog(gui);
     }
 
     @NotNull
-    Thread getPickerThread ();
+    PickerModel getPicker ();
 }

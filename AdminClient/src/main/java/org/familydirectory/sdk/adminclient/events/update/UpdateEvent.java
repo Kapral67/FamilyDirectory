@@ -18,26 +18,17 @@ public final
 class UpdateEvent implements EventHelper {
     private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull MemberPicker memberPicker;
-    private final @NotNull Thread pickerThread;
 
     public
-    UpdateEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull MemberPicker memberPicker, final @NotNull Thread pickerThread) {
+    UpdateEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull MemberPicker memberPicker) {
         super();
         this.gui = requireNonNull(gui);
         this.memberPicker = requireNonNull(memberPicker);
-        this.pickerThread = requireNonNull(pickerThread);
     }
 
     @Override
     public
     void run () {
-        if (this.pickerThread.isAlive()) {
-            try {
-                this.pickerThread.join();
-            } catch (final InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
         if (this.memberPicker.isEmpty()) {
             throw new IllegalStateException("No Members Exist to Update");
         }
@@ -71,11 +62,5 @@ class UpdateEvent implements EventHelper {
     public @NotNull
     PickerModel getPicker () {
         return this.memberPicker;
-    }
-
-    @Override
-    public @NotNull
-    Thread getPickerThread () {
-        return this.pickerThread;
     }
 }

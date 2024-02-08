@@ -10,6 +10,28 @@
 
 - Better Thread Interrupt Handling
 
+    - In PickerModel:
+
+        - FETCH THREAD
+
+            - WAIT
+
+                - REFRESH_CALLED
+
+            - NOTIFY
+
+                - PROCESSING_DONE
+
+        - CALL THREAD
+
+            - WAIT
+
+                - PROCESSING_DONE
+
+            - NOTIFY
+
+                - REFRESH_CALLED
+
 ---
 
 ### Deferred Tasks

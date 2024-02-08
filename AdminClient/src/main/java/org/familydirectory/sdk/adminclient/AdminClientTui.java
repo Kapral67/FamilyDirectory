@@ -10,7 +10,6 @@ import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -27,7 +26,6 @@ import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.CognitoUserPicker;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
-import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
 import org.jetbrains.annotations.NotNull;
 import static java.lang.System.getenv;
 import static java.util.Objects.isNull;
@@ -51,10 +49,9 @@ class AdminClientTui {
     public static
     void main (final String[] args) {
         final List<String> arguments = Arrays.asList(args);
-        try (final SdkClientProvider sdkClientProvider = SdkClientProvider.getSdkClientProvider()) {
-            final ThreadPicker<MemberPicker> memberThreadPicker = initializePicker(MemberPicker.class);
-            ThreadPicker<CognitoUserPicker> cognitoThreadPicker = initializePicker(CognitoUserPicker.class);
-
+        try (final SdkClientProvider ignored = SdkClientProvider.getSdkClientProvider(); final MemberPicker memberPicker = new MemberPicker();
+             final CognitoUserPicker cognitoPicker = new CognitoUserPicker())
+        {
             final DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
             try (final Screen screen = terminalFactory.createScreen()) {
                 screen.startScreen();
@@ -82,7 +79,7 @@ class AdminClientTui {
                     }
 
                     try (final Runnable runner = switch (cmd) {
-                        case CREATE -> new CreateEvent(gui, (CreateOptions) requireNonNull(option), memberThreadPicker.picker(), memberThreadPicker.thread());
+                        case CREATE -> new CreateEvent(gui, (CreateOptions) requireNonNull(option), memberPicker);
                         case UPDATE -> new UpdateEvent(gui, memberThreadPicker.picker(), memberThreadPicker.thread());
                         case DELETE -> new DeleteEvent(gui, memberThreadPicker.picker(), memberThreadPicker.thread());
                         case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(scanner);
@@ -92,13 +89,11 @@ class AdminClientTui {
                     })
                     {
                         if (isNull(runner)) {
-                            break;
+                            return;
                         }
-
                         runner.run();
-
                         if (cmd.equals(Commands.DELETE)) {
-                            cognitoThreadPicker = reinitializePicker(cognitoThreadPicker.picker());
+                            cognitoPicker.refresh();
                         }
                     }
                 }
@@ -114,33 +109,6 @@ class AdminClientTui {
                 e.printStackTrace(new PrintWriter(stringWriter));
                 Logger.trace(stringWriter.toString());
             }
-            System.exit(1);
         }
-        System.exit(0);
-    }
-
-    @NotNull
-    private static
-    <P extends PickerModel> ThreadPicker<P> initializePicker (final @NotNull Class<P> pickerClass)
-            throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException
-    {
-        final P picker = requireNonNull(pickerClass).getDeclaredConstructor()
-                                                    .newInstance();
-        final Thread pickerThread = new Thread(picker);
-        pickerThread.start();
-        return new ThreadPicker<>(pickerThread, picker);
-    }
-
-    @NotNull
-    private static
-    <P extends PickerModel> ThreadPicker<P> reinitializePicker (final @NotNull P picker, final @NotNull Thread previous) {
-        final Thread pickerThread = new Thread(picker);
-        previous.interrupt();
-        pickerThread.start();
-        return new ThreadPicker<>(pickerThread, picker);
-    }
-
-    private
-    record ThreadPicker<P extends PickerModel>(@NotNull Thread thread, @NotNull P picker) {
     }
 }
