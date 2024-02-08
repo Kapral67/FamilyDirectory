@@ -4,9 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -20,13 +19,14 @@ class PickerModel extends Thread implements AutoCloseable {
     @NotNull
     protected final List<MemberRecord> entriesList;
     @NotNull
-    private final
-    CyclicBarrier processingBarrier;
+    private final BlockingQueue<Boolean> processingQueue;
+    private volatile boolean isClosed;
 
     protected
     PickerModel () {
+        this.isClosed = false;
         this.entriesList = new ArrayList<>();
-        this.processingBarrier = new CyclicBarrier(2);
+        this.processingQueue = new ArrayBlockingQueue<>(1);
     }
 
     public synchronized final
@@ -42,21 +42,43 @@ class PickerModel extends Thread implements AutoCloseable {
 
     protected final
     void blockUntilReady () {
-        if (!this.isAlive()) {
+        if (this.isClosed()) {
             throw new PickerClosedException();
         }
-        while () {
-            this.safeWait();
+        synchronized (this) {
+            while (!this.processingQueue.isEmpty()) {
+                this.safeWait();
+            }
         }
     }
 
     protected synchronized final
     void safeWait () {
         try {
-            Thread.currentThread().wait();
+            Thread.currentThread()
+                  .wait();
         } catch (final InterruptedException x) {
             this.close();
         }
+    }
+
+    @Override
+    public final
+    void close () {
+        if (!this.isClosed()) {
+            synchronized (this.processingQueue) {
+                this.processingQueue.clear();
+                this.processingQueue.add(false);
+            }
+        }
+    }
+
+    public final
+    boolean isClosed () {
+        if (!this.isAlive() && !this.isClosed) {
+            this.isClosed = true;
+        }
+        return this.isClosed;
     }
 
     public synchronized final
@@ -89,30 +111,20 @@ class PickerModel extends Thread implements AutoCloseable {
     @Override
     public final
     void run () {
-        if (!this.isAlive()) {
+        if (this.isClosed()) {
             throw new PickerClosedException();
         }
         try {
             do {
-                if (this.isInterrupted()) {
-                    return;
-                }
                 synchronized (this) {
                     this.syncRun();
-                    if (this.isInterrupted()) {
-                        return;
-                    }
-                    this.notifyAll();
+                    this.notify();
                 }
-                if (this.isInterrupted()) {
-                    return;
-                }
-                this.processingBarrier.await();
-            } while (true);
+            } while (this.processingQueue.take());
         } catch (final InterruptedException ignored) {
             this.interrupt();
-        } catch (final BrokenBarrierException e) {
-            throw new RuntimeException(e);
+        } finally {
+            this.isClosed = true;
         }
     }
 
@@ -120,22 +132,14 @@ class PickerModel extends Thread implements AutoCloseable {
     void syncRun ();
 
     public final
-    void refresh () throws BrokenBarrierException {
-        if (!this.isAlive()) {
+    void refresh () {
+        if (!this.isClosed()) {
             throw new PickerClosedException();
         }
-        try {
-            this.processingBarrier.await();
-        } catch (final InterruptedException e) {
-            this.close();
-        }
-    }
-
-    @Override
-    public final
-    void close () {
-        if (this.isAlive()) {
-            this.interrupt();
+        synchronized (this.processingQueue) {
+            if (this.processingQueue.isEmpty()) {
+                this.processingQueue.add(true);
+            }
         }
     }
 

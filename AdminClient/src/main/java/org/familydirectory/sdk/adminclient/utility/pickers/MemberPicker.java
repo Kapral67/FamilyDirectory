@@ -60,13 +60,7 @@ class MemberPicker extends PickerModel {
     @Override
     protected
     void syncRun () {
-        if (this.isInterrupted()) {
-            return;
-        }
         this.entriesSet.clear();
-        if (this.isInterrupted()) {
-            return;
-        }
         this.entriesList.clear();
 
         Map<String, AttributeValue> lastEvaluatedKey = emptyMap();
@@ -78,14 +72,8 @@ class MemberPicker extends PickerModel {
                 scanRequestBuilder.exclusiveStartKey(lastEvaluatedKey);
             }
 
-            if (this.isInterrupted()) {
-                return;
-            }
             final ScanResponse scanResponse = this.dynamoDbClient.scan(scanRequestBuilder.build());
             for (final Map<String, AttributeValue> entry : scanResponse.items()) {
-                if (this.isInterrupted()) {
-                    return;
-                }
                 this.add_entry(new MemberRecord(UUID.fromString(entry.get(MemberTableParameter.ID.jsonFieldName())
                                                                      .s()), Member.convertDdbMap(entry), UUID.fromString(entry.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
                                                                                                                               .s())));
@@ -94,10 +82,6 @@ class MemberPicker extends PickerModel {
             lastEvaluatedKey = scanResponse.lastEvaluatedKey();
 
         } while (!lastEvaluatedKey.isEmpty());
-
-        if (this.isInterrupted()) {
-            return;
-        }
         this.entriesList.sort(LAST_NAME_COMPARATOR);
     }
 }
