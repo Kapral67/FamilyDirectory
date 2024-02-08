@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
@@ -399,20 +398,10 @@ interface EventHelper extends Runnable {
 
     @NotNull
     default
-    MemberRecord getExistingMember (final @NotNull String title, final @Nullable String description, final @Nullable String waitText) {
-        return this.getExistingMember(title, description, waitText, () -> this.getPicker()
-                                                                              .getEntries(), () -> this.getPicker()
-                                                                                                       .run());
-    }
-
-    @NotNull
-    default
-    MemberRecord getExistingMember (final @NotNull String title, final @Nullable String description, final @Nullable String waitText,
-                                    final @NotNull Supplier<List<MemberRecord>> memberRecordListSupplier, final @NotNull Runnable memberRecordListRefreshAction)
+    MemberRecord getExistingMember (final @NotNull String title, final @Nullable String description, final @Nullable String waitText)
     {
         final WindowBasedTextGUI gui = this.getGui();
-        final PickerListSelectDialog<MemberRecord> memberRecordListDialog = new PickerListSelectDialog<>(title, description, waitText, memberRecordListSupplier, memberRecordListRefreshAction,
-                                                                                                         this.getPicker());
+        final PickerListSelectDialog memberRecordListDialog = new PickerListSelectDialog(this.getPicker(), title, description, waitText);
         return memberRecordListDialog.showDialog(gui);
     }
 

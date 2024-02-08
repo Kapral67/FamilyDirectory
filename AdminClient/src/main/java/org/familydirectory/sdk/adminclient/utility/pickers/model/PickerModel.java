@@ -30,7 +30,7 @@ class PickerModel extends Thread implements AutoCloseable {
     }
 
     public synchronized final
-    boolean isEmpty () throws InterruptedException {
+    boolean isEmpty () {
         this.blockUntilReady();
         return this.is_empty();
     }
@@ -46,7 +46,7 @@ class PickerModel extends Thread implements AutoCloseable {
             throw new PickerClosedException();
         }
         synchronized (this) {
-            while (!this.processingQueue.isEmpty()) {
+            while (this.processingQueue.contains(true)) {
                 this.safeWait();
             }
         }
@@ -133,7 +133,7 @@ class PickerModel extends Thread implements AutoCloseable {
 
     public final
     void refresh () {
-        if (!this.isClosed()) {
+        if (this.isClosed()) {
             throw new PickerClosedException();
         }
         synchronized (this.processingQueue) {

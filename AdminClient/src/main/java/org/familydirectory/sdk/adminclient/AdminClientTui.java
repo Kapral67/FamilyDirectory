@@ -80,8 +80,8 @@ class AdminClientTui {
 
                     try (final Runnable runner = switch (cmd) {
                         case CREATE -> new CreateEvent(gui, (CreateOptions) requireNonNull(option), memberPicker);
-                        case UPDATE -> new UpdateEvent(gui, memberThreadPicker.picker(), memberThreadPicker.thread());
-                        case DELETE -> new DeleteEvent(gui, memberThreadPicker.picker(), memberThreadPicker.thread());
+                        case UPDATE -> new UpdateEvent(gui, memberPicker);
+                        case DELETE -> new DeleteEvent(gui, memberPicker);
                         case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(scanner);
                         case COGNITO_MANAGEMENT -> new CognitoManagementEvent(scanner, CognitoManagementOptions.values()[ordinal]);
                         case TOOLKIT_CLEANER -> new ToolkitCleanerEvent(scanner);

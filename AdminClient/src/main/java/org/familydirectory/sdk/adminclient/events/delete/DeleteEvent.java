@@ -32,26 +32,17 @@ public final
 class DeleteEvent implements EventHelper {
     private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull MemberPicker memberPicker;
-    private final @NotNull Thread pickerThread;
 
     public
-    DeleteEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull MemberPicker memberPicker, final @NotNull Thread pickerThread) {
+    DeleteEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull MemberPicker memberPicker) {
         super();
         this.gui = requireNonNull(gui);
         this.memberPicker = requireNonNull(memberPicker);
-        this.pickerThread = requireNonNull(pickerThread);
     }
 
     @Override
     public
     void run () {
-        if (this.pickerThread.isAlive()) {
-            try {
-                this.pickerThread.join();
-            } catch (final InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
         if (this.memberPicker.isEmpty()) {
             throw new IllegalStateException("No Members Exist to Delete");
         }
@@ -182,11 +173,5 @@ class DeleteEvent implements EventHelper {
     public @NotNull
     PickerModel getPicker () {
         return this.memberPicker;
-    }
-
-    @Override
-    public @NotNull
-    Thread getPickerThread () {
-        return this.pickerThread;
     }
 }
