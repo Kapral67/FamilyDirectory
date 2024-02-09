@@ -1,36 +1,10 @@
-## Feb 06 2024
+## Feb 09 2024
 
 - update gradle
 
 ### AdminClient
 
-- Simplify Event constructors by further abstracting EventHelper (abstract class)
-
 - Implement logic to detect Termux and set /path/to/stty accordingly
-
-- Better Thread Interrupt Handling
-
-    - In PickerModel:
-
-        - FETCH THREAD
-
-            - WAIT
-
-                - REFRESH_CALLED
-
-            - NOTIFY
-
-                - PROCESSING_DONE
-
-        - CALL THREAD
-
-            - WAIT
-
-                - PROCESSING_DONE
-
-            - NOTIFY
-
-                - REFRESH_CALLED
 
 ---
 
