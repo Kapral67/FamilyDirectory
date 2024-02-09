@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
+import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -115,22 +116,26 @@ class PickerModel extends Thread implements AutoCloseable {
     @Override
     public final
     void run () {
-        if (this.isClosed()) {
-            throw new PickerClosedException();
-        }
         try {
-            do {
-                if (this.isInterrupted()) {
-                    return;
-                }
-                synchronized (this) {
-                    this.syncRun();
-                    this.notify();
-                }
-            } while (this.processingQueue.take());
-        } catch (final InterruptedException ignored) {
-            Thread.currentThread()
-                  .interrupt();
+            if (this.isClosed()) {
+                throw new PickerClosedException();
+            }
+            try {
+                do {
+                    if (this.isInterrupted()) {
+                        return;
+                    }
+                    synchronized (this) {
+                        this.syncRun();
+                        this.notify();
+                    }
+                } while (this.processingQueue.take());
+            } catch (final InterruptedException ignored) {
+                Thread.currentThread()
+                      .interrupt();
+            }
+        } catch (final Throwable e) {
+            AdminClientTui.catchAll(e);
         } finally {
             this.isClosed = true;
         }

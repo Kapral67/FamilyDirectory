@@ -24,6 +24,7 @@ import com.googlecode.lanterna.gui2.AnimatedLabel;
 import com.googlecode.lanterna.gui2.Panels;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
+import java.util.concurrent.CompletableFuture;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -70,17 +71,20 @@ class EnhancedWaitingDialog extends DialogWindow {
     public
     Object showDialog (final @NotNull WindowBasedTextGUI textGUI) {
         textGUI.addWindow(this);
-        new Thread(() -> {
-            try {
-                Thread.sleep(this.seconds * MILLIS_IN_SEC);
-            } catch (InterruptedException e) {
-                Thread.currentThread()
-                      .interrupt();
-                throw new RuntimeException(e);
-            } finally {
-                this.close();
-            }
-        }).start();
+        CompletableFuture.runAsync(() -> {
+                             try {
+                                 Thread.sleep(this.seconds * MILLIS_IN_SEC);
+                             } catch (final InterruptedException e) {
+                                 Thread.currentThread()
+                                       .interrupt();
+                                 throw new RuntimeException(e);
+                             } finally {
+                                 this.close();
+                             }
+                         })
+                         .exceptionally(e -> {
+                             throw new RuntimeException(e);
+                         });
         this.waitUntilClosed();
         return null;
     }

@@ -4,11 +4,11 @@ import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
 import org.familydirectory.sdk.adminclient.enums.Commands;
@@ -85,34 +85,39 @@ class TogglePdfGeneratorEvent implements EventHelper {
     @NotNull
     private static
     EventSourceMappingConfiguration getEventSourceMappingConfig (final @NotNull String functionName) {
-        final AtomicReference<EventSourceMappingConfiguration> eventSourceMappingRef = new AtomicReference<>();
-        final CountDownLatch latch = new CountDownLatch(1);
-        try (final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor()) {
+        CompletableFuture<EventSourceMappingConfiguration> future = new CompletableFuture<>();
+        try (ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor()) {
             executorService.scheduleAtFixedRate(() -> {
-                EventSourceMappingConfiguration eventSourceMapping = SdkClientProvider.getSdkClientProvider()
-                                                                                      .getSdkClient(LambdaClient.class)
-                                                                                      .listEventSourceMappings(ListEventSourceMappingsRequest.builder()
-                                                                                                                                             .functionName(requireNonNull(functionName))
-                                                                                                                                             .build())
-                                                                                      .eventSourceMappings()
-                                                                                      .stream()
-                                                                                      .findFirst()
-                                                                                      .orElseThrow();
+                try {
+                    EventSourceMappingConfiguration eventSourceMapping = SdkClientProvider.getSdkClientProvider()
+                                                                                          .getSdkClient(LambdaClient.class)
+                                                                                          .listEventSourceMappings(ListEventSourceMappingsRequest.builder()
+                                                                                                                                                 .functionName(requireNonNull(functionName))
+                                                                                                                                                 .build())
+                                                                                          .eventSourceMappings()
+                                                                                          .stream()
+                                                                                          .findFirst()
+                                                                                          .orElseThrow();
 
-                if (eventSourceMapping.state()
-                                      .equalsIgnoreCase(ENABLED) || eventSourceMapping.state()
-                                                                                      .equalsIgnoreCase(DISABLED))
-                {
-                    eventSourceMappingRef.set(eventSourceMapping);
-                    latch.countDown();
+                    if (eventSourceMapping.state()
+                                          .equalsIgnoreCase(ENABLED) || eventSourceMapping.state()
+                                                                                          .equalsIgnoreCase(DISABLED))
+                    {
+                        future.complete(eventSourceMapping);
+                        executorService.shutdownNow();
+                    }
+                } catch (final Throwable e) {
+                    future.completeExceptionally(e);
+                    executorService.shutdownNow();
                 }
             }, 0L, 100L, TimeUnit.MILLISECONDS);
-            latch.await();
+            return future.get();
+        } catch (final ExecutionException e) {
+            throw new RuntimeException(e);
         } catch (final InterruptedException e) {
             Thread.currentThread()
                   .interrupt();
             throw new RuntimeException(e);
         }
-        return eventSourceMappingRef.get();
     }
 }

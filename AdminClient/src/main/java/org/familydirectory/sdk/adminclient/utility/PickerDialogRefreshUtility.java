@@ -4,6 +4,7 @@ import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.WaitingDialog;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicReference;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
@@ -45,14 +46,17 @@ class PickerDialogRefreshUtility {
         do {
             final WaitingDialog waitDialog = WaitingDialog.createDialog(this.title, this.waitText);
             waitDialog.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
-            new Thread(() -> {
-                contentRef.set(this.picker.getEntries());
-                waitDialog.close();
-                safeBarrierAwait(cyclicBarrier);
-                if (isNull(memberRecordRef.get())) {
-                    this.picker.refresh();
-                }
-            }).start();
+            CompletableFuture.runAsync(() -> {
+                                 contentRef.set(this.picker.getEntries());
+                                 waitDialog.close();
+                                 safeBarrierAwait(cyclicBarrier);
+                                 if (isNull(memberRecordRef.get())) {
+                                     this.picker.refresh();
+                                 }
+                             })
+                             .exceptionally(e -> {
+                                 throw new RuntimeException(e);
+                             });
             waitDialog.showDialog(requireNonNull(gui));
             final RefreshableListSelectDialog<MemberRecord> listSelectDialog = new RefreshableListSelectDialog<>(this.title, this.description, contentRef.get());
             memberRecordRef.set(listSelectDialog.showDialog(gui));

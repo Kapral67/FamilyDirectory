@@ -7,9 +7,12 @@ import com.googlecode.lanterna.gui2.dialogs.ListSelectDialog;
 import com.googlecode.lanterna.gui2.dialogs.ListSelectDialogBuilder;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +31,7 @@ import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.CognitoUserPicker;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import static java.lang.System.getenv;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -38,9 +42,12 @@ class AdminClientTui {
     @NotNull
     public static final Set<Window.Hint> EXTRA_WINDOW_HINTS = Set.of(Window.Hint.CENTERED, Window.Hint.MODAL);
     @NotNull
+    public static final String LANTERNA_STTY_PROPERTY_KEY = "com.googlecode.lanterna.terminal.UnixTerminal.sttyCommand";
+    @NotNull
     private static final String AWS_REGION = requireNonNull(getenv("AWS_REGION"));
     @NotNull
     private static final String AWS_ACCOUNT_ID = requireNonNull(getenv("AWS_ACCOUNT_ID"));
+    private static volatile boolean DEBUG = false;
 
     private
     AdminClientTui () {
@@ -50,12 +57,14 @@ class AdminClientTui {
     public static
     void main (final String[] args) {
         final List<String> arguments = Arrays.asList(args);
+        DEBUG = arguments.contains("-d") || arguments.contains("--debug");
+        setLanternaSttyPropertyKey();
         try (final SdkClientProvider ignored = SdkClientProvider.getSdkClientProvider(); final MemberPicker memberPicker = new MemberPicker();
              final CognitoUserPicker cognitoPicker = new CognitoUserPicker())
         {
             memberPicker.start();
             cognitoPicker.start();
-            
+
             final DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
             try (final Screen screen = terminalFactory.createScreen()) {
                 screen.startScreen();
@@ -107,12 +116,48 @@ class AdminClientTui {
             }
 //      DO NOT PLACE ANY CODE HERE
         } catch (final Throwable e) {
-            Logger.error(e.getMessage());
-            if (arguments.contains("-d") || arguments.contains("--debug")) {
-                final StringWriter stringWriter = new StringWriter();
-                e.printStackTrace(new PrintWriter(stringWriter));
-                Logger.trace(stringWriter.toString());
+            catchAll(e);
+        }
+    }
+
+    public static
+    void catchAll (final @NotNull Throwable e) {
+        Logger.error(e.getMessage());
+        if (DEBUG) {
+            final StringWriter stringWriter = new StringWriter();
+            e.printStackTrace(new PrintWriter(stringWriter));
+            Logger.debug(stringWriter.toString());
+        }
+    }
+
+    private static
+    void setLanternaSttyPropertyKey () {
+        final String sttyPath = getSttyPath();
+        if (nonNull(sttyPath)) {
+            System.setProperty(LANTERNA_STTY_PROPERTY_KEY, sttyPath);
+        }
+    }
+
+    @Nullable
+    private static
+    String getSttyPath () {
+        final String PATH = System.getenv("PATH");
+        if (isNull(PATH)) {
+            return null;
+        }
+        try {
+            for (final String dir : PATH.split(File.pathSeparator)) {
+                final Path path = Path.of(dir + File.separatorChar + "stty");
+                if (Files.exists(path)) {
+                    System.out.println(path);
+                    break;
+                }
+            }
+        } catch (final Exception e) {
+            if (DEBUG) {
+                Logger.debug(e.getMessage());
             }
         }
+        return null;
     }
 }
