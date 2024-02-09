@@ -149,8 +149,7 @@ class AdminClientTui {
             for (final String dir : PATH.split(File.pathSeparator)) {
                 final Path path = Path.of(dir + File.separatorChar + "stty");
                 if (Files.exists(path)) {
-                    System.out.println(path);
-                    break;
+                    return path.toString();
                 }
             }
         } catch (final Exception e) {
