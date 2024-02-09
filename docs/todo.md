@@ -1,7 +1,5 @@
 ## Feb 09 2024
 
-- update gradle
-
 ### AdminClient
 
 - Implement logic to detect Termux and set /path/to/stty accordingly
