@@ -25,6 +25,7 @@ import com.googlecode.lanterna.gui2.Panels;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -81,7 +82,7 @@ class EnhancedWaitingDialog extends DialogWindow {
                              } finally {
                                  this.close();
                              }
-                         })
+                         }, Executors.newSingleThreadExecutor())
                          .exceptionally(e -> {
                              throw new RuntimeException(e);
                          });
