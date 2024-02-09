@@ -21,16 +21,11 @@
 package org.familydirectory.sdk.adminclient.utility.dialogs;
 
 import com.googlecode.lanterna.gui2.AnimatedLabel;
-import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.Panels;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.requireNonNull;
@@ -43,9 +38,9 @@ import static java.util.Objects.requireNonNull;
  */
 public final
 class EnhancedWaitingDialog extends DialogWindow {
+    private static final long MILLIS_IN_SEC = 1000L;
     private static final String FORMAT_TEXT = "Please Wait for %d Seconds";
-    private final @NotNull Label label;
-    private final AtomicLong seconds;
+    private final long seconds;
 
     public
     EnhancedWaitingDialog (final @NotNull String title, final long seconds) {
@@ -54,36 +49,39 @@ class EnhancedWaitingDialog extends DialogWindow {
         if (seconds <= 0L) {
             throw new IllegalArgumentException("seconds must be 1 or greater");
         }
-        this.seconds = new AtomicLong(seconds);
-        this.label = new Label(FORMAT_TEXT.formatted(this.seconds.get()));
-        this.setComponent(Panels.horizontal(this.label, AnimatedLabel.createClassicSpinningLine()));
+        this.seconds = seconds;
+        this.setComponent(Panels.horizontal(this.getCountDownLabel(), AnimatedLabel.createClassicSpinningLine()));
+    }
+
+    @NotNull
+    private
+    AnimatedLabel getCountDownLabel () {
+        final AnimatedLabel countDownLabel = new AnimatedLabel(FORMAT_TEXT.formatted(this.seconds));
+        for (long sec = this.seconds - 1L; sec >= 0L; --sec) {
+            countDownLabel.addFrame(FORMAT_TEXT.formatted(sec));
+        }
+        countDownLabel.startAnimation(MILLIS_IN_SEC);
+        return countDownLabel;
     }
 
     @Override
+    @Contract("_ -> null")
     @Nullable
     public
     Object showDialog (final @NotNull WindowBasedTextGUI textGUI) {
         textGUI.addWindow(this);
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        try (final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor()) {
-            executorService.scheduleAtFixedRate(() -> {
-                if (this.seconds.get() > 0L) {
-                    this.seconds.set(this.seconds.get() - 1L);
-                    this.label.setText(FORMAT_TEXT.formatted(this.seconds.get()));
-                } else {
-                    latch.countDown();
-                }
-            }, 0L, 1L, TimeUnit.SECONDS);
-            latch.await();
-        } catch (final InterruptedException e) {
-            Thread.currentThread()
-                  .interrupt();
-            throw new RuntimeException(e);
-        } finally {
-            this.close();
-        }
-
+        new Thread(() -> {
+            try {
+                Thread.sleep(this.seconds * MILLIS_IN_SEC);
+            } catch (InterruptedException e) {
+                Thread.currentThread()
+                      .interrupt();
+                throw new RuntimeException(e);
+            } finally {
+                this.close();
+            }
+        }).start();
+        this.waitUntilClosed();
         return null;
     }
 }
