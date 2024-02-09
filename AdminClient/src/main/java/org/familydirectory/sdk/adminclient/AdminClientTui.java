@@ -53,6 +53,9 @@ class AdminClientTui {
         try (final SdkClientProvider ignored = SdkClientProvider.getSdkClientProvider(); final MemberPicker memberPicker = new MemberPicker();
              final CognitoUserPicker cognitoPicker = new CognitoUserPicker())
         {
+            memberPicker.start();
+            cognitoPicker.start();
+            
             final DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
             try (final Screen screen = terminalFactory.createScreen()) {
                 screen.startScreen();
