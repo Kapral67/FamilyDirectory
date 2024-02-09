@@ -55,12 +55,14 @@ class PickerModel extends Thread implements AutoCloseable {
     protected synchronized final
     void safeWait () {
         try {
-            Thread.currentThread()
-                  .wait();
+            this.wait();
         } catch (final InterruptedException x) {
             Thread.currentThread()
                   .interrupt();
             this.close();
+        } catch (final Exception e) {
+            this.close();
+            throw e;
         }
     }
 
@@ -118,13 +120,17 @@ class PickerModel extends Thread implements AutoCloseable {
         }
         try {
             do {
+                if (this.isInterrupted()) {
+                    return;
+                }
                 synchronized (this) {
                     this.syncRun();
                     this.notify();
                 }
             } while (this.processingQueue.take());
         } catch (final InterruptedException ignored) {
-            this.interrupt();
+            Thread.currentThread()
+                  .interrupt();
         } finally {
             this.isClosed = true;
         }

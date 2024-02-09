@@ -33,7 +33,7 @@ import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.gui2.dialogs.TextInputDialogResultValidator;
-import java.util.Set;
+import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.nonNull;
@@ -58,7 +58,7 @@ class SkippableTextInputDialog extends DialogWindow {
     public
     SkippableTextInputDialog (final @NotNull String title, final @Nullable String description, final boolean allowSkip, final @Nullable TextInputDialogResultValidator validator) {
         super(requireNonNull(title));
-        this.setHints(Set.of(Hint.MODAL, Hint.CENTERED));
+        this.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
         this.textBox = new TextBox();
         this.validator = validator;
         this.result = null;

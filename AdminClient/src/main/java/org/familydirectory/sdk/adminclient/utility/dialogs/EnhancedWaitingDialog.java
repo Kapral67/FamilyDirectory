@@ -25,12 +25,12 @@ import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.Panels;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.requireNonNull;
@@ -50,7 +50,7 @@ class EnhancedWaitingDialog extends DialogWindow {
     public
     EnhancedWaitingDialog (final @NotNull String title, final long seconds) {
         super(requireNonNull(title));
-        this.setHints(Set.of(Hint.MODAL, Hint.CENTERED));
+        this.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
         if (seconds <= 0L) {
             throw new IllegalArgumentException("seconds must be 1 or greater");
         }

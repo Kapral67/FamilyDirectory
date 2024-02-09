@@ -30,7 +30,7 @@ import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import java.util.List;
-import java.util.Set;
+import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.nonNull;
@@ -51,7 +51,7 @@ class SkippableListSelectDialog<T> extends DialogWindow {
     SkippableListSelectDialog (final @NotNull String title, final @Nullable String description, final boolean allowSkip, final @NotNull List<T> content) {
         super(requireNonNull(title));
         this.result = null;
-        this.setHints(Set.of(Hint.MODAL, Hint.CENTERED));
+        this.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
         if (content.isEmpty()) {
             throw new IllegalArgumentException("content may not be empty");
         }
@@ -87,6 +87,7 @@ class SkippableListSelectDialog<T> extends DialogWindow {
     }
 
     @Override
+    @Nullable
     public
     T showDialog (final WindowBasedTextGUI textGUI) {
         this.result = null;

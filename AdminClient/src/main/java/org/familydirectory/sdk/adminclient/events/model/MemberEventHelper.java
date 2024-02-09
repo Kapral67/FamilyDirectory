@@ -22,8 +22,8 @@ import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
+import org.familydirectory.sdk.adminclient.utility.PickerDialogRefreshUtility;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
-import org.familydirectory.sdk.adminclient.utility.dialogs.PickerListSelectDialog;
 import org.familydirectory.sdk.adminclient.utility.dialogs.SkippableListSelectDialog;
 import org.familydirectory.sdk.adminclient.utility.dialogs.SkippableTextInputDialog;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
@@ -397,11 +397,11 @@ interface MemberEventHelper extends EventHelper {
 
     @NotNull
     default
-    MemberRecord getExistingMember (final @NotNull String title, final @Nullable String description, final @Nullable String waitText)
+    MemberRecord getExistingMember (final @NotNull String title, final @Nullable String description, final @NotNull String waitText)
     {
         final WindowBasedTextGUI gui = this.getGui();
-        final PickerListSelectDialog memberRecordListDialog = new PickerListSelectDialog(this.getPicker(), title, description, waitText);
-        return memberRecordListDialog.showDialog(gui);
+        final PickerDialogRefreshUtility pickerDialogRefreshUtility = new PickerDialogRefreshUtility(this.getPicker(), requireNonNull(title), description, requireNonNull(waitText));
+        return pickerDialogRefreshUtility.showDialog(gui);
     }
 
     @NotNull
