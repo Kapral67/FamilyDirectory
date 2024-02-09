@@ -19,6 +19,7 @@ import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.familydirectory.sdk.adminclient.events.cognito.CognitoManagementEvent;
 import org.familydirectory.sdk.adminclient.events.create.CreateEvent;
 import org.familydirectory.sdk.adminclient.events.delete.DeleteEvent;
+import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.events.stream.TogglePdfGeneratorEvent;
 import org.familydirectory.sdk.adminclient.events.toolkitcleaner.ToolkitCleanerEvent;
 import org.familydirectory.sdk.adminclient.events.update.UpdateEvent;
@@ -78,7 +79,7 @@ class AdminClientTui {
                         option = optionsListDialog.showDialog(gui);
                     }
 
-                    final Runnable runner = switch (cmd) {
+                    try (final EventHelper runner = switch (cmd) {
                         case CREATE -> new CreateEvent(gui, (CreateOptions) requireNonNull(option), memberPicker);
                         case UPDATE -> new UpdateEvent(gui, memberPicker);
                         case DELETE -> new DeleteEvent(gui, memberPicker);
@@ -86,13 +87,15 @@ class AdminClientTui {
                         case COGNITO_MANAGEMENT -> new CognitoManagementEvent(gui, (CognitoManagementOptions) requireNonNull(option), cognitoPicker);
                         case TOOLKIT_CLEANER -> new ToolkitCleanerEvent(gui);
                         case EXIT -> null;
-                    };
-                    if (isNull(runner)) {
-                        return;
-                    }
-                    runner.run();
-                    if (cmd.equals(Commands.DELETE)) {
-                        cognitoPicker.refresh();
+                    })
+                    {
+                        if (isNull(runner)) {
+                            return;
+                        }
+                        runner.run();
+                        if (cmd.equals(Commands.DELETE)) {
+                            cognitoPicker.refresh();
+                        }
                     }
                 }
 //      DO NOT PLACE ANY CODE HERE

@@ -11,8 +11,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.familydirectory.sdk.adminclient.enums.ByteDivisor;
 import org.familydirectory.sdk.adminclient.enums.Commands;
+import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.records.ToolkitCleanerResponse;
-import org.familydirectory.sdk.adminclient.utility.S3CrossRegionClient;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
@@ -31,18 +31,22 @@ import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 public final
-class ToolkitCleanerEvent implements Runnable {
+class ToolkitCleanerEvent implements EventHelper {
     private static final int HASH_LENGTH = 64;
     private static final Pattern CFN_TEMPLATE_HASHES_PATTERN = Pattern.compile("[a-f0-9]{%d}".formatted(HASH_LENGTH));
     private static final String ASSET_BUCKET_PREFIX = "cdk";
     private final long[] deletedItems = {0L};
     private final long[] reclaimedBytes = {0L};
+    private final @NotNull S3Client s3Client;
     private final @NotNull WindowBasedTextGUI gui;
 
     public
     ToolkitCleanerEvent (final @NotNull WindowBasedTextGUI gui) {
         super();
         this.gui = requireNonNull(gui);
+        this.s3Client = S3Client.builder()
+                                .crossRegionAccessEnabled(true)
+                                .build();
     }
 
     @Override
@@ -123,14 +127,12 @@ class ToolkitCleanerEvent implements Runnable {
     @NotNull
     private
     ToolkitCleanerResponse cleanObjects (final @NotNull Set<String> assetHashes) {
-        final S3Client s3Client = SdkClientProvider.getSdkClientProvider()
-                                                   .getSdkClient(S3CrossRegionClient.class);
-        final Set<String> buckets = s3Client.listBuckets()
-                                            .buckets()
-                                            .stream()
-                                            .map(Bucket::name)
-                                            .filter(s -> s.startsWith(ASSET_BUCKET_PREFIX))
-                                            .collect(Collectors.toUnmodifiableSet());
+        final Set<String> buckets = this.s3Client.listBuckets()
+                                                 .buckets()
+                                                 .stream()
+                                                 .map(Bucket::name)
+                                                 .filter(s -> s.startsWith(ASSET_BUCKET_PREFIX))
+                                                 .collect(Collectors.toUnmodifiableSet());
         buckets.forEach(bucketName -> {
             String keyMarker = null;
             String versionIdMarker = null;
@@ -139,19 +141,19 @@ class ToolkitCleanerEvent implements Runnable {
                                                                                                   .bucket(bucketName);
                 final ListObjectVersionsResponse response;
                 if (isNull(keyMarker) && isNull(versionIdMarker)) {
-                    response = s3Client.listObjectVersions(requestBuilder.build());
+                    response = this.s3Client.listObjectVersions(requestBuilder.build());
                 } else if (isNull(keyMarker)) {
-                    response = s3Client.listObjectVersions(requestBuilder.versionIdMarker(versionIdMarker)
-                                                                         .build());
+                    response = this.s3Client.listObjectVersions(requestBuilder.versionIdMarker(versionIdMarker)
+                                                                              .build());
                 } else if (isNull(versionIdMarker)) {
-                    response = s3Client.listObjectVersions(requestBuilder.keyMarker(keyMarker)
-                                                                         .build());
+                    response = this.s3Client.listObjectVersions(requestBuilder.keyMarker(keyMarker)
+                                                                              .build());
                 } else {
-                    response = s3Client.listObjectVersions(ListObjectVersionsRequest.builder()
-                                                                                    .bucket(bucketName)
-                                                                                    .keyMarker(keyMarker)
-                                                                                    .versionIdMarker(versionIdMarker)
-                                                                                    .build());
+                    response = this.s3Client.listObjectVersions(ListObjectVersionsRequest.builder()
+                                                                                         .bucket(bucketName)
+                                                                                         .keyMarker(keyMarker)
+                                                                                         .versionIdMarker(versionIdMarker)
+                                                                                         .build());
                 }
                 keyMarker = response.nextKeyMarker();
                 versionIdMarker = response.nextVersionIdMarker();
@@ -160,17 +162,17 @@ class ToolkitCleanerEvent implements Runnable {
                             final String hash = obj.key()
                                                    .substring(0, HASH_LENGTH);
                             if (!assetHashes.contains(hash)) {
-                                this.reclaimedBytes[0] += s3Client.headObject(HeadObjectRequest.builder()
-                                                                                               .bucket(bucketName)
-                                                                                               .key(obj.key())
-                                                                                               .versionId(obj.versionId())
-                                                                                               .build())
-                                                                  .contentLength();
-                                s3Client.deleteObject(DeleteObjectRequest.builder()
-                                                                         .bucket(bucketName)
-                                                                         .key(obj.key())
-                                                                         .versionId(obj.versionId())
-                                                                         .build());
+                                this.reclaimedBytes[0] += this.s3Client.headObject(HeadObjectRequest.builder()
+                                                                                                    .bucket(bucketName)
+                                                                                                    .key(obj.key())
+                                                                                                    .versionId(obj.versionId())
+                                                                                                    .build())
+                                                                       .contentLength();
+                                this.s3Client.deleteObject(DeleteObjectRequest.builder()
+                                                                              .bucket(bucketName)
+                                                                              .key(obj.key())
+                                                                              .versionId(obj.versionId())
+                                                                              .build());
                                 ++this.deletedItems[0];
                             }
                         });
@@ -178,5 +180,11 @@ class ToolkitCleanerEvent implements Runnable {
             } while (nonNull(keyMarker) || nonNull(versionIdMarker));
         });
         return new ToolkitCleanerResponse(this.deletedItems[0], this.reclaimedBytes[0]);
+    }
+
+    @Override
+    public
+    void close () {
+        this.s3Client.close();
     }
 }

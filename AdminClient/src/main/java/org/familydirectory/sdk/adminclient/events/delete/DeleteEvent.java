@@ -10,7 +10,7 @@ import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.enums.Commands;
-import org.familydirectory.sdk.adminclient.events.model.EventHelper;
+import org.familydirectory.sdk.adminclient.events.model.MemberEventHelper;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 public final
-class DeleteEvent implements EventHelper {
+class DeleteEvent implements MemberEventHelper {
     private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull MemberPicker memberPicker;
 
@@ -53,8 +53,8 @@ class DeleteEvent implements EventHelper {
                         .equals(memberRecord.familyId()))
         {
             // NATIVE
-            final Map<String, AttributeValue> familyMap = requireNonNull(EventHelper.getDdbItem(memberRecord.familyId()
-                                                                                                            .toString(), DdbTable.FAMILY));
+            final Map<String, AttributeValue> familyMap = requireNonNull(MemberEventHelper.getDdbItem(memberRecord.familyId()
+                                                                                                                  .toString(), DdbTable.FAMILY));
             ofNullable(familyMap.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
                                                                                   .filter(Predicate.not(String::isBlank))
                                                                                   .ifPresent(spouse -> {
@@ -81,12 +81,12 @@ class DeleteEvent implements EventHelper {
             final String ancestorId = ofNullable(familyMap.get(FamilyTableParameter.ANCESTOR.jsonFieldName())).map(AttributeValue::s)
                                                                                                               .filter(Predicate.not(String::isBlank))
                                                                                                               .orElseThrow();
-            final List<String> ancestorFamilyDescendantsList = ofNullable(EventHelper.getDdbItem(ancestorId, DdbTable.FAMILY)).map(m -> m.get(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
-                                                                                                                              .map(AttributeValue::ss)
-                                                                                                                              .filter(Predicate.not(List::isEmpty))
-                                                                                                                              .filter(l -> l.contains(memberRecord.id()
-                                                                                                                                                                  .toString()))
-                                                                                                                              .orElseThrow();
+            final List<String> ancestorFamilyDescendantsList = ofNullable(MemberEventHelper.getDdbItem(ancestorId, DdbTable.FAMILY)).map(m -> m.get(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
+                                                                                                                                    .map(AttributeValue::ss)
+                                                                                                                                    .filter(Predicate.not(List::isEmpty))
+                                                                                                                                    .filter(l -> l.contains(memberRecord.id()
+                                                                                                                                                                        .toString()))
+                                                                                                                                    .orElseThrow();
 
             final Update.Builder updateAncestorFamilyBuilder = Update.builder()
                                                                      .tableName(DdbTable.FAMILY.name())
@@ -159,7 +159,7 @@ class DeleteEvent implements EventHelper {
                                                                                     .get(CognitoTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
                                                                                                                                    .filter(Predicate.not(String::isBlank))
                                                                                                                                    .orElseThrow();
-            EventHelper.deleteCognitoAccountAndNotify(ddbMemberCognitoSub);
+            MemberEventHelper.deleteCognitoAccountAndNotify(ddbMemberCognitoSub);
         }
     }
 

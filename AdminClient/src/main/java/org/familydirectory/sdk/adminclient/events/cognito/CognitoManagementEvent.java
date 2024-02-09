@@ -8,7 +8,7 @@ import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.enums.cognito.CognitoManagementOptions;
-import org.familydirectory.sdk.adminclient.events.model.EventHelper;
+import org.familydirectory.sdk.adminclient.events.model.MemberEventHelper;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.CognitoUserPicker;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 public final
-class CognitoManagementEvent implements EventHelper {
+class CognitoManagementEvent implements MemberEventHelper {
     private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull CognitoManagementOptions cognitoManagementOption;
     private final @NotNull CognitoUserPicker cognitoUserPicker;
@@ -43,7 +43,7 @@ class CognitoManagementEvent implements EventHelper {
                     throw new IllegalStateException("No Cognito Users Exist to Delete");
                 }
                 final MemberRecord memberRecord = this.getExistingMember(this.cognitoManagementOption.name(), "Please Select Existing Cognito User:", waitText);
-                EventHelper.deleteCognitoAccountAndNotify(this.cognitoUserPicker.getCognitoSub(memberRecord));
+                MemberEventHelper.deleteCognitoAccountAndNotify(this.cognitoUserPicker.getCognitoSub(memberRecord));
                 this.cognitoUserPicker.removeEntry(memberRecord);
             }
             case DEMOTE_COGNITO_USER -> {
@@ -67,9 +67,9 @@ class CognitoManagementEvent implements EventHelper {
     private
     void alterCognitoAccountStatus (final @NotNull MemberRecord memberRecord, final boolean shouldPromote) {
         final String cognitoSub = this.cognitoUserPicker.getCognitoSub(memberRecord);
-        final boolean cognitoUserIsAdmin = ofNullable(requireNonNull(EventHelper.getDdbItem(cognitoSub, DdbTable.COGNITO)).get(CognitoTableParameter.IS_ADMIN.jsonFieldName())).map(
-                                                                                                                                                                                       AttributeValue::bool)
-                                                                                                                                                                               .orElse(false);
+        final boolean cognitoUserIsAdmin = ofNullable(requireNonNull(MemberEventHelper.getDdbItem(cognitoSub, DdbTable.COGNITO)).get(CognitoTableParameter.IS_ADMIN.jsonFieldName())).map(
+                                                                                                                                                                                             AttributeValue::bool)
+                                                                                                                                                                                     .orElse(false);
         final MessageDialogBuilder msgDialogBuilder = new MessageDialogBuilder().setTitle(this.cognitoManagementOption.name())
                                                                                 .addButton(MessageDialogButton.OK);
         if (cognitoUserIsAdmin ^ shouldPromote) {

@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
 import org.familydirectory.sdk.adminclient.enums.Commands;
+import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.dialogs.EnhancedWaitingDialog;
 import org.jetbrains.annotations.NotNull;
@@ -25,7 +26,7 @@ import software.amazon.awssdk.services.lambda.model.UpdateEventSourceMappingRequ
 import static java.util.Objects.requireNonNull;
 
 public final
-class TogglePdfGeneratorEvent implements Runnable {
+class TogglePdfGeneratorEvent implements EventHelper {
     private static final String ENABLED = "Enabled";
     private static final String DISABLED = "Disabled";
     private final @NotNull WindowBasedTextGUI gui;

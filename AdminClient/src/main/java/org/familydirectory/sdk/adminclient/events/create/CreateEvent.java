@@ -10,7 +10,7 @@ import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
-import org.familydirectory.sdk.adminclient.events.model.EventHelper;
+import org.familydirectory.sdk.adminclient.events.model.MemberEventHelper;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 public final
-class CreateEvent implements EventHelper {
+class CreateEvent implements MemberEventHelper {
     private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull CreateOptions createOption;
     private final @NotNull MemberPicker memberPicker;
@@ -63,19 +63,19 @@ class CreateEvent implements EventHelper {
         final MemberRecord memberRecord;
         switch (this.createOption) {
             case ROOT -> {
-                if (nonNull(EventHelper.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
+                if (nonNull(MemberEventHelper.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
                     throw new IllegalStateException("ROOT Member Already Exists");
                 }
                 id = UUID.fromString(ROOT_ID);
                 memberRecord = this.buildMemberRecord(id, id);
             }
             case SPOUSE -> {
-                if (isNull(EventHelper.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
+                if (isNull(MemberEventHelper.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
                     throw new IllegalStateException("ROOT Member Must Exist");
                 }
                 final MemberRecord nativeSpouse = this.getExistingMember(this.createOption.name(), "Please Select the Existing Member:", "Retrieving Members from AWS, Please Wait");
                 id = nativeSpouse.familyId();
-                final Map<String, AttributeValue> family = requireNonNull(EventHelper.getDdbItem(id.toString(), DdbTable.FAMILY));
+                final Map<String, AttributeValue> family = requireNonNull(MemberEventHelper.getDdbItem(id.toString(), DdbTable.FAMILY));
                 if (ofNullable(family.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
                                                                                        .filter(Predicate.not(String::isBlank))
                                                                                        .isPresent())
@@ -85,7 +85,7 @@ class CreateEvent implements EventHelper {
                 memberRecord = this.buildMemberRecord(UUID.randomUUID(), id);
             }
             case DESCENDANT -> {
-                if (isNull(EventHelper.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
+                if (isNull(MemberEventHelper.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
                     throw new IllegalStateException("ROOT Member Must Exist");
                 }
                 final MemberRecord parent = this.getExistingMember(this.createOption.name(), "Please Select a Parent:", "Retrieving Parents From AWS, Please Wait");
@@ -96,8 +96,8 @@ class CreateEvent implements EventHelper {
             default -> throw new IllegalStateException("Unhandled CreateOption: %s".formatted(this.createOption.name()));
         }
 
-        EventHelper.validateMemberEmailIsUnique(memberRecord.member()
-                                                            .getEmail());
+        MemberEventHelper.validateMemberEmailIsUnique(memberRecord.member()
+                                                                  .getEmail());
 
         SdkClientProvider.getSdkClientProvider()
                          .getSdkClient(DynamoDbClient.class)
@@ -131,7 +131,7 @@ class CreateEvent implements EventHelper {
                                                                                .build())
                                                                  .build());
             case DESCENDANT -> {
-                final Map<String, AttributeValue> ancestorMap = requireNonNull(EventHelper.getDdbItem(requireNonNull(ancestorId).toString(), DdbTable.FAMILY));
+                final Map<String, AttributeValue> ancestorMap = requireNonNull(MemberEventHelper.getDdbItem(requireNonNull(ancestorId).toString(), DdbTable.FAMILY));
                 final String descendantsUpdateExpression = (ofNullable(ancestorMap.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
                                                                                                                                          .filter(Predicate.not(List::isEmpty))
                                                                                                                                          .isEmpty())
@@ -161,7 +161,7 @@ class CreateEvent implements EventHelper {
         transactionItems.add(TransactWriteItem.builder()
                                               .put(Put.builder()
                                                       .tableName(DdbTable.MEMBER.name())
-                                                      .item(EventHelper.buildMember(memberRecord))
+                                                      .item(MemberEventHelper.buildMember(memberRecord))
                                                       .build())
                                               .build());
         return TransactWriteItemsRequest.builder()

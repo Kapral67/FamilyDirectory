@@ -4,7 +4,7 @@ import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.enums.Commands;
-import org.familydirectory.sdk.adminclient.events.model.EventHelper;
+import org.familydirectory.sdk.adminclient.events.model.MemberEventHelper;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
@@ -15,7 +15,7 @@ import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 public final
-class UpdateEvent implements EventHelper {
+class UpdateEvent implements MemberEventHelper {
     private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull MemberPicker memberPicker;
 
@@ -40,14 +40,14 @@ class UpdateEvent implements EventHelper {
             if (nonNull(updateMemberEmail) && !updateMemberEmail.equals(ddbMemberRecord.member()
                                                                                        .getEmail()))
             {
-                EventHelper.validateMemberEmailIsUnique(updateMemberEmail);
+                MemberEventHelper.validateMemberEmailIsUnique(updateMemberEmail);
             }
         }
         SdkClientProvider.getSdkClientProvider()
                          .getSdkClient(DynamoDbClient.class)
                          .putItem(PutItemRequest.builder()
                                                 .tableName(DdbTable.MEMBER.name())
-                                                .item(EventHelper.buildMember(memberRecord))
+                                                .item(MemberEventHelper.buildMember(memberRecord))
                                                 .build());
         this.memberPicker.addEntry(memberRecord);
     }
