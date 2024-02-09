@@ -1,20 +1,18 @@
 package org.familydirectory.sdk.adminclient.events.cognito;
 
-import io.leego.banana.Ansi;
-import java.util.List;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import java.util.Map;
-import java.util.Scanner;
-import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.enums.cognito.CognitoManagementOptions;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
-import org.familydirectory.sdk.adminclient.utility.Logger;
+import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.CognitoUserPicker;
+import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
 import org.jetbrains.annotations.NotNull;
-import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUserPoolsRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
@@ -23,126 +21,91 @@ import static java.util.Optional.ofNullable;
 
 public final
 class CognitoManagementEvent implements EventHelper {
-    private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
-    private final @NotNull CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create();
-    private final @NotNull Scanner scanner;
+    private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull CognitoManagementOptions cognitoManagementOption;
     private final @NotNull CognitoUserPicker cognitoUserPicker;
 
     public
-    CognitoManagementEvent (final @NotNull Scanner scanner, final @NotNull CognitoManagementOptions cognitoManagementOption, final @NotNull CognitoUserPicker cognitoUserPicker) {
+    CognitoManagementEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull CognitoManagementOptions cognitoManagementOption, final @NotNull CognitoUserPicker cognitoUserPicker) {
         super();
-        this.scanner = requireNonNull(scanner);
+        this.gui = requireNonNull(gui);
         this.cognitoManagementOption = requireNonNull(cognitoManagementOption);
         this.cognitoUserPicker = cognitoUserPicker;
     }
 
     @Override
-    @NotNull
-    public
-    DynamoDbClient getDynamoDbClient () {
-        return this.dynamoDbClient;
-    }
-
-    @Override
-    public
-    void close () {
-        EventHelper.super.close();
-        this.cognitoClient.close();
-    }
-
-    @Override
     public
     void run () {
+        final String waitText = "Retrieving Cognito Users from AWS, Please Wait";
         switch (this.cognitoManagementOption) {
             case DELETE_COGNITO_USER -> {
                 if (this.cognitoUserPicker.isEmpty()) {
                     throw new IllegalStateException("No Cognito Users Exist to Delete");
                 }
-                final MemberRecord memberRecord = this.getExistingMember("Please Select Existing Cognito User to Delete:");
-                this.deleteCognitoAccountAndNotify(this.cognitoClient, this.cognitoUserPicker.getCognitoSub(memberRecord));
+                final MemberRecord memberRecord = this.getExistingMember(this.cognitoManagementOption.name(), "Please Select Existing Cognito User:", waitText);
+                EventHelper.deleteCognitoAccountAndNotify(this.cognitoUserPicker.getCognitoSub(memberRecord));
                 this.cognitoUserPicker.removeEntry(memberRecord);
             }
             case DEMOTE_COGNITO_USER -> {
                 if (this.cognitoUserPicker.isEmpty()) {
                     throw new IllegalStateException("No Cognito Users Exist to Demote");
                 }
-                final MemberRecord memberRecord = this.getExistingMember("Please Select Existing Cognito User to Demote:");
-                this.demoteCognitoAccount(memberRecord);
+                final MemberRecord memberRecord = this.getExistingMember(this.cognitoManagementOption.name(), "Please Select Existing Cognito User:", waitText);
+                this.alterCognitoAccountStatus(memberRecord, false);
             }
             case ELEVATE_COGNITO_USER -> {
                 if (this.cognitoUserPicker.isEmpty()) {
                     throw new IllegalStateException("No Cognito Users Exist to Elevate");
                 }
-                final MemberRecord memberRecord = this.getExistingMember("Please Select Existing Cognito User to Elevate:");
-                this.elevateCognitoAccount(memberRecord);
+                final MemberRecord memberRecord = this.getExistingMember(this.cognitoManagementOption.name(), "Please Select Existing Cognito User:", waitText);
+                this.alterCognitoAccountStatus(memberRecord, true);
             }
             default -> throw new IllegalStateException("Unhandled CognitoManagementOption: %s".formatted(this.cognitoManagementOption.name()));
         }
     }
 
     private
-    void elevateCognitoAccount (final @NotNull MemberRecord memberRecord) {
+    void alterCognitoAccountStatus (final @NotNull MemberRecord memberRecord, final boolean shouldPromote) {
         final String cognitoSub = this.cognitoUserPicker.getCognitoSub(memberRecord);
-        final boolean cognitoUserIsAdmin = ofNullable(requireNonNull(this.getDdbItem(cognitoSub, DdbTable.COGNITO)).get(CognitoTableParameter.IS_ADMIN.jsonFieldName())).map(AttributeValue::bool)
-                                                                                                                                                                        .orElse(false);
-        if (!cognitoUserIsAdmin) {
-            this.dynamoDbClient.putItem(PutItemRequest.builder()
-                                                      .tableName(DdbTable.COGNITO.name())
-                                                      .item(Map.of(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(cognitoSub), CognitoTableParameter.MEMBER.jsonFieldName(),
-                                                                   AttributeValue.fromS(memberRecord.id()
-                                                                                                    .toString()), CognitoTableParameter.IS_ADMIN.jsonFieldName(), AttributeValue.fromBool(true)))
-                                                      .build());
-            Logger.customLine("SUCCESS: COGNITO USER NOW ADMIN", Ansi.BOLD, Ansi.GREEN);
+        final boolean cognitoUserIsAdmin = ofNullable(requireNonNull(EventHelper.getDdbItem(cognitoSub, DdbTable.COGNITO)).get(CognitoTableParameter.IS_ADMIN.jsonFieldName())).map(
+                                                                                                                                                                                       AttributeValue::bool)
+                                                                                                                                                                               .orElse(false);
+        final MessageDialogBuilder msgDialogBuilder = new MessageDialogBuilder().setTitle(this.cognitoManagementOption.name())
+                                                                                .addButton(MessageDialogButton.OK);
+        if (cognitoUserIsAdmin ^ shouldPromote) {
+            SdkClientProvider.getSdkClientProvider()
+                             .getSdkClient(DynamoDbClient.class)
+                             .putItem(PutItemRequest.builder()
+                                                    .tableName(DdbTable.COGNITO.name())
+                                                    .item(Map.of(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(cognitoSub), CognitoTableParameter.MEMBER.jsonFieldName(),
+                                                                 AttributeValue.fromS(memberRecord.id()
+                                                                                                  .toString()), CognitoTableParameter.IS_ADMIN.jsonFieldName(), AttributeValue.fromBool(shouldPromote)))
+                                                    .build());
+            msgDialogBuilder.setText("%s %s".formatted(memberRecord.member()
+                                                                   .getFullName(), shouldPromote
+                                                               ? "Promoted"
+                                                               : "Demoted"));
         } else {
-            Logger.customLine("WARN: COGNITO USER WAS ALREADY ADMIN", Ansi.BOLD, Ansi.YELLOW);
+            msgDialogBuilder.setText("No Action Taken; %s Already %s".formatted(memberRecord.member()
+                                                                                            .getFullName(), shouldPromote
+                                                                                        ? "Promoted"
+                                                                                        : "Demoted"));
         }
-
-        System.out.println();
-    }
-
-    private
-    void demoteCognitoAccount (final @NotNull MemberRecord memberRecord) {
-        final String cognitoSub = this.cognitoUserPicker.getCognitoSub(memberRecord);
-        final boolean cognitoUserIsAdmin = ofNullable(requireNonNull(this.getDdbItem(cognitoSub, DdbTable.COGNITO)).get(CognitoTableParameter.IS_ADMIN.jsonFieldName())).map(AttributeValue::bool)
-                                                                                                                                                                        .orElse(false);
-        if (cognitoUserIsAdmin) {
-            this.dynamoDbClient.putItem(PutItemRequest.builder()
-                                                      .tableName(DdbTable.COGNITO.name())
-                                                      .item(Map.of(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(cognitoSub), CognitoTableParameter.MEMBER.jsonFieldName(),
-                                                                   AttributeValue.fromS(memberRecord.id()
-                                                                                                    .toString()), CognitoTableParameter.IS_ADMIN.jsonFieldName(), AttributeValue.fromBool(false)))
-                                                      .build());
-            Logger.customLine("SUCCESS: COGNITO USER NO LONGER ADMIN", Ansi.BOLD, Ansi.GREEN);
-        } else {
-            Logger.customLine("WARN: NO ACTION TAKEN; COGNITO USER WAS NOT ADMIN", Ansi.BOLD, Ansi.YELLOW);
-        }
-
-        System.out.println();
-    }
-
-    @NotNull
-    private
-    String getUserPoolId () {
-        return ofNullable(this.cognitoClient.listUserPools(ListUserPoolsRequest.builder()
-                                                                               .maxResults(1)
-                                                                               .build())
-                                            .userPools()).filter(Predicate.not(List::isEmpty))
-                                                         .map(l -> l.getFirst()
-                                                                    .id())
-                                                         .orElseThrow();
+        msgDialogBuilder.build()
+                        .showDialog(this.gui);
     }
 
     @Override
     @NotNull
     public
-    Scanner scanner () {
-        return this.scanner;
+    WindowBasedTextGUI getGui () {
+        return this.gui;
     }
 
     @Override
-    public @NotNull
-    List<MemberRecord> getPickerEntries () {
-        return this.cognitoUserPicker.getEntries();
+    @NotNull
+    public
+    PickerModel getPicker () {
+        return this.cognitoUserPicker;
     }
 }

@@ -58,6 +58,8 @@ class PickerModel extends Thread implements AutoCloseable {
             Thread.currentThread()
                   .wait();
         } catch (final InterruptedException x) {
+            Thread.currentThread()
+                  .interrupt();
             this.close();
         }
     }

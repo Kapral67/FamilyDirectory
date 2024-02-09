@@ -82,7 +82,7 @@ class AdminClientTui {
                         case CREATE -> new CreateEvent(gui, (CreateOptions) requireNonNull(option), memberPicker);
                         case UPDATE -> new UpdateEvent(gui, memberPicker);
                         case DELETE -> new DeleteEvent(gui, memberPicker);
-                        case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(scanner);
+                        case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(gui);
                         case COGNITO_MANAGEMENT -> new CognitoManagementEvent(scanner, CognitoManagementOptions.values()[ordinal]);
                         case TOOLKIT_CLEANER -> new ToolkitCleanerEvent(scanner);
                         case EXIT -> null;
