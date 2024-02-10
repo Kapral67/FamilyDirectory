@@ -58,7 +58,7 @@ class SpousePicker extends PickerModel {
                                                                                                                                .toString(), DdbTable.FAMILY)).get(
                 FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
                                                              .filter(Predicate.not(String::isBlank))
-                                                             .isPresent())
+                                                             .isEmpty())
         {
             this.precheck_add_entry(memberRecord);
         }
