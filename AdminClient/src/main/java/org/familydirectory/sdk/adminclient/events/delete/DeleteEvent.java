@@ -1,8 +1,10 @@
 package org.familydirectory.sdk.adminclient.events.delete;
 
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
@@ -32,12 +34,16 @@ public final
 class DeleteEvent implements MemberEventHelper {
     private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull MemberPicker memberPicker;
+    private final List<PickerModel> pickerModels;
 
     public
-    DeleteEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull MemberPicker memberPicker) {
+    DeleteEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull MemberPicker memberPicker, final PickerModel... pickerModels) {
         super();
         this.gui = requireNonNull(gui);
         this.memberPicker = requireNonNull(memberPicker);
+        this.pickerModels = Arrays.stream(pickerModels)
+                                  .filter(Objects::nonNull)
+                                  .toList();
     }
 
     @Override
@@ -132,6 +138,9 @@ class DeleteEvent implements MemberEventHelper {
                                                                       .transactItems(transactionItems)
                                                                       .build());
         this.memberPicker.removeEntry(memberRecord);
+        for (final PickerModel pickerModel : this.pickerModels) {
+            pickerModel.removeEntry(memberRecord);
+        }
         deleteCognitoAccountAndNotify(memberRecord.id()
                                                   .toString());
     }

@@ -4,10 +4,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
-import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
+import org.familydirectory.sdk.adminclient.events.model.MemberEventHelper;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
 import org.jetbrains.annotations.NotNull;
@@ -16,14 +18,16 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import static java.util.Collections.emptyMap;
+import static java.util.Objects.requireNonNull;
+import static java.util.Optional.ofNullable;
 
 public final
-class MemberPicker extends PickerModel {
+class SpousePicker extends PickerModel {
     @NotNull
     private final Set<MemberRecord> entriesSet;
 
     public
-    MemberPicker () {
+    SpousePicker () {
         super();
         this.entriesSet = new HashSet<>();
     }
@@ -32,7 +36,7 @@ class MemberPicker extends PickerModel {
     protected
     boolean is_empty () {
         if (this.entriesList.size() != this.entriesSet.size()) {
-            throw new IllegalStateException("MemberPicker Entries Have Incongruent Size");
+            throw new IllegalStateException("SpousePicker Entries Have Incongruent Size");
         }
         return super.is_empty();
     }
@@ -49,8 +53,15 @@ class MemberPicker extends PickerModel {
     protected
     void add_entry (final @NotNull MemberRecord memberRecord) {
         this.remove_entry(memberRecord);
-        this.entriesSet.add(memberRecord);
-        this.entriesList.add(memberRecord);
+        if (memberRecord.id()
+                        .equals(memberRecord.familyId()) && ofNullable(requireNonNull(MemberEventHelper.getDdbItem(memberRecord.id()
+                                                                                                                               .toString(), DdbTable.FAMILY)).get(
+                FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
+                                                             .filter(Predicate.not(String::isBlank))
+                                                             .isPresent())
+        {
+            this.precheck_add_entry(memberRecord);
+        }
     }
 
     @Override
@@ -62,7 +73,7 @@ class MemberPicker extends PickerModel {
         Map<String, AttributeValue> lastEvaluatedKey = emptyMap();
         do {
             final ScanRequest.Builder scanRequestBuilder = ScanRequest.builder()
-                                                                      .tableName(DdbTable.MEMBER.name())
+                                                                      .tableName(DdbTable.FAMILY.name())
                                                                       .consistentRead(true);
             if (!lastEvaluatedKey.isEmpty()) {
                 scanRequestBuilder.exclusiveStartKey(lastEvaluatedKey);
@@ -72,14 +83,25 @@ class MemberPicker extends PickerModel {
                                                                .getSdkClient(DynamoDbClient.class)
                                                                .scan(scanRequestBuilder.build());
             for (final Map<String, AttributeValue> entry : scanResponse.items()) {
-                this.add_entry(new MemberRecord(UUID.fromString(entry.get(MemberTableParameter.ID.jsonFieldName())
-                                                                     .s()), Member.convertDdbMap(entry), UUID.fromString(entry.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
-                                                                                                                              .s())));
+                if (ofNullable(entry.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
+                                                                                      .filter(Predicate.not(String::isBlank))
+                                                                                      .isEmpty())
+                {
+                    final UUID id = UUID.fromString(entry.get(FamilyTableParameter.ID.jsonFieldName())
+                                                         .s());
+                    this.precheck_add_entry(new MemberRecord(id, Member.convertDdbMap(requireNonNull(MemberEventHelper.getDdbItem(id.toString(), DdbTable.MEMBER))), id));
+                }
             }
 
             lastEvaluatedKey = scanResponse.lastEvaluatedKey();
 
         } while (!lastEvaluatedKey.isEmpty());
         this.entriesList.sort(LAST_NAME_COMPARATOR);
+    }
+
+    private
+    void precheck_add_entry (final @NotNull MemberRecord memberRecord) {
+        this.entriesSet.add(memberRecord);
+        this.entriesList.add(memberRecord);
     }
 }

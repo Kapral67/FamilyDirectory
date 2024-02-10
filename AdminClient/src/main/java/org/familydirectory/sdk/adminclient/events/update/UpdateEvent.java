@@ -1,6 +1,9 @@
 package org.familydirectory.sdk.adminclient.events.update;
 
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.enums.Commands;
@@ -18,12 +21,16 @@ public final
 class UpdateEvent implements MemberEventHelper {
     private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull MemberPicker memberPicker;
+    private final @NotNull List<PickerModel> pickerModels;
 
     public
-    UpdateEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull MemberPicker memberPicker) {
+    UpdateEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull MemberPicker memberPicker, final PickerModel... pickerModels) {
         super();
         this.gui = requireNonNull(gui);
         this.memberPicker = requireNonNull(memberPicker);
+        this.pickerModels = Arrays.stream(pickerModels)
+                                  .filter(Objects::nonNull)
+                                  .toList();
     }
 
     @Override
@@ -50,6 +57,9 @@ class UpdateEvent implements MemberEventHelper {
                                                 .item(MemberEventHelper.buildMember(memberRecord))
                                                 .build());
         this.memberPicker.addEntry(memberRecord);
+        for (final PickerModel pickerModel : this.pickerModels) {
+            pickerModel.addEntry(memberRecord);
+        }
     }
 
     @Override

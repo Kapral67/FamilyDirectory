@@ -30,6 +30,7 @@ import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.CognitoUserPicker;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
+import org.familydirectory.sdk.adminclient.utility.pickers.SpousePicker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.lang.System.getenv;
@@ -60,10 +61,11 @@ class AdminClientTui {
         DEBUG = arguments.contains("-d") || arguments.contains("--debug");
         setLanternaSttyPropertyKey();
         try (final SdkClientProvider ignored = SdkClientProvider.getSdkClientProvider(); final MemberPicker memberPicker = new MemberPicker();
-             final CognitoUserPicker cognitoPicker = new CognitoUserPicker())
+             final CognitoUserPicker cognitoPicker = new CognitoUserPicker(); final SpousePicker spousePicker = new SpousePicker())
         {
             memberPicker.start();
             cognitoPicker.start();
+            spousePicker.start();
 
             final DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
             try (final Screen screen = terminalFactory.createScreen()) {
@@ -92,9 +94,9 @@ class AdminClientTui {
                     }
 
                     try (final EventHelper runner = switch (cmd) {
-                        case CREATE -> new CreateEvent(gui, (CreateOptions) requireNonNull(option), memberPicker);
-                        case UPDATE -> new UpdateEvent(gui, memberPicker);
-                        case DELETE -> new DeleteEvent(gui, memberPicker);
+                        case CREATE -> new CreateEvent(gui, (CreateOptions) requireNonNull(option), memberPicker, spousePicker);
+                        case UPDATE -> new UpdateEvent(gui, memberPicker, cognitoPicker, spousePicker);
+                        case DELETE -> new DeleteEvent(gui, memberPicker, cognitoPicker, spousePicker);
                         case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(gui);
                         case COGNITO_MANAGEMENT -> new CognitoManagementEvent(gui, (CognitoManagementOptions) requireNonNull(option), cognitoPicker);
                         case TOOLKIT_CLEANER -> new ToolkitCleanerEvent(gui);
@@ -105,9 +107,6 @@ class AdminClientTui {
                             return;
                         }
                         runner.run();
-                        if (cmd.equals(Commands.DELETE)) {
-                            cognitoPicker.refresh();
-                        }
                     }
                 }
 //      DO NOT PLACE ANY CODE HERE

@@ -13,6 +13,7 @@ import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.familydirectory.sdk.adminclient.events.model.MemberEventHelper;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
+import org.familydirectory.sdk.adminclient.utility.pickers.SpousePicker;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -34,13 +35,15 @@ class CreateEvent implements MemberEventHelper {
     private final @NotNull WindowBasedTextGUI gui;
     private final @NotNull CreateOptions createOption;
     private final @NotNull MemberPicker memberPicker;
+    private final @NotNull SpousePicker spousePicker;
 
     public
-    CreateEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull CreateOptions createOption, final @NotNull MemberPicker memberPicker) {
+    CreateEvent (final @NotNull WindowBasedTextGUI gui, final @NotNull CreateOptions createOption, final @NotNull MemberPicker memberPicker, final @NotNull SpousePicker spousePicker) {
         super();
         this.gui = requireNonNull(gui);
         this.createOption = requireNonNull(createOption);
         this.memberPicker = requireNonNull(memberPicker);
+        this.spousePicker = requireNonNull(spousePicker);
     }
 
     @Override
@@ -53,7 +56,9 @@ class CreateEvent implements MemberEventHelper {
     @Override
     public @NotNull
     PickerModel getPicker () {
-        return this.memberPicker;
+        return this.createOption.equals(CreateOptions.SPOUSE)
+                ? this.spousePicker
+                : this.memberPicker;
     }
 
     @Override
@@ -104,6 +109,9 @@ class CreateEvent implements MemberEventHelper {
                          .transactWriteItems(this.buildCreateTransaction(memberRecord, id));
 
         this.memberPicker.addEntry(memberRecord);
+        if (this.createOption.equals(CreateOptions.SPOUSE)) {
+            this.spousePicker.addEntry(memberRecord);
+        }
     }
 
     private @NotNull
