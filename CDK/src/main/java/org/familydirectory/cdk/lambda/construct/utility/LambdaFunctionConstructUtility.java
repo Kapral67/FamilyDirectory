@@ -1,6 +1,6 @@
 package org.familydirectory.cdk.lambda.construct.utility;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +27,7 @@ import software.constructs.Construct;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
+import static org.familydirectory.assets.Constants.VERSION_STR;
 import static software.amazon.awscdk.Duration.seconds;
 import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.iam.Effect.ALLOW;
@@ -95,10 +96,10 @@ class LambdaFunctionConstructUtility {
     @NotNull
     private static
     String getLambdaJar (final String lambdaName) {
-        return Paths.get(System.getProperty("user.dir"), "..", "assets", lambdaName, "target", "%s-%s.jar".formatted(lambdaName.toLowerCase(), FamilyDirectoryCdkApp.VERSION))
-                    .toAbsolutePath()
-                    .normalize()
-                    .toString();
+        return Path.of(System.getProperty("user.dir"), "..", "assets", lambdaName, "target", "%s-%s.jar".formatted(lambdaName.toLowerCase(), VERSION_STR))
+                   .toAbsolutePath()
+                   .normalize()
+                   .toString();
     }
 
     public static

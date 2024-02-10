@@ -18,18 +18,21 @@
  *
  * Copyright (C) 2024 Maxwell Kapral
  */
-package org.familydirectory.sdk.adminclient.utility.dialogs;
+package org.familydirectory.sdk.adminclient.utility.lanterna;
 
 import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.gui2.ActionListBox;
 import com.googlecode.lanterna.gui2.Button;
 import com.googlecode.lanterna.gui2.EmptySpace;
 import com.googlecode.lanterna.gui2.GridLayout;
 import com.googlecode.lanterna.gui2.Label;
+import com.googlecode.lanterna.gui2.LocalizedString;
 import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.TextBox;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
-import java.util.List;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
+import com.googlecode.lanterna.gui2.dialogs.TextInputDialogResultValidator;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -37,57 +40,70 @@ import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 /**
- * {@link com.googlecode.lanterna.gui2.dialogs.ListSelectDialog}
+ * {@link com.googlecode.lanterna.gui2.dialogs.TextInputDialog}
  *
  * @author Martin
  * @author Maxwell Kapral
  */
 public final
-class RefreshableListSelectDialog<T> extends DialogWindow {
+class SkippableTextInputDialog extends DialogWindow {
+
+    @NotNull
+    private final TextBox textBox;
     @Nullable
-    private T result;
+    private final TextInputDialogResultValidator validator;
+    @Nullable
+    private String result;
 
     public
-    RefreshableListSelectDialog (final @NotNull String title, final @Nullable String description, final @NotNull List<T> content, final @Nullable TerminalSize listBoxSize) {
+    SkippableTextInputDialog (final @NotNull String title, final @Nullable String description, final boolean allowSkip, final @Nullable TextInputDialogResultValidator validator) {
         super(requireNonNull(title));
-        this.result = null;
         this.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
-        if (content.isEmpty()) {
-            throw new IllegalArgumentException("content may not be empty");
-        }
+        this.textBox = new TextBox();
+        this.validator = validator;
+        this.result = null;
 
-        final ActionListBox listBox = new ActionListBox(listBoxSize);
-        content.forEach(item -> listBox.addItem(item.toString(), () -> this.onSelect(item)));
+        final Panel buttonPanel = new Panel();
+        buttonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
+        buttonPanel.addComponent(
+                new Button(LocalizedString.OK.toString(), this::onOK).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
+        if (allowSkip) {
+            buttonPanel.addComponent(new Button("Skip", this::close));
+        }
 
         final Panel mainPanel = new Panel();
         mainPanel.setLayoutManager(new GridLayout(1).setLeftMarginSize(1)
                                                     .setRightMarginSize(1));
         if (nonNull(description)) {
             mainPanel.addComponent(new Label(description));
-            mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));
         }
-        listBox.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.FILL, GridLayout.Alignment.CENTER, true, false))
-               .addTo(mainPanel);
         mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));
-
-        final Panel buttonPanel = new Panel();
-        buttonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
-        buttonPanel.addComponent(new Button("Refresh", this::close).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
+        this.textBox.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.FILL, GridLayout.Alignment.CENTER, true, false))
+                    .addTo(mainPanel);
+        mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));
         buttonPanel.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER, false, false))
                    .addTo(mainPanel);
         this.setComponent(mainPanel);
     }
 
     private
-    void onSelect (final T item) {
-        this.result = item;
+    void onOK () {
+        final String text = this.textBox.getText();
+        if (nonNull(this.validator)) {
+            final String errorMessage = this.validator.validate(text);
+            if (nonNull(errorMessage)) {
+                MessageDialog.showMessageDialog(this.getTextGUI(), this.getTitle(), errorMessage, MessageDialogButton.OK);
+                return;
+            }
+        }
+        this.result = text;
         this.close();
     }
 
     @Override
     @Nullable
     public
-    T showDialog (final WindowBasedTextGUI textGUI) {
+    String showDialog (final WindowBasedTextGUI textGUI) {
         this.result = null;
         super.showDialog(textGUI);
         return this.result;

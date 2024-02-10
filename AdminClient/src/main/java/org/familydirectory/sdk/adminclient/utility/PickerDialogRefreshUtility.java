@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
-import org.familydirectory.sdk.adminclient.utility.dialogs.RefreshableListSelectDialog;
+import org.familydirectory.sdk.adminclient.utility.lanterna.RefreshableListSelectDialog;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

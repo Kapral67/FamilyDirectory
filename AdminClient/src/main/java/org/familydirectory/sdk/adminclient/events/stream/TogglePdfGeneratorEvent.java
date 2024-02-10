@@ -14,7 +14,7 @@ import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
 import org.familydirectory.sdk.adminclient.enums.Commands;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
-import org.familydirectory.sdk.adminclient.utility.dialogs.EnhancedWaitingDialog;
+import org.familydirectory.sdk.adminclient.utility.lanterna.EnhancedWaitingDialog;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.lambda.LambdaClient;
 import software.amazon.awssdk.services.lambda.model.EventSourceMappingConfiguration;

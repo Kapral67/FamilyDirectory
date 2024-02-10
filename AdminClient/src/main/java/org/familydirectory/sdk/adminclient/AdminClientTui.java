@@ -1,5 +1,6 @@
 package org.familydirectory.sdk.adminclient;
 
+import com.googlecode.lanterna.gui2.DefaultWindowManager;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
@@ -28,6 +29,7 @@ import org.familydirectory.sdk.adminclient.events.toolkitcleaner.ToolkitCleanerE
 import org.familydirectory.sdk.adminclient.events.update.UpdateEvent;
 import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
+import org.familydirectory.sdk.adminclient.utility.lanterna.FamilyDirectoryBackground;
 import org.familydirectory.sdk.adminclient.utility.pickers.CognitoUserPicker;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
 import org.familydirectory.sdk.adminclient.utility.pickers.SpousePicker;
@@ -47,9 +49,9 @@ class AdminClientTui {
     @NotNull
     public static final String README = "https://github.com/Kapral67/FamilyDirectory/blob/main/README.md";
     @NotNull
-    private static final String AWS_REGION = requireNonNull(getenv("AWS_REGION"), README);
+    public static final String AWS_REGION = requireNonNull(getenv("AWS_REGION"), README);
     @NotNull
-    private static final String AWS_ACCOUNT_ID = requireNonNull(getenv("AWS_ACCOUNT_ID"), README);
+    public static final String AWS_ACCOUNT_ID = requireNonNull(getenv("AWS_ACCOUNT_ID"), README);
     private static boolean DEBUG = false;
 
     private
@@ -71,7 +73,7 @@ class AdminClientTui {
                 final DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory().setPreferTerminalEmulator(true);
                 try (final Screen screen = terminalFactory.createScreen()) {
                     screen.startScreen();
-                    final WindowBasedTextGUI gui = new MultiWindowTextGUI(screen);
+                    final WindowBasedTextGUI gui = new MultiWindowTextGUI(screen, new DefaultWindowManager(), new FamilyDirectoryBackground());
                     while (true) {
                         final ListSelectDialog<Commands> cmdListDialog = new ListSelectDialogBuilder<Commands>().setTitle("AdminClient")
                                                                                                                 .setDescription("Choose a Command")
@@ -123,7 +125,7 @@ class AdminClientTui {
         if (DEBUG) {
             final StringWriter stringWriter = new StringWriter();
             e.printStackTrace(new PrintWriter(stringWriter));
-            Logger.debug(stringWriter.toString());
+            Logger.trace(stringWriter.toString());
         }
     }
 
@@ -142,7 +144,7 @@ class AdminClientTui {
         if (nonNull(PATH)) {
             try {
                 for (final String dir : PATH.split(File.pathSeparator)) {
-                    final Path path = Path.of(dir + File.separatorChar + "stty");
+                    final Path path = Path.of(dir, "stty");
                     if (Files.exists(path)) {
                         return path.toString();
                     }

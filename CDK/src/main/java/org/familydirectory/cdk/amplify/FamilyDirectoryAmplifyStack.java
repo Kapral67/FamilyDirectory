@@ -35,6 +35,7 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.constructs.Construct;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
+import static org.familydirectory.assets.Constants.VERSION_STR;
 import static software.amazon.awscdk.Fn.importValue;
 
 public
@@ -86,16 +87,15 @@ class FamilyDirectoryAmplifyStack extends Stack {
         final AppProps spaProps = AppProps.builder()
                                           .autoBranchDeletion(AMPLIFY_APP_AUTO_BRANCH_DELETE)
                                           .customRules(AMPLIFY_CUSTOM_RULES)
-                                          .environmentVariables(Map.ofEntries(Map.entry(ReactEnvVar.BACKEND_VERSION.toString(), FamilyDirectoryCdkApp.VERSION),
-                                                                              Map.entry(ReactEnvVar.REDIRECT_URI.toString(), REACT_APP_REDIRECT_URI),
-                                                                              Map.entry(ReactEnvVar.API_DOMAIN.toString(), REACT_APP_API_DOMAIN),
-                                                                              Map.entry(ReactEnvVar.AUTH_DOMAIN.toString(), FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME),
-                                                                              Map.entry(ReactEnvVar.CLIENT_ID.toString(),
-                                                                                        importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME)),
-                                                                              Map.entry(ReactEnvVar.SURNAME.toString(), rootMemberSurname),
-                                                                              Map.entry(ReactEnvVar.AWS_REGION.toString(), FamilyDirectoryCdkApp.DEFAULT_REGION),
-                                                                              Map.entry(ReactEnvVar.USER_POOL_ID.toString(), importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)),
-                                                                              Map.entry(ReactEnvVar.AGE_OF_MAJORITY.toString(), String.valueOf(DdbUtils.AGE_OF_MAJORITY))))
+                                          .environmentVariables(
+                                                  Map.ofEntries(Map.entry(ReactEnvVar.BACKEND_VERSION.toString(), VERSION_STR), Map.entry(ReactEnvVar.REDIRECT_URI.toString(), REACT_APP_REDIRECT_URI),
+                                                                Map.entry(ReactEnvVar.API_DOMAIN.toString(), REACT_APP_API_DOMAIN),
+                                                                Map.entry(ReactEnvVar.AUTH_DOMAIN.toString(), FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME),
+                                                                Map.entry(ReactEnvVar.CLIENT_ID.toString(), importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME)),
+                                                                Map.entry(ReactEnvVar.SURNAME.toString(), rootMemberSurname),
+                                                                Map.entry(ReactEnvVar.AWS_REGION.toString(), FamilyDirectoryCdkApp.DEFAULT_REGION),
+                                                                Map.entry(ReactEnvVar.USER_POOL_ID.toString(), importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)),
+                                                                Map.entry(ReactEnvVar.AGE_OF_MAJORITY.toString(), String.valueOf(DdbUtils.AGE_OF_MAJORITY))))
                                           .platform(AMPLIFY_PLATFORM)
                                           .sourceCodeProvider(GitHubSourceCodeProvider.Builder.create()
                                                                                               .owner(AMPLIFY_REPOSITORY_OWNER)

@@ -18,7 +18,7 @@
  *
  * Copyright (C) 2024 Maxwell Kapral
  */
-package org.familydirectory.sdk.adminclient.utility.dialogs;
+package org.familydirectory.sdk.adminclient.utility.lanterna;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.ActionListBox;
