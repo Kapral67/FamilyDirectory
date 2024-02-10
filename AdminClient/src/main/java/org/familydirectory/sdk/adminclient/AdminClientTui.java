@@ -40,7 +40,7 @@ import static java.util.Objects.requireNonNull;
 public final
 class AdminClientTui {
     @NotNull
-    public static final Set<Window.Hint> EXTRA_WINDOW_HINTS = Set.of(Window.Hint.CENTERED, Window.Hint.MODAL);
+    public static final Set<Window.Hint> EXTRA_WINDOW_HINTS = Set.of(Window.Hint.MODAL, Window.Hint.CENTERED, Window.Hint.FIT_TERMINAL_WINDOW);
     @NotNull
     public static final String LANTERNA_STTY_PROPERTY_KEY = "com.googlecode.lanterna.terminal.UnixTerminal.sttyCommand";
     @NotNull

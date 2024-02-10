@@ -1,5 +1,6 @@
 package org.familydirectory.sdk.adminclient.utility;
 
+import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.WaitingDialog;
 import java.util.List;
@@ -57,7 +58,7 @@ class PickerDialogRefreshUtility {
                                  throw new RuntimeException(e);
                              });
             waitDialog.waitUntilClosed();
-            final RefreshableListSelectDialog<MemberRecord> listSelectDialog = new RefreshableListSelectDialog<>(this.title, this.description, contentRef.get());
+            final RefreshableListSelectDialog<MemberRecord> listSelectDialog = new RefreshableListSelectDialog<>(this.title, this.description, contentRef.get(), new TerminalSize(20, 10));
             memberRecordRef.set(listSelectDialog.showDialog(gui));
             if (isNull(memberRecordRef.get())) {
                 needsRefresh.set(true);

@@ -48,7 +48,7 @@ class RefreshableListSelectDialog<T> extends DialogWindow {
     private T result;
 
     public
-    RefreshableListSelectDialog (final @NotNull String title, final @Nullable String description, final @NotNull List<T> content) {
+    RefreshableListSelectDialog (final @NotNull String title, final @Nullable String description, final @NotNull List<T> content, final @Nullable TerminalSize listBoxSize) {
         super(requireNonNull(title));
         this.result = null;
         this.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
@@ -56,7 +56,7 @@ class RefreshableListSelectDialog<T> extends DialogWindow {
             throw new IllegalArgumentException("content may not be empty");
         }
 
-        final ActionListBox listBox = new ActionListBox();
+        final ActionListBox listBox = new ActionListBox(listBoxSize);
         content.forEach(item -> listBox.addItem(item.toString(), () -> this.onSelect(item)));
 
         final Panel mainPanel = new Panel();

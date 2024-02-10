@@ -239,8 +239,8 @@ interface MemberEventHelper extends EventHelper {
             final LocalDate finalBirthday = birthday;
             switch (param) {
                 case FIRST_NAME -> {
-                    final String desc = "Must match pattern: ^A-Za-z\\-_'$%nMust NOT match pattern: ^['_-]+[A-Za-z\\-'_]*$%n_ & - chars result in the immediate succeeding char being " +
-                                        "capitalized%n_ chars are removed, useful for names like McDonald (input: mc_donald)%n%n[Required] Please Enter %s:".formatted(param.jsonFieldName());
+                    final String desc = ("Must match pattern: ^A-Za-z\\-_'$%nMust NOT match pattern: ^['_-]+[A-Za-z\\-'_]*$%n_ & - chars result in the immediate succeeding char being " +
+                                         "capitalized%n_ chars are removed, useful for names like McDonald (input: mc_donald)%n%n[Required] Please Enter %s:").formatted(param.jsonFieldName());
                     final TextInputDialogResultValidator validator = (content) -> {
                         try {
                             Member.builder()
@@ -254,8 +254,8 @@ interface MemberEventHelper extends EventHelper {
                     memberBuilder.firstName(requireNonNull(dialog.showDialog(gui)));
                 }
                 case MIDDLE_NAME -> {
-                    final String desc = "Must match pattern: ^A-Za-z\\-_'$%nMust NOT match pattern: ^['_-]+[A-Za-z\\-'_]*$%n_ & - chars result in the immediate succeeding char being " +
-                                        "capitalized%n_ chars are removed, useful for names like McDonald (input: mc_donald)%n%n[Optional] Please Enter %s:".formatted(param.jsonFieldName());
+                    final String desc = ("Must match pattern: ^A-Za-z\\-_'$%nMust NOT match pattern: ^['_-]+[A-Za-z\\-'_]*$%n_ & - chars result in the immediate succeeding char being " +
+                                         "capitalized%n_ chars are removed, useful for names like McDonald (input: mc_donald)%n%n[Optional] Please Enter %s:").formatted(param.jsonFieldName());
                     final TextInputDialogResultValidator validator = (content) -> {
                         try {
                             Member.builder()
@@ -269,8 +269,9 @@ interface MemberEventHelper extends EventHelper {
                     memberBuilder.middleName(dialog.showDialog(gui));
                 }
                 case LAST_NAME -> {
-                    final String desc = "Must match pattern: ^A-Za-z\\-_'$%nMust NOT match pattern: ^['_-]+[A-Za-z\\-'_]*$%n_ & - chars result in the immediate succeeding char being " +
-                                        "capitalized%n_ chars are removed, useful for names like McDonald (input: mc_donald)%n%n[Required] Please Enter %s:".formatted(param.jsonFieldName());
+                    final String desc = (
+                            "Must match pattern: ^A-Za-z\\-_'$%nMust NOT match pattern: ^['_-]+[A-Za-z\\-'_]*$%n_ & - chars result in the immediate succeeding char being capitalized%n_ " +
+                            "chars are removed, useful for names like McDonald (input: mc_donald)%n%n[Required] Please Enter %s:").formatted(param.jsonFieldName());
                     final TextInputDialogResultValidator validator = (content) -> {
                         try {
                             Member.builder()
@@ -284,11 +285,11 @@ interface MemberEventHelper extends EventHelper {
                     memberBuilder.lastName(requireNonNull(dialog.showDialog(gui)));
                 }
                 case SUFFIX -> {
-                    final SkippableListSelectDialog<SuffixType> dialog = new SkippableListSelectDialog<>(param.jsonFieldName(), null, true, List.of(SuffixType.values()));
+                    final SkippableListSelectDialog<SuffixType> dialog = new SkippableListSelectDialog<>(param.jsonFieldName(), null, true, List.of(SuffixType.values()), null);
                     memberBuilder.suffix(dialog.showDialog(gui));
                 }
                 case BIRTHDAY -> {
-                    final String desc = "Must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)%n%n[Required] Please Enter %s:".formatted(param.jsonFieldName());
+                    final String desc = ("Must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)%n%n[Required] Please Enter %s:").formatted(param.jsonFieldName());
                     final TextInputDialogResultValidator validator = (content) -> {
                         try {
                             Member.builder()
@@ -303,7 +304,7 @@ interface MemberEventHelper extends EventHelper {
                     memberBuilder.birthday(birthday);
                 }
                 case DEATHDAY -> {
-                    final String desc = "Must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)%n%n[Optional] Please Enter %s:".formatted(param.jsonFieldName());
+                    final String desc = ("Must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)%n%n[Optional] Please Enter %s:").formatted(param.jsonFieldName());
                     final TextInputDialogResultValidator validator = (content) -> {
                         if (isNull(content)) {
                             return null;
