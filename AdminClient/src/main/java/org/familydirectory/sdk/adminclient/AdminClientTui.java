@@ -27,6 +27,7 @@ import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.events.stream.TogglePdfGeneratorEvent;
 import org.familydirectory.sdk.adminclient.events.toolkitcleaner.ToolkitCleanerEvent;
 import org.familydirectory.sdk.adminclient.events.update.UpdateEvent;
+import org.familydirectory.sdk.adminclient.utility.CanceledException;
 import org.familydirectory.sdk.adminclient.utility.Logger;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.lanterna.FamilyDirectoryBackground;
@@ -87,11 +88,14 @@ class AdminClientTui {
                         if (nonNull(options)) {
                             final ListSelectDialog<Enum<?>> optionsListDialog = new ListSelectDialogBuilder<Enum<?>>().setTitle(cmd.name())
                                                                                                                       .setDescription("Choose an Option")
-                                                                                                                      .setCanCancel(false)
+                                                                                                                      .setCanCancel(true)
                                                                                                                       .setExtraWindowHints(EXTRA_WINDOW_HINTS)
                                                                                                                       .addListItems(options)
                                                                                                                       .build();
                             option = optionsListDialog.showDialog(gui);
+                            if (isNull(option)) {
+                                continue;
+                            }
                         }
 
                         try (final EventHelper runner = switch (cmd) {
@@ -107,7 +111,10 @@ class AdminClientTui {
                             if (isNull(runner)) {
                                 return;
                             }
-                            runner.run();
+                            try {
+                                runner.run();
+                            } catch (final CanceledException ignored1) {
+                            }
                         }
                     }
                 } catch (final IOException e) {

@@ -250,7 +250,7 @@ interface MemberEventHelper extends EventHelper {
                             return e.getMessage();
                         }
                     };
-                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, false, validator);
+                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, false, true, validator);
                     memberBuilder.firstName(requireNonNull(dialog.showDialog(gui)));
                 }
                 case MIDDLE_NAME -> {
@@ -265,7 +265,7 @@ interface MemberEventHelper extends EventHelper {
                             return e.getMessage();
                         }
                     };
-                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, true, validator);
+                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, true, true, validator);
                     memberBuilder.middleName(dialog.showDialog(gui));
                 }
                 case LAST_NAME -> {
@@ -281,11 +281,11 @@ interface MemberEventHelper extends EventHelper {
                             return e.getMessage();
                         }
                     };
-                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, false, validator);
+                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, false, true, validator);
                     memberBuilder.lastName(requireNonNull(dialog.showDialog(gui)));
                 }
                 case SUFFIX -> {
-                    final SkippableListSelectDialog<SuffixType> dialog = new SkippableListSelectDialog<>(param.jsonFieldName(), null, true, List.of(SuffixType.values()), null);
+                    final SkippableListSelectDialog<SuffixType> dialog = new SkippableListSelectDialog<>(param.jsonFieldName(), null, true, true, List.of(SuffixType.values()), null);
                     memberBuilder.suffix(dialog.showDialog(gui));
                 }
                 case BIRTHDAY -> {
@@ -299,7 +299,7 @@ interface MemberEventHelper extends EventHelper {
                             return e.getMessage();
                         }
                     };
-                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, false, validator);
+                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, false, true, validator);
                     birthday = Member.convertStringToDate(requireNonNull(dialog.showDialog(gui)));
                     memberBuilder.birthday(birthday);
                 }
@@ -318,7 +318,7 @@ interface MemberEventHelper extends EventHelper {
                             return e.getMessage();
                         }
                     };
-                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, true, validator);
+                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, true, true, validator);
                     final String deathdayString = dialog.showDialog(gui);
                     if (nonNull(deathdayString)) {
                         final LocalDate deathday = Member.convertStringToDate(deathdayString);
@@ -337,7 +337,7 @@ interface MemberEventHelper extends EventHelper {
                             return e.getMessage();
                         }
                     };
-                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, true, validator);
+                    final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, true, true, validator);
                     memberBuilder.email(dialog.showDialog(gui));
                 }
                 case PHONES -> {
@@ -361,7 +361,7 @@ interface MemberEventHelper extends EventHelper {
                         final Map<PhoneType, String> phones = new HashMap<>();
                         for (final PhoneType phoneType : PhoneType.values()) {
                             final String desc = "%s%n%n[Optional] Please Enter %s %s:".formatted(descPrefix, phoneType.name(), param.jsonFieldName());
-                            final SkippableTextInputDialog dialog = new SkippableTextInputDialog(phoneType.name(), desc, true, validator);
+                            final SkippableTextInputDialog dialog = new SkippableTextInputDialog(phoneType.name(), desc, true, true, validator);
                             final String content = dialog.showDialog(gui);
                             if (nonNull(content)) {
                                 phones.put(phoneType, DdbUtils.normalizePhoneNumber(content));
@@ -376,7 +376,7 @@ interface MemberEventHelper extends EventHelper {
                         final String desc = "[%s] Please Enter %s Line %d:".formatted((i == 1)
                                                                                               ? "Optional"
                                                                                               : "Required", param.jsonFieldName(), i);
-                        final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, i == 1, null);
+                        final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, i == 1, true, null);
                         final String addressLine = dialog.showDialog(gui);
                         if (nonNull(addressLine)) {
                             addressLines.add(addressLine);

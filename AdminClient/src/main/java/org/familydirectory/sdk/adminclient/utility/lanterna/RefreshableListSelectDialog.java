@@ -26,11 +26,13 @@ import com.googlecode.lanterna.gui2.Button;
 import com.googlecode.lanterna.gui2.EmptySpace;
 import com.googlecode.lanterna.gui2.GridLayout;
 import com.googlecode.lanterna.gui2.Label;
+import com.googlecode.lanterna.gui2.LocalizedString;
 import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import java.util.List;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
+import org.familydirectory.sdk.adminclient.utility.CanceledException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.nonNull;
@@ -44,13 +46,15 @@ import static java.util.Objects.requireNonNull;
  */
 public final
 class RefreshableListSelectDialog<T> extends DialogWindow {
+    private volatile boolean isCanceled;
     @Nullable
     private T result;
 
     public
-    RefreshableListSelectDialog (final @NotNull String title, final @Nullable String description, final @NotNull List<T> content, final @Nullable TerminalSize listBoxSize) {
+    RefreshableListSelectDialog (final @NotNull String title, final @Nullable String description, final boolean allowCancel, final @NotNull List<T> content, final @Nullable TerminalSize listBoxSize) {
         super(requireNonNull(title));
         this.result = null;
+        this.isCanceled = false;
         this.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
         if (content.isEmpty()) {
             throw new IllegalArgumentException("content may not be empty");
@@ -73,6 +77,9 @@ class RefreshableListSelectDialog<T> extends DialogWindow {
         final Panel buttonPanel = new Panel();
         buttonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
         buttonPanel.addComponent(new Button("Refresh", this::close).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
+        if (allowCancel) {
+            buttonPanel.addComponent(new Button(LocalizedString.Cancel.toString(), this::cancel));
+        }
         buttonPanel.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER, false, false))
                    .addTo(mainPanel);
         this.setComponent(mainPanel);
@@ -84,12 +91,21 @@ class RefreshableListSelectDialog<T> extends DialogWindow {
         this.close();
     }
 
+    private
+    void cancel () {
+        this.isCanceled = true;
+        this.close();
+    }
+
     @Override
     @Nullable
     public
     T showDialog (final WindowBasedTextGUI textGUI) {
         this.result = null;
         super.showDialog(textGUI);
+        if (this.isCanceled) {
+            throw new CanceledException();
+        }
         return this.result;
     }
 }

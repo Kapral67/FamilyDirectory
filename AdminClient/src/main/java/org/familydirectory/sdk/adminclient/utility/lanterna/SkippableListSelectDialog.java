@@ -26,11 +26,13 @@ import com.googlecode.lanterna.gui2.Button;
 import com.googlecode.lanterna.gui2.EmptySpace;
 import com.googlecode.lanterna.gui2.GridLayout;
 import com.googlecode.lanterna.gui2.Label;
+import com.googlecode.lanterna.gui2.LocalizedString;
 import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import java.util.List;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
+import org.familydirectory.sdk.adminclient.utility.CanceledException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.nonNull;
@@ -44,12 +46,16 @@ import static java.util.Objects.requireNonNull;
  */
 public final
 class SkippableListSelectDialog<T> extends DialogWindow {
+    private volatile boolean isCanceled;
     @Nullable
     private T result;
 
     public
-    SkippableListSelectDialog (final @NotNull String title, final @Nullable String description, final boolean allowSkip, final @NotNull List<T> content, final @Nullable TerminalSize listBoxSize) {
+    SkippableListSelectDialog (final @NotNull String title, final @Nullable String description, final boolean allowSkip, final boolean allowCancel, final @NotNull List<T> content,
+                               final @Nullable TerminalSize listBoxSize)
+    {
         super(requireNonNull(title));
+        this.isCanceled = false;
         this.result = null;
         this.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
         if (content.isEmpty()) {
@@ -70,13 +76,20 @@ class SkippableListSelectDialog<T> extends DialogWindow {
                .addTo(mainPanel);
         mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));
 
-        if (allowSkip) {
-            final Panel buttonPanel = new Panel();
-            buttonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
-            buttonPanel.addComponent(new Button("Skip", this::close).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
-            buttonPanel.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER, false, false))
-                       .addTo(mainPanel);
+        final Panel buttonPanel = new Panel();
+        buttonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
+        if (allowSkip || allowCancel) {
+            buttonPanel.addComponent(new Button(allowCancel
+                                                        ? LocalizedString.Cancel.toString()
+                                                        : "Skip", allowCancel
+                                                        ? this::cancel
+                                                        : this::close).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
+            if (allowSkip && allowCancel) {
+                buttonPanel.addComponent(new Button("Skip", this::close));
+            }
         }
+        buttonPanel.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER, false, false))
+                   .addTo(mainPanel);
         this.setComponent(mainPanel);
     }
 
@@ -86,12 +99,21 @@ class SkippableListSelectDialog<T> extends DialogWindow {
         this.close();
     }
 
+    private
+    void cancel () {
+        this.isCanceled = true;
+        this.close();
+    }
+
     @Override
     @Nullable
     public
     T showDialog (final WindowBasedTextGUI textGUI) {
         this.result = null;
         super.showDialog(textGUI);
+        if (this.isCanceled) {
+            throw new CanceledException();
+        }
         return this.result;
     }
 }

@@ -58,7 +58,7 @@ class PickerDialogRefreshUtility {
                                  throw new RuntimeException(e);
                              });
             waitDialog.waitUntilClosed();
-            final RefreshableListSelectDialog<MemberRecord> listSelectDialog = new RefreshableListSelectDialog<>(this.title, this.description, contentRef.get(), new TerminalSize(20, 10));
+            final RefreshableListSelectDialog<MemberRecord> listSelectDialog = new RefreshableListSelectDialog<>(this.title, this.description, true, contentRef.get(), new TerminalSize(20, 10));
             memberRecordRef.set(listSelectDialog.showDialog(gui));
             if (isNull(memberRecordRef.get())) {
                 needsRefresh.set(true);

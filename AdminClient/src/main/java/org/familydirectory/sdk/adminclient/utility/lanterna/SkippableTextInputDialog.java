@@ -34,6 +34,7 @@ import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.gui2.dialogs.TextInputDialogResultValidator;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
+import org.familydirectory.sdk.adminclient.utility.CanceledException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.nonNull;
@@ -52,15 +53,19 @@ class SkippableTextInputDialog extends DialogWindow {
     private final TextBox textBox;
     @Nullable
     private final TextInputDialogResultValidator validator;
+    private volatile boolean isCanceled;
     @Nullable
     private String result;
 
     public
-    SkippableTextInputDialog (final @NotNull String title, final @Nullable String description, final boolean allowSkip, final @Nullable TextInputDialogResultValidator validator) {
+    SkippableTextInputDialog (final @NotNull String title, final @Nullable String description, final boolean allowSkip, final boolean allowCancel,
+                              final @Nullable TextInputDialogResultValidator validator)
+    {
         super(requireNonNull(title));
         this.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
         this.textBox = new TextBox();
         this.validator = validator;
+        this.isCanceled = false;
         this.result = null;
 
         final Panel buttonPanel = new Panel();
@@ -69,6 +74,9 @@ class SkippableTextInputDialog extends DialogWindow {
                 new Button(LocalizedString.OK.toString(), this::onOK).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
         if (allowSkip) {
             buttonPanel.addComponent(new Button("Skip", this::close));
+        }
+        if (allowCancel) {
+            buttonPanel.addComponent(new Button(LocalizedString.Cancel.toString(), this::cancel));
         }
 
         final Panel mainPanel = new Panel();
@@ -100,12 +108,21 @@ class SkippableTextInputDialog extends DialogWindow {
         this.close();
     }
 
+    private
+    void cancel () {
+        this.isCanceled = true;
+        this.close();
+    }
+
     @Override
     @Nullable
     public
     String showDialog (final WindowBasedTextGUI textGUI) {
         this.result = null;
         super.showDialog(textGUI);
+        if (this.isCanceled) {
+            throw new CanceledException();
+        }
         return this.result;
     }
 }
