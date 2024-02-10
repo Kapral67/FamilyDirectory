@@ -15,8 +15,8 @@ import org.jetbrains.annotations.UnmodifiableView;
 
 public abstract
 class PickerModel extends Thread implements AutoCloseable {
-    protected static final Comparator<MemberRecord> LAST_NAME_COMPARATOR = Comparator.comparing(memberRecord -> memberRecord.member()
-                                                                                                                            .getLastName());
+    protected static final Comparator<MemberRecord> FIRST_NAME_COMPARATOR = Comparator.comparing(memberRecord -> memberRecord.member()
+                                                                                                                             .getFirstName());
 
     @NotNull
     protected final List<MemberRecord> entriesList;

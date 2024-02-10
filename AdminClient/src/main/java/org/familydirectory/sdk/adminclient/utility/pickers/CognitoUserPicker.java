@@ -135,6 +135,6 @@ class CognitoUserPicker extends PickerModel {
 
             lastEvaluatedKey = scanResponse.lastEvaluatedKey();
         } while (!lastEvaluatedKey.isEmpty());
-        this.entriesList.sort(LAST_NAME_COMPARATOR);
+        this.entriesList.sort(FIRST_NAME_COMPARATOR);
     }
 }
