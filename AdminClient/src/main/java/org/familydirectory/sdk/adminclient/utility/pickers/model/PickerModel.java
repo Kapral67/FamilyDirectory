@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.jetbrains.annotations.Contract;
@@ -21,6 +22,8 @@ class PickerModel extends Thread implements AutoCloseable {
     protected final List<MemberRecord> entriesList;
     @NotNull
     private final BlockingQueue<Boolean> processingQueue;
+    @NotNull
+    private final CountDownLatch closedLatch;
     private volatile boolean isClosed;
 
     protected
@@ -28,6 +31,7 @@ class PickerModel extends Thread implements AutoCloseable {
         this.isClosed = false;
         this.entriesList = new ArrayList<>();
         this.processingQueue = new ArrayBlockingQueue<>(1);
+        this.closedLatch = new CountDownLatch(1);
     }
 
     public synchronized final
@@ -74,6 +78,13 @@ class PickerModel extends Thread implements AutoCloseable {
             synchronized (this.processingQueue) {
                 this.processingQueue.clear();
                 this.processingQueue.add(false);
+            }
+            try {
+                this.closedLatch.await();
+            } catch (final InterruptedException e) {
+                Thread.currentThread()
+                      .interrupt();
+                throw new RuntimeException(e);
             }
         }
     }
@@ -138,6 +149,7 @@ class PickerModel extends Thread implements AutoCloseable {
             AdminClientTui.catchAll(e);
         } finally {
             this.isClosed = true;
+            this.closedLatch.countDown();
         }
     }
 

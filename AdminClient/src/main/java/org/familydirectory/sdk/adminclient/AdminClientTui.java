@@ -62,60 +62,58 @@ class AdminClientTui {
         final List<String> arguments = Arrays.asList(args);
         DEBUG = arguments.contains("-d") || arguments.contains("--debug");
         setLanternaSttyPropertyKey();
-        try (final SdkClientProvider ignored = SdkClientProvider.getSdkClientProvider(); final MemberPicker memberPicker = new MemberPicker();
-             final CognitoUserPicker cognitoPicker = new CognitoUserPicker(); final SpousePicker spousePicker = new SpousePicker())
-        {
-            memberPicker.start();
-            cognitoPicker.start();
-            spousePicker.start();
+        try (final SdkClientProvider ignored = SdkClientProvider.getSdkClientProvider()) {
+            try (final MemberPicker memberPicker = new MemberPicker(); final CognitoUserPicker cognitoPicker = new CognitoUserPicker(); final SpousePicker spousePicker = new SpousePicker()) {
+                memberPicker.start();
+                cognitoPicker.start();
+                spousePicker.start();
 
-            final DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
-            try (final Screen screen = terminalFactory.createScreen()) {
-                screen.startScreen();
-                // TODO: Investigate WindowManager & Component (background) for alternate MultiWindowTextGui ctor
-                final WindowBasedTextGUI gui = new MultiWindowTextGUI(screen);
+                final DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory().setPreferTerminalEmulator(true);
+                try (final Screen screen = terminalFactory.createScreen()) {
+                    screen.startScreen();
+                    // TODO: Investigate WindowManager & Component (background) for alternate MultiWindowTextGui ctor
+                    final WindowBasedTextGUI gui = new MultiWindowTextGUI(screen);
 
-                while (true) {
-                    final ListSelectDialog<Commands> cmdListDialog = new ListSelectDialogBuilder<Commands>().setTitle("AdminClient")
-                                                                                                            .setDescription("Choose a Command")
-                                                                                                            .setCanCancel(false)
-                                                                                                            .setExtraWindowHints(EXTRA_WINDOW_HINTS)
-                                                                                                            .addListItems(Commands.values())
-                                                                                                            .build();
-                    final Commands cmd = cmdListDialog.showDialog(gui);
-                    final Enum<?>[] options = cmd.options();
-                    Enum<?> option = null;
-                    if (nonNull(options)) {
-                        final ListSelectDialog<Enum<?>> optionsListDialog = new ListSelectDialogBuilder<Enum<?>>().setTitle(cmd.name())
-                                                                                                                  .setDescription("Choose an Option")
-                                                                                                                  .setCanCancel(false)
-                                                                                                                  .setExtraWindowHints(EXTRA_WINDOW_HINTS)
-                                                                                                                  .addListItems(options)
-                                                                                                                  .build();
-                        option = optionsListDialog.showDialog(gui);
-                    }
-
-                    try (final EventHelper runner = switch (cmd) {
-                        case CREATE -> new CreateEvent(gui, (CreateOptions) requireNonNull(option), memberPicker, spousePicker);
-                        case UPDATE -> new UpdateEvent(gui, memberPicker, cognitoPicker, spousePicker);
-                        case DELETE -> new DeleteEvent(gui, memberPicker, cognitoPicker, spousePicker);
-                        case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(gui);
-                        case COGNITO_MANAGEMENT -> new CognitoManagementEvent(gui, (CognitoManagementOptions) requireNonNull(option), cognitoPicker);
-                        case TOOLKIT_CLEANER -> new ToolkitCleanerEvent(gui);
-                        case EXIT -> null;
-                    })
-                    {
-                        if (isNull(runner)) {
-                            return;
+                    while (true) {
+                        final ListSelectDialog<Commands> cmdListDialog = new ListSelectDialogBuilder<Commands>().setTitle("AdminClient")
+                                                                                                                .setDescription("Choose a Command")
+                                                                                                                .setCanCancel(false)
+                                                                                                                .setExtraWindowHints(EXTRA_WINDOW_HINTS)
+                                                                                                                .addListItems(Commands.values())
+                                                                                                                .build();
+                        final Commands cmd = cmdListDialog.showDialog(gui);
+                        final Enum<?>[] options = cmd.options();
+                        Enum<?> option = null;
+                        if (nonNull(options)) {
+                            final ListSelectDialog<Enum<?>> optionsListDialog = new ListSelectDialogBuilder<Enum<?>>().setTitle(cmd.name())
+                                                                                                                      .setDescription("Choose an Option")
+                                                                                                                      .setCanCancel(false)
+                                                                                                                      .setExtraWindowHints(EXTRA_WINDOW_HINTS)
+                                                                                                                      .addListItems(options)
+                                                                                                                      .build();
+                            option = optionsListDialog.showDialog(gui);
                         }
-                        runner.run();
+
+                        try (final EventHelper runner = switch (cmd) {
+                            case CREATE -> new CreateEvent(gui, (CreateOptions) requireNonNull(option), memberPicker, spousePicker);
+                            case UPDATE -> new UpdateEvent(gui, memberPicker, cognitoPicker, spousePicker);
+                            case DELETE -> new DeleteEvent(gui, memberPicker, cognitoPicker, spousePicker);
+                            case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(gui);
+                            case COGNITO_MANAGEMENT -> new CognitoManagementEvent(gui, (CognitoManagementOptions) requireNonNull(option), cognitoPicker);
+                            case TOOLKIT_CLEANER -> new ToolkitCleanerEvent(gui);
+                            case EXIT -> null;
+                        })
+                        {
+                            if (isNull(runner)) {
+                                return;
+                            }
+                            runner.run();
+                        }
                     }
+                } catch (final IOException e) {
+                    throw new RuntimeException(e);
                 }
-//      DO NOT PLACE ANY CODE HERE
-            } catch (final IOException e) {
-                throw new RuntimeException(e);
             }
-//      DO NOT PLACE ANY CODE HERE
         } catch (final Throwable e) {
             catchAll(e);
         }
