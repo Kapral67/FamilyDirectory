@@ -45,10 +45,12 @@ class AdminClientTui {
     @NotNull
     public static final String LANTERNA_STTY_PROPERTY_KEY = "com.googlecode.lanterna.terminal.UnixTerminal.sttyCommand";
     @NotNull
-    private static final String AWS_REGION = requireNonNull(getenv("AWS_REGION"));
+    public static final String README = "https://github.com/Kapral67/FamilyDirectory/blob/main/README.md";
     @NotNull
-    private static final String AWS_ACCOUNT_ID = requireNonNull(getenv("AWS_ACCOUNT_ID"));
-    private static volatile boolean DEBUG = false;
+    private static final String AWS_REGION = requireNonNull(getenv("AWS_REGION"), README);
+    @NotNull
+    private static final String AWS_ACCOUNT_ID = requireNonNull(getenv("AWS_ACCOUNT_ID"), README);
+    private static boolean DEBUG = false;
 
     private
     AdminClientTui () {
@@ -141,21 +143,25 @@ class AdminClientTui {
     private static
     String getSttyPath () {
         final String PATH = System.getenv("PATH");
-        if (isNull(PATH)) {
-            return null;
-        }
-        try {
-            for (final String dir : PATH.split(File.pathSeparator)) {
-                final Path path = Path.of(dir + File.separatorChar + "stty");
-                if (Files.exists(path)) {
-                    return path.toString();
+        if (nonNull(PATH)) {
+            try {
+                for (final String dir : PATH.split(File.pathSeparator)) {
+                    final Path path = Path.of(dir + File.separatorChar + "stty");
+                    if (Files.exists(path)) {
+                        return path.toString();
+                    }
                 }
-            }
-        } catch (final Exception e) {
-            if (DEBUG) {
-                Logger.debug(e.getMessage());
+            } catch (final Exception e) {
+                if (DEBUG) {
+                    Logger.debug(e.getMessage());
+                }
             }
         }
         return null;
+    }
+
+    public static
+    boolean isDEBUG () {
+        return DEBUG;
     }
 }

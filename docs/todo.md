@@ -1,9 +1,5 @@
 ## Feb 09 2024
 
-### AdminClient
-
-- Implement logic to detect Termux and set /path/to/stty accordingly
-
 ---
 
 ### Deferred Tasks
