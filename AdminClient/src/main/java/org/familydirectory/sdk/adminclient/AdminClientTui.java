@@ -71,9 +71,7 @@ class AdminClientTui {
                 final DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory().setPreferTerminalEmulator(true);
                 try (final Screen screen = terminalFactory.createScreen()) {
                     screen.startScreen();
-                    // TODO: Investigate WindowManager & Component (background) for alternate MultiWindowTextGui ctor
                     final WindowBasedTextGUI gui = new MultiWindowTextGUI(screen);
-
                     while (true) {
                         final ListSelectDialog<Commands> cmdListDialog = new ListSelectDialogBuilder<Commands>().setTitle("AdminClient")
                                                                                                                 .setDescription("Choose a Command")

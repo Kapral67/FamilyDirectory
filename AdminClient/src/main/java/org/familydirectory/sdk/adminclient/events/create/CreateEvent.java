@@ -88,6 +88,7 @@ class CreateEvent implements MemberEventHelper {
                     throw new IllegalStateException("SPOUSE already exists");
                 }
                 memberRecord = this.buildMemberRecord(UUID.randomUUID(), id);
+                this.spousePicker.removeEntry(nativeSpouse);
             }
             case DESCENDANT -> {
                 if (isNull(MemberEventHelper.getDdbItem(ROOT_ID, DdbTable.MEMBER))) {
@@ -109,7 +110,7 @@ class CreateEvent implements MemberEventHelper {
                          .transactWriteItems(this.buildCreateTransaction(memberRecord, id));
 
         this.memberPicker.addEntry(memberRecord);
-        if (this.createOption.equals(CreateOptions.SPOUSE)) {
+        if (!this.createOption.equals(CreateOptions.SPOUSE)) {
             this.spousePicker.addEntry(memberRecord);
         }
     }
