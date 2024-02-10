@@ -4,8 +4,6 @@
 
 ### Deferred Tasks
 
-### Changelog
-
 - Maybe CREATE/UPDATE/DELETE should publish their changes to some kind of log so that releases of PDFs/vCard files can
   include the changes?
     - To do this, we'd need to have some kind of locking applied to the log:
