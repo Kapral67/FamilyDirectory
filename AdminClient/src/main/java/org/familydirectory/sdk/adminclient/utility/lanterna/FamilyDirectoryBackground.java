@@ -29,6 +29,7 @@ import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import static java.util.Objects.isNull;
 import static org.familydirectory.assets.Constants.VERSION_STR;
 
 /**
@@ -41,11 +42,24 @@ import static org.familydirectory.assets.Constants.VERSION_STR;
  */
 public final
 class FamilyDirectoryBackground extends EmptySpace {
+    @Nullable
+    private final TextColor.ANSI textColor;
+    @Nullable
+    private final TextColor.ANSI backgroundColor;
+
+    public
+    FamilyDirectoryBackground (final @Nullable TextColor.ANSI textColor, final @Nullable TextColor.ANSI backgroundColor) {
+        super();
+        this.textColor = textColor;
+        this.backgroundColor = backgroundColor;
+    }
+
     @Contract(value = " -> new", pure = true)
     @Override
     @NotNull
     protected
     ComponentRenderer<EmptySpace> createDefaultRenderer () {
+        final boolean text = false;
         return new ComponentRenderer<>() {
             @Override
             @NotNull
@@ -57,8 +71,12 @@ class FamilyDirectoryBackground extends EmptySpace {
             @Override
             public
             void drawComponent (final @NotNull TextGUIGraphics graphics, final @Nullable EmptySpace ignored) {
-                graphics.setForegroundColor(TextColor.ANSI.BLACK);
-                graphics.setBackgroundColor(TextColor.ANSI.BLACK_BRIGHT);
+                graphics.setForegroundColor(isNull(FamilyDirectoryBackground.this.textColor)
+                                                    ? TextColor.ANSI.BLACK
+                                                    : FamilyDirectoryBackground.this.textColor);
+                graphics.setBackgroundColor(isNull(FamilyDirectoryBackground.this.backgroundColor)
+                                                    ? TextColor.ANSI.BLUE_BRIGHT
+                                                    : FamilyDirectoryBackground.this.backgroundColor);
                 graphics.fill(' ');
                 final TerminalSize terminalSize = graphics.getSize();
                 final String awsId = "AWS ACCOUNT ID: " + AdminClientTui.AWS_ACCOUNT_ID;

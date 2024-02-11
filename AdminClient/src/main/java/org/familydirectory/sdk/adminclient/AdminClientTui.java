@@ -1,5 +1,6 @@
 package org.familydirectory.sdk.adminclient;
 
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.DefaultWindowManager;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Window;
@@ -57,10 +58,15 @@ class AdminClientTui {
     @NotNull
     private static final String HELP_MSG = """
                                            Family Directory AdminClient v%s
-                                             -d | --debug    show debug messages
-                                             -h | --help     show this message
-                                             -v | --version  show this message
-                                             -w | --window   prefer windowed mode""".formatted(Constants.VERSION_STR);
+                                             -b | --background  COLOR  background color
+                                             -d | --debug              show debug messages
+                                             -h | --help               show this message
+                                             -t | --text        COLOR  text color
+                                             -v | --version            show this message
+                                             -w | --window             prefer windowed mode
+                                                                                      
+                                           COLOR:
+                                             [ BLACK, BLUE, CYAN, GREEN, MAGENTA, RED, WHITE, YELLOW ]""".formatted(Constants.VERSION_STR);
     private static boolean DEBUG = false;
 
     private
@@ -86,7 +92,9 @@ class AdminClientTui {
                 final DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory().setPreferTerminalEmulator(arguments.contains("-w") || arguments.contains("--window"));
                 try (final Screen screen = terminalFactory.createScreen()) {
                     screen.startScreen();
-                    final WindowBasedTextGUI gui = new MultiWindowTextGUI(screen, new DefaultWindowManager(), new FamilyDirectoryBackground());
+                    final WindowBasedTextGUI gui = new MultiWindowTextGUI(screen, new DefaultWindowManager(), new FamilyDirectoryBackground(getColorFromCmdLineArgs(arguments, List.of("-t", "--text")),
+                                                                                                                                            getColorFromCmdLineArgs(arguments,
+                                                                                                                                                                    List.of("-b", "--background"))));
                     while (true) {
                         final ListSelectDialog<Commands> cmdListDialog = new ListSelectDialogBuilder<Commands>().setTitle("AdminClient")
                                                                                                                 .setDescription("Choose a Command")
@@ -175,6 +183,24 @@ class AdminClientTui {
             }
         }
         return null;
+    }
+
+    @Nullable
+    private static
+    TextColor.ANSI getColorFromCmdLineArgs (final @NotNull List<String> arguments, final @NotNull List<String> argPrefixes) {
+        TextColor.ANSI color = null;
+        for (int i = 0; i < arguments.size() - 1; ++i) {
+            if (argPrefixes.contains(arguments.get(i))) {
+                try {
+                    color = TextColor.ANSI.valueOf(arguments.get(i + 1)
+                                                            .trim()
+                                                            .toUpperCase());
+                    break;
+                } catch (final IllegalArgumentException ignored) {
+                }
+            }
+        }
+        return color;
     }
 
     public static
