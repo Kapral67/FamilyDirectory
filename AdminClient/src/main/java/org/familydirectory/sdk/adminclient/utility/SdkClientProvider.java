@@ -2,6 +2,7 @@ package org.familydirectory.sdk.adminclient.utility;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.annotations.ThreadSafe;
 import software.amazon.awssdk.core.SdkClient;
@@ -12,7 +13,8 @@ import static java.util.Objects.requireNonNull;
 @ThreadSafe
 public final
 class SdkClientProvider implements SdkAutoCloseable {
-    private static volatile SdkClientProvider INSTANCE = null;
+    @NotNull
+    private static final AtomicReference<SdkClientProvider> INSTANCE = new AtomicReference<>(null);
     @NotNull
     private final ConcurrentHashMap<Class<? extends SdkClient>, SdkClient> clientMap;
 
@@ -24,10 +26,10 @@ class SdkClientProvider implements SdkAutoCloseable {
 
     public static synchronized
     SdkClientProvider getSdkClientProvider () {
-        if (isNull(INSTANCE)) {
-            INSTANCE = new SdkClientProvider();
+        if (isNull(INSTANCE.get())) {
+            INSTANCE.set(new SdkClientProvider());
         }
-        return INSTANCE;
+        return INSTANCE.get();
     }
 
     @NotNull

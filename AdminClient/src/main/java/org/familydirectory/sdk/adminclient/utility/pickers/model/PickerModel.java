@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.jetbrains.annotations.Contract;
@@ -15,6 +16,7 @@ import org.jetbrains.annotations.UnmodifiableView;
 
 public abstract
 class PickerModel extends Thread implements AutoCloseable {
+    @NotNull
     protected static final Comparator<MemberRecord> FIRST_NAME_COMPARATOR = Comparator.comparing(memberRecord -> memberRecord.member()
                                                                                                                              .getFirstName());
 
@@ -24,17 +26,19 @@ class PickerModel extends Thread implements AutoCloseable {
     private final BlockingQueue<Boolean> processingQueue;
     @NotNull
     private final CountDownLatch closedLatch;
-    private volatile boolean isClosed;
+    @NotNull
+    private final AtomicBoolean isClosed;
 
     protected
     PickerModel () {
-        this.isClosed = false;
+        super();
+        this.isClosed = new AtomicBoolean(false);
         this.entriesList = new ArrayList<>();
         this.processingQueue = new ArrayBlockingQueue<>(1);
         this.closedLatch = new CountDownLatch(1);
     }
 
-    public synchronized final
+    public final synchronized
     boolean isEmpty () {
         this.blockUntilReady();
         return this.is_empty();
@@ -57,7 +61,7 @@ class PickerModel extends Thread implements AutoCloseable {
         }
     }
 
-    protected synchronized final
+    protected final synchronized
     void safeWait () {
         try {
             this.wait();
@@ -91,13 +95,13 @@ class PickerModel extends Thread implements AutoCloseable {
 
     public final
     boolean isClosed () {
-        if (!this.isAlive() && !this.isClosed) {
-            this.isClosed = true;
+        if (!this.isAlive() && !this.isClosed.get()) {
+            this.isClosed.set(true);
         }
-        return this.isClosed;
+        return this.isClosed.get();
     }
 
-    public synchronized final
+    public final synchronized
     void removeEntry (final @NotNull MemberRecord memberRecord) {
         this.blockUntilReady();
         this.remove_entry(memberRecord);
@@ -108,7 +112,7 @@ class PickerModel extends Thread implements AutoCloseable {
         this.entriesList.remove(memberRecord);
     }
 
-    public synchronized final
+    public final synchronized
     void addEntry (final @NotNull MemberRecord memberRecord) {
         this.blockUntilReady();
         this.add_entry(memberRecord);
@@ -124,7 +128,7 @@ class PickerModel extends Thread implements AutoCloseable {
     @Contract(pure = true)
     @NotNull
     @UnmodifiableView
-    public synchronized final
+    public final synchronized
     List<MemberRecord> getEntries () {
         this.blockUntilReady();
         return Collections.unmodifiableList(this.entriesList);
@@ -156,7 +160,7 @@ class PickerModel extends Thread implements AutoCloseable {
         } catch (final Throwable e) {
             AdminClientTui.catchAll(e);
         } finally {
-            this.isClosed = true;
+            this.isClosed.set(true);
             this.closedLatch.countDown();
         }
     }

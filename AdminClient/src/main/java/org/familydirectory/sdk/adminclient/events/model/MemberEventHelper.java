@@ -60,7 +60,7 @@ import static java.util.Optional.ofNullable;
 
 public
 interface MemberEventHelper extends EventHelper {
-    String ROOT_ID = DdbUtils.ROOT_MEMBER_ID;
+    @NotNull String ROOT_ID = DdbUtils.ROOT_MEMBER_ID;
 
     @NotNull
     static
@@ -239,8 +239,12 @@ interface MemberEventHelper extends EventHelper {
             final LocalDate finalBirthday = birthday;
             switch (param) {
                 case FIRST_NAME -> {
-                    final String desc = ("Must match pattern: ^A-Za-z\\-_'$%nMust NOT match pattern: ^['_-]+[A-Za-z\\-'_]*$%n_ & - chars result in the immediate succeeding char being " +
-                                         "capitalized%n_ chars are removed, useful for names like McDonald (input: mc_donald)%n%n[Required] Please Enter %s:").formatted(param.jsonFieldName());
+                    final String desc = """
+                                        Must match pattern: ^[A-Za-z]+[A-Za-z'_-]*$
+                                        _ & - chars result in the immediate succeeding char being capitalized
+                                        _ chars are removed, useful for names like McDonald (input: mc_donald)
+                                                                                 
+                                        [Required] Please Enter %s:""".formatted(param.jsonFieldName());
                     final TextInputDialogResultValidator validator = (content) -> {
                         try {
                             Member.builder()
@@ -254,8 +258,12 @@ interface MemberEventHelper extends EventHelper {
                     memberBuilder.firstName(requireNonNull(dialog.showDialog(gui)));
                 }
                 case MIDDLE_NAME -> {
-                    final String desc = ("Must match pattern: ^A-Za-z\\-_'$%nMust NOT match pattern: ^['_-]+[A-Za-z\\-'_]*$%n_ & - chars result in the immediate succeeding char being " +
-                                         "capitalized%n_ chars are removed, useful for names like McDonald (input: mc_donald)%n%n[Optional] Please Enter %s:").formatted(param.jsonFieldName());
+                    final String desc = """
+                                        Must match pattern: ^[A-Za-z]+[A-Za-z'_-]*$
+                                        _ & - chars result in the immediate succeeding char being capitalized
+                                        _ chars are removed, useful for names like McDonald (input: mc_donald)
+                                                                                 
+                                        [Optional] Please Enter %s:""".formatted(param.jsonFieldName());
                     final TextInputDialogResultValidator validator = (content) -> {
                         try {
                             Member.builder()
@@ -269,9 +277,12 @@ interface MemberEventHelper extends EventHelper {
                     memberBuilder.middleName(dialog.showDialog(gui));
                 }
                 case LAST_NAME -> {
-                    final String desc = (
-                            "Must match pattern: ^A-Za-z\\-_'$%nMust NOT match pattern: ^['_-]+[A-Za-z\\-'_]*$%n_ & - chars result in the immediate succeeding char being capitalized%n_ " +
-                            "chars are removed, useful for names like McDonald (input: mc_donald)%n%n[Required] Please Enter %s:").formatted(param.jsonFieldName());
+                    final String desc = """
+                                        Must match pattern: ^[A-Za-z]+[A-Za-z'_-]*$
+                                        _ & - chars result in the immediate succeeding char being capitalized
+                                        _ chars are removed, useful for names like McDonald (input: mc_donald)
+                                                                                 
+                                        [Required] Please Enter %s:""".formatted(param.jsonFieldName());
                     final TextInputDialogResultValidator validator = (content) -> {
                         try {
                             Member.builder()
@@ -289,7 +300,11 @@ interface MemberEventHelper extends EventHelper {
                     memberBuilder.suffix(dialog.showDialog(gui));
                 }
                 case BIRTHDAY -> {
-                    final String desc = ("Must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)%n%n[Required] Please Enter %s:").formatted(param.jsonFieldName());
+                    final String desc = """
+                                        Must be formatted like yyyy-MM-dd
+                                          e.g. 1970-01-01 -> Jan 1st 1970
+                                                                                
+                                        [Required] Please Enter %s:""".formatted(param.jsonFieldName());
                     final TextInputDialogResultValidator validator = (content) -> {
                         try {
                             Member.builder()
@@ -304,7 +319,11 @@ interface MemberEventHelper extends EventHelper {
                     memberBuilder.birthday(birthday);
                 }
                 case DEATHDAY -> {
-                    final String desc = ("Must be formatted like yyyy-MM-dd (e.g. 1970-12-31 -> Dec. 31, 1970)%n%n[Optional] Please Enter %s:").formatted(param.jsonFieldName());
+                    final String desc = """
+                                        Must be formatted like yyyy-MM-dd
+                                          e.g. 1970-01-01 -> Jan 1st 1970
+                                                                                
+                                        [Optional] Please Enter %s:""".formatted(param.jsonFieldName());
                     final TextInputDialogResultValidator validator = (content) -> {
                         if (isNull(content)) {
                             return null;
@@ -349,7 +368,9 @@ interface MemberEventHelper extends EventHelper {
                     if (msgDialog.showDialog(gui)
                                  .equals(MessageDialogButton.Yes))
                     {
-                        final String descPrefix = "For US numbers: '+' & Country Code are Optional%nFor Int'l Numbers: '+' & Country Code are Required".formatted();
+                        final String descPrefix = """
+                                                  For US numbers: '+' & Country Code are Optional
+                                                  For Int'l Numbers: '+' & Country Code are Required""";
                         final TextInputDialogResultValidator validator = (content) -> {
                             try {
                                 DdbUtils.normalizePhoneNumber(content);

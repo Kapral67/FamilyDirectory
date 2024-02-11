@@ -31,6 +31,7 @@ import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.familydirectory.sdk.adminclient.utility.CanceledException;
 import org.jetbrains.annotations.NotNull;
@@ -46,7 +47,8 @@ import static java.util.Objects.requireNonNull;
  */
 public final
 class SkippableListSelectDialog<T> extends DialogWindow {
-    private volatile boolean isCanceled;
+    @NotNull
+    private final AtomicBoolean isCanceled;
     @Nullable
     private T result;
 
@@ -55,7 +57,7 @@ class SkippableListSelectDialog<T> extends DialogWindow {
                                final @Nullable TerminalSize listBoxSize)
     {
         super(requireNonNull(title));
-        this.isCanceled = false;
+        this.isCanceled = new AtomicBoolean(false);
         this.result = null;
         this.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
         if (content.isEmpty()) {
@@ -101,7 +103,7 @@ class SkippableListSelectDialog<T> extends DialogWindow {
 
     private
     void cancel () {
-        this.isCanceled = true;
+        this.isCanceled.set(true);
         this.close();
     }
 
@@ -111,7 +113,7 @@ class SkippableListSelectDialog<T> extends DialogWindow {
     T showDialog (final WindowBasedTextGUI textGUI) {
         this.result = null;
         super.showDialog(textGUI);
-        if (this.isCanceled) {
+        if (this.isCanceled.get()) {
             throw new CanceledException();
         }
         return this.result;

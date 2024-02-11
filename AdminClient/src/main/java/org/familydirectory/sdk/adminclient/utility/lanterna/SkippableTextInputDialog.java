@@ -33,6 +33,7 @@ import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.gui2.dialogs.TextInputDialogResultValidator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.familydirectory.sdk.adminclient.utility.CanceledException;
 import org.jetbrains.annotations.NotNull;
@@ -53,7 +54,8 @@ class SkippableTextInputDialog extends DialogWindow {
     private final TextBox textBox;
     @Nullable
     private final TextInputDialogResultValidator validator;
-    private volatile boolean isCanceled;
+    @NotNull
+    private final AtomicBoolean isCanceled;
     @Nullable
     private String result;
 
@@ -65,7 +67,7 @@ class SkippableTextInputDialog extends DialogWindow {
         this.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
         this.textBox = new TextBox();
         this.validator = validator;
-        this.isCanceled = false;
+        this.isCanceled = new AtomicBoolean(false);
         this.result = null;
 
         final Panel buttonPanel = new Panel();
@@ -110,7 +112,7 @@ class SkippableTextInputDialog extends DialogWindow {
 
     private
     void cancel () {
-        this.isCanceled = true;
+        this.isCanceled.set(true);
         this.close();
     }
 
@@ -120,7 +122,7 @@ class SkippableTextInputDialog extends DialogWindow {
     String showDialog (final WindowBasedTextGUI textGUI) {
         this.result = null;
         super.showDialog(textGUI);
-        if (this.isCanceled) {
+        if (this.isCanceled.get()) {
             throw new CanceledException();
         }
         return this.result;

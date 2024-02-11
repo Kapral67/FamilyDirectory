@@ -33,8 +33,8 @@ import static java.util.Objects.requireNonNull;
 public final
 class ToolkitCleanerEvent implements EventHelper {
     private static final int HASH_LENGTH = 64;
-    private static final Pattern CFN_TEMPLATE_HASHES_PATTERN = Pattern.compile("[a-f0-9]{%d}".formatted(HASH_LENGTH));
-    private static final String ASSET_BUCKET_PREFIX = "cdk";
+    private static final @NotNull Pattern CFN_TEMPLATE_HASHES_PATTERN = Pattern.compile("[a-f0-9]{%d}".formatted(HASH_LENGTH));
+    private static final @NotNull String ASSET_BUCKET_PREFIX = "cdk";
     private final long[] deletedItems = {0L};
     private final long[] reclaimedBytes = {0L};
     private final @NotNull S3Client s3Client;
