@@ -2,7 +2,6 @@ package org.familydirectory.sdk.adminclient.utility;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
-import com.googlecode.lanterna.gui2.dialogs.WaitingDialog;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -10,6 +9,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.familydirectory.sdk.adminclient.utility.lanterna.RefreshableListSelectDialog;
+import org.familydirectory.sdk.adminclient.utility.lanterna.WaitingDialog;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -41,8 +41,13 @@ import static java.util.Objects.requireNonNull;
 public final
 class EnhancedWaitingDialog extends DialogWindow {
     private static final long MILLIS_IN_SEC = 1000L;
+    @NotNull
     private static final String FORMAT_TEXT = "Please Wait for %d Seconds";
     private final long seconds;
+    @NotNull
+    private final AnimatedLabel countDownLabel;
+    @NotNull
+    private final AnimatedLabel spinningLine;
 
     public
     EnhancedWaitingDialog (final @NotNull String title, final long seconds) {
@@ -52,7 +57,9 @@ class EnhancedWaitingDialog extends DialogWindow {
             throw new IllegalArgumentException("seconds must be 1 or greater");
         }
         this.seconds = seconds;
-        this.setComponent(Panels.horizontal(this.getCountDownLabel(), AnimatedLabel.createClassicSpinningLine()));
+        this.countDownLabel = this.getCountDownLabel();
+        this.spinningLine = AnimatedLabel.createClassicSpinningLine();
+        this.setComponent(Panels.horizontal(this.countDownLabel, this.spinningLine));
     }
 
     @NotNull
@@ -88,5 +95,16 @@ class EnhancedWaitingDialog extends DialogWindow {
                          });
         this.waitUntilClosed();
         return null;
+    }
+
+    /**
+     * TODO: Delete this once <a href="https://github.com/mabe02/lanterna/issues/595">lantera issue #595</a> is resolved
+     */
+    @Override
+    public
+    void close () {
+        super.close();
+        this.countDownLabel.stopAnimation();
+        this.spinningLine.stopAnimation();
     }
 }

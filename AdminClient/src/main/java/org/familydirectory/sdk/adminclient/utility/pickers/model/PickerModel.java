@@ -95,7 +95,7 @@ class PickerModel extends Thread implements AutoCloseable {
 
     public final
     boolean isClosed () {
-        if (!this.isAlive() && !this.isClosed.get()) {
+        if (!(this.isAlive() || this.isClosed.get())) {
             this.isClosed.set(true);
         }
         return this.isClosed.get();
