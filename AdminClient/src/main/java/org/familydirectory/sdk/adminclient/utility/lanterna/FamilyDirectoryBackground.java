@@ -82,16 +82,16 @@ class FamilyDirectoryBackground extends EmptySpace {
                 final String awsId = "AWS ACCOUNT ID: " + AdminClientTui.AWS_ACCOUNT_ID;
                 final String awsRegion = "AWS REGION: " + AdminClientTui.AWS_REGION;
                 final String version = 'v' + VERSION_STR;
-                final boolean widthCheck = (awsId.length() + awsRegion.length() + 1) < terminalSize.getColumns();
-                graphics.putString(0, 0, awsId);
+                final boolean widthCheck = (awsId.length() + awsRegion.length() + 3) < terminalSize.getColumns();
+                graphics.putString(1, 0, awsId);
                 final int awsRegionColumn = widthCheck
-                        ? terminalSize.getColumns() - awsRegion.length()
-                        : 0;
+                        ? terminalSize.getColumns() - awsRegion.length() - 1
+                        : 1;
                 final int awsRegionRow = widthCheck
                         ? 0
                         : 1;
                 graphics.putString(awsRegionColumn, awsRegionRow, awsRegion);
-                graphics.putString(terminalSize.getColumns() - version.length(), terminalSize.getRows() - 1, version);
+                graphics.putString(terminalSize.getColumns() - version.length() - 1, terminalSize.getRows() - 1, version);
             }
         };
     }
