@@ -61,7 +61,7 @@ class AdminClientTui {
                                              -b | --background  COLOR  background color
                                              -d | --debug              show debug messages
                                              -h | --help               show this message
-                                             -t | --text        COLOR  text color
+                                             -t | --text        COLOR  background text color
                                              -v | --version            show this message
                                              -w | --window             prefer windowed mode
                                                                                       
