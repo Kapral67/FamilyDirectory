@@ -16,7 +16,7 @@
 
 ### Dependency Upgrade Tracking PRs
 
-- ==PLACEHOLDER==
+- #775 - #809
 
 ## v0.6
 
