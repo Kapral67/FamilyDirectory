@@ -61,6 +61,7 @@ class SpousePicker extends PickerModel {
                                                              .isEmpty())
         {
             this.precheck_add_entry(memberRecord);
+            this.entriesList.sort(FIRST_NAME_COMPARATOR);
         }
     }
 
@@ -68,7 +69,6 @@ class SpousePicker extends PickerModel {
     protected
     void syncRun () {
         this.entriesSet.clear();
-        this.entriesList.clear();
 
         Map<String, AttributeValue> lastEvaluatedKey = emptyMap();
         do {
@@ -96,7 +96,6 @@ class SpousePicker extends PickerModel {
             lastEvaluatedKey = scanResponse.lastEvaluatedKey();
 
         } while (!lastEvaluatedKey.isEmpty());
-        this.entriesList.sort(FIRST_NAME_COMPARATOR);
     }
 
     private

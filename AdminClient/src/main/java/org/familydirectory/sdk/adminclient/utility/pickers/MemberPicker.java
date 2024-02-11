@@ -51,13 +51,13 @@ class MemberPicker extends PickerModel {
         this.remove_entry(memberRecord);
         this.entriesSet.add(memberRecord);
         this.entriesList.add(memberRecord);
+        this.entriesList.sort(FIRST_NAME_COMPARATOR);
     }
 
     @Override
     protected
     void syncRun () {
         this.entriesSet.clear();
-        this.entriesList.clear();
 
         Map<String, AttributeValue> lastEvaluatedKey = emptyMap();
         do {
@@ -80,6 +80,5 @@ class MemberPicker extends PickerModel {
             lastEvaluatedKey = scanResponse.lastEvaluatedKey();
 
         } while (!lastEvaluatedKey.isEmpty());
-        this.entriesList.sort(FIRST_NAME_COMPARATOR);
     }
 }

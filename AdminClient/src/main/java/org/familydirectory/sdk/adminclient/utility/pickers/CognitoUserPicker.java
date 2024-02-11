@@ -74,6 +74,7 @@ class CognitoUserPicker extends PickerModel {
         if (nonNull(sub)) {
             this.entriesMap.put(memberRecord, sub);
             this.entriesList.add(memberRecord);
+            this.entriesList.sort(FIRST_NAME_COMPARATOR);
         }
     }
 
@@ -109,7 +110,6 @@ class CognitoUserPicker extends PickerModel {
     protected
     void syncRun () {
         this.entriesMap.clear();
-        this.entriesList.clear();
 
         Map<String, AttributeValue> lastEvaluatedKey = emptyMap();
         do {
@@ -135,6 +135,5 @@ class CognitoUserPicker extends PickerModel {
 
             lastEvaluatedKey = scanResponse.lastEvaluatedKey();
         } while (!lastEvaluatedKey.isEmpty());
-        this.entriesList.sort(FIRST_NAME_COMPARATOR);
     }
 }

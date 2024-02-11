@@ -103,8 +103,10 @@ class PickerModel extends Thread implements AutoCloseable {
         this.remove_entry(memberRecord);
     }
 
-    protected abstract
-    void remove_entry (final @NotNull MemberRecord memberRecord);
+    protected
+    void remove_entry (final @NotNull MemberRecord memberRecord) {
+        this.entriesList.remove(memberRecord);
+    }
 
     public synchronized final
     void addEntry (final @NotNull MemberRecord memberRecord) {
@@ -112,8 +114,12 @@ class PickerModel extends Thread implements AutoCloseable {
         this.add_entry(memberRecord);
     }
 
-    protected abstract
-    void add_entry (final @NotNull MemberRecord memberRecord);
+    protected
+    void add_entry (final @NotNull MemberRecord memberRecord) {
+        this.remove_entry(memberRecord);
+        this.entriesList.add(memberRecord);
+        this.entriesList.sort(FIRST_NAME_COMPARATOR);
+    }
 
     @Contract(pure = true)
     @NotNull
@@ -137,7 +143,9 @@ class PickerModel extends Thread implements AutoCloseable {
                         return;
                     }
                     synchronized (this) {
+                        this.entriesList.clear();
                         this.syncRun();
+                        this.entriesList.sort(FIRST_NAME_COMPARATOR);
                         this.notify();
                     }
                 } while (this.processingQueue.take());
