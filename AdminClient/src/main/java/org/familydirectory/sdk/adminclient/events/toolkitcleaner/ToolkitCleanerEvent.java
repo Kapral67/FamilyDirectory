@@ -1,23 +1,25 @@
 package org.familydirectory.sdk.adminclient.events.toolkitcleaner;
 
-import io.leego.banana.Ansi;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import java.util.HashSet;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.familydirectory.sdk.adminclient.enums.ByteDivisor;
+import org.familydirectory.sdk.adminclient.enums.Commands;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.records.ToolkitCleanerResponse;
-import org.familydirectory.sdk.adminclient.utility.Logger;
+import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest;
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksResponse;
 import software.amazon.awssdk.services.cloudformation.model.GetTemplateRequest;
 import software.amazon.awssdk.services.cloudformation.model.Stack;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -35,82 +37,64 @@ class ToolkitCleanerEvent implements EventHelper {
     private static final String ASSET_BUCKET_PREFIX = "cdk";
     private final long[] deletedItems = {0L};
     private final long[] reclaimedBytes = {0L};
-    private final @NotNull S3Client s3Client = S3Client.builder()
-                                                       .crossRegionAccessEnabled(true)
-                                                       .build();
-    private final @NotNull CloudFormationClient cfnClient = CloudFormationClient.create();
-    private final @NotNull Scanner scanner;
+    private final @NotNull S3Client s3Client;
+    private final @NotNull WindowBasedTextGUI gui;
 
     public
-    ToolkitCleanerEvent (final @NotNull Scanner scanner) {
+    ToolkitCleanerEvent (final @NotNull WindowBasedTextGUI gui) {
         super();
-        this.scanner = requireNonNull(scanner);
-    }
-
-    @Override
-    public @NotNull
-    Scanner scanner () {
-        return this.scanner;
-    }
-
-    @Override
-    @Deprecated
-    @NotNull
-    public
-    DynamoDbClient getDynamoDbClient () {
-        throw new UnsupportedOperationException("DynamoDbClient Not Implemented");
+        this.gui = requireNonNull(gui);
+        this.s3Client = S3Client.builder()
+                                .crossRegionAccessEnabled(true)
+                                .build();
     }
 
     @Override
     public
-    void close () {
-        this.s3Client.close();
-        this.cfnClient.close();
-    }
-
-    @Override
-    public
-    void execute () {
-        Logger.customLine("Clean CDK S3 Assets? (Y/n)", Ansi.BOLD, Ansi.BLUE);
-        final String choice = this.scanner.nextLine()
-                                          .trim();
-        if (!choice.isBlank()) {
-            System.out.println();
-            if (choice.equalsIgnoreCase("n")) {
-                return;
+    void run () {
+        final MessageDialog msgDialog = new MessageDialogBuilder().setTitle(Commands.TOOLKIT_CLEANER.name())
+                                                                  .setText("Clean CDK S3 Assets?")
+                                                                  .addButton(MessageDialogButton.Yes)
+                                                                  .addButton(MessageDialogButton.No)
+                                                                  .build();
+        if (msgDialog.showDialog(this.gui)
+                     .equals(MessageDialogButton.Yes))
+        {
+            final ToolkitCleanerResponse response = this.cleanObjects(this.extractTemplateHashes(this.getStackNames()));
+            final StringBuilder responseBuilder = new StringBuilder("Deleted Items: %d | ".formatted(response.deletedItems()));
+            final double bytes = response.reclaimed(ByteDivisor.NONE);
+            if (bytes < ByteDivisor.KILO.divisor()) {
+                responseBuilder.append("Reclaimed Space: %d Bytes".formatted(response.reclaimedBytes()));
+            } else if (bytes < ByteDivisor.MEGA.divisor()) {
+                responseBuilder.append("Reclaimed Space: %f KiB".formatted(response.reclaimed(ByteDivisor.KIBI)));
+            } else if (bytes < ByteDivisor.GIGA.divisor()) {
+                responseBuilder.append("Reclaimed Space: %f MiB".formatted(response.reclaimed(ByteDivisor.MEBI)));
+            } else {
+                responseBuilder.append("Reclaimed Space: %f GiB".formatted(response.reclaimed(ByteDivisor.GIBI)));
             }
+            new MessageDialogBuilder().setTitle(Commands.TOOLKIT_CLEANER.name())
+                                      .setText(responseBuilder.toString())
+                                      .addButton(MessageDialogButton.OK)
+                                      .build()
+                                      .showDialog(this.gui);
         }
-
-        final ToolkitCleanerResponse response = this.cleanObjects(this.extractTemplateHashes(this.getStackNames()));
-
-        Logger.custom("", "Deleted Items: %d | ".formatted(response.deletedItems()), Ansi.BOLD, Ansi.PURPLE);
-        final double bytes = response.reclaimed(ByteDivisor.NONE);
-        if (bytes < ByteDivisor.KILO.divisor()) {
-            Logger.customLine("Reclaimed Space: %d Bytes".formatted(response.reclaimedBytes()), Ansi.BOLD, Ansi.PURPLE);
-        } else if (bytes < ByteDivisor.MEGA.divisor()) {
-            Logger.customLine("Reclaimed Space: %f KiB".formatted(response.reclaimed(ByteDivisor.KIBI)), Ansi.BOLD, Ansi.PURPLE);
-        } else if (bytes < ByteDivisor.GIGA.divisor()) {
-            Logger.customLine("Reclaimed Space: %f MiB".formatted(response.reclaimed(ByteDivisor.MEBI)), Ansi.BOLD, Ansi.PURPLE);
-        } else {
-            Logger.customLine("Reclaimed Space: %f GiB".formatted(response.reclaimed(ByteDivisor.GIBI)), Ansi.BOLD, Ansi.PURPLE);
-        }
-
-        System.out.println();
     }
 
     @NotNull
-    public
+    private
     Set<String> getStackNames () {
+        final CloudFormationClient cfnClient = SdkClientProvider.getSdkClientProvider()
+                                                                .getSdkClient(CloudFormationClient.class);
         final Set<String> stacks = new HashSet<>();
         String nextToken = null;
         do {
             final DescribeStacksResponse response;
             if (isNull(nextToken)) {
-                response = this.cfnClient.describeStacks();
+                response = cfnClient.describeStacks();
             } else {
-                response = this.cfnClient.describeStacks(DescribeStacksRequest.builder()
-                                                                              .nextToken(nextToken)
-                                                                              .build());
+                response = cfnClient.describeStacks(DescribeStacksRequest.builder()
+                                                                         .nextToken(nextToken)
+                                                                         .build());
             }
             nextToken = response.nextToken();
             stacks.addAll(response.stacks()
@@ -122,14 +106,16 @@ class ToolkitCleanerEvent implements EventHelper {
     }
 
     @NotNull
-    public
+    private
     Set<String> extractTemplateHashes (final @NotNull Set<String> stackNames) {
         final Set<String> hashes = new HashSet<>();
         stackNames.forEach(stackName -> {
-            final String templateBody = this.cfnClient.getTemplate(GetTemplateRequest.builder()
-                                                                                     .stackName(stackName)
-                                                                                     .build())
-                                                      .templateBody();
+            final String templateBody = SdkClientProvider.getSdkClientProvider()
+                                                         .getSdkClient(CloudFormationClient.class)
+                                                         .getTemplate(GetTemplateRequest.builder()
+                                                                                        .stackName(stackName)
+                                                                                        .build())
+                                                         .templateBody();
             final Matcher hashesMatcher = CFN_TEMPLATE_HASHES_PATTERN.matcher(templateBody);
             while (hashesMatcher.find()) {
                 hashes.add(hashesMatcher.group());
@@ -139,7 +125,7 @@ class ToolkitCleanerEvent implements EventHelper {
     }
 
     @NotNull
-    public
+    private
     ToolkitCleanerResponse cleanObjects (final @NotNull Set<String> assetHashes) {
         final Set<String> buckets = this.s3Client.listBuckets()
                                                  .buckets()
@@ -194,5 +180,11 @@ class ToolkitCleanerEvent implements EventHelper {
             } while (nonNull(keyMarker) || nonNull(versionIdMarker));
         });
         return new ToolkitCleanerResponse(this.deletedItems[0], this.reclaimedBytes[0]);
+    }
+
+    @Override
+    public
+    void close () {
+        this.s3Client.close();
     }
 }

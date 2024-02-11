@@ -18,6 +18,7 @@ import org.familydirectory.assets.ddb.utils.LocalDateDeserializer;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
 import static java.time.LocalDate.now;
@@ -132,6 +133,7 @@ class Member extends MemberModel {
 
     @Override
     @Nullable
+    @UnmodifiableView
     public
     List<String> getAddress () {
         return this.address;
@@ -139,6 +141,7 @@ class Member extends MemberModel {
 
     @Override
     @Nullable
+    @UnmodifiableView
     public
     Map<PhoneType, String> getPhones () {
         return this.phones;
@@ -298,7 +301,7 @@ class Member extends MemberModel {
             } else if (email.contains(String.valueOf(DAGGER))) {
                 throw new IllegalArgumentException("Forbidden Character in Email");
             }
-            final String e_mail = email.replaceAll("\\s", "")
+            final String e_mail = email.replaceAll("\\s+", "")
                                        .toLowerCase();
             if (!DdbUtils.EMAIL_VALIDATOR.isValid(e_mail)) {
                 throw new IllegalArgumentException("Email Invalid");
@@ -382,7 +385,7 @@ class Member extends MemberModel {
                                                     .filter(Predicate.not(Objects::isNull))
                                                     .map(String::trim)
                                                     .filter(Predicate.not(String::isBlank))
-                                                    .map(s -> s.replaceAll("\\s", " "))
+                                                    .map(s -> s.replaceAll("\\s+", " "))
                                                     .toList())
                                    .filter(Predicate.not(List::isEmpty))
                                    .orElse(null);

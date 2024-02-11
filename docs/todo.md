@@ -1,10 +1,8 @@
-## Jan 29 2024
+## Feb 09 2024
 
 ---
 
 ### Deferred Tasks
-
-### Changelog
 
 - Maybe CREATE/UPDATE/DELETE should publish their changes to some kind of log so that releases of PDFs/vCard files can
   include the changes?

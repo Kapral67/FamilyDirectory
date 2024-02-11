@@ -113,12 +113,12 @@ class Logger implements LambdaLogger {
 
     public static
     void debug (final @Nullable String debug) {
-        customLine(LogLevel.DEBUG, debug, Ansi.GREEN);
+        customLine(LogLevel.DEBUG, debug, Ansi.PURPLE);
     }
 
     public static
     void trace (final @Nullable String trace) {
-        customLine(LogLevel.TRACE, trace, Ansi.FAINT);
+        customLine(LogLevel.TRACE, trace, Ansi.BG_BLACK, Ansi.WHITE);
     }
 
     @Override

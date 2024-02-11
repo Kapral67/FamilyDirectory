@@ -1,5 +1,23 @@
 # FamilyDirectory Release Notes
 
+## v0.7
+
+### IMPORTANT UPDATE INFO
+
+- If Updating from v0.5 or below, please follow **IMPORTANT UPDATE INFO** from v0.6
+
+### Bug Fixes
+
+- Member.Builder::address regex added greedy quantifier
+
+### Features
+
+- AdminClient Overhauled to new TUI interface (powered by [mabe02/lanterna](https://github.com/mabe02/lanterna))
+
+### Dependency Upgrade Tracking PRs
+
+- ==PLACEHOLDER==
+
 ## v0.6
 
 ### IMPORTANT UPDATE INFO

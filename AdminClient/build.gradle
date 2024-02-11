@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'org.familydirectory.sdk.adminclient'
-version = '0.6'
+version = '0.7'
 
 compileJava {
     sourceCompatibility = '21'
@@ -19,7 +19,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.familydirectory.assets:familydirectory-service-assets:0.6'
+    implementation 'org.familydirectory.assets:familydirectory-service-assets:0.7'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
     implementation 'org.jetbrains:annotations:24.1.0'
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
@@ -33,10 +33,11 @@ dependencies {
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:cloudformation'
     implementation 'io.leego:banana:2.1.0'
+    implementation 'com.googlecode.lanterna:lanterna:3.1.1'
 }
 
 application {
-    mainClass = 'org.familydirectory.sdk.adminclient.AdminClient'
+    mainClass = 'org.familydirectory.sdk.adminclient.AdminClientTui'
 }
 
 run {

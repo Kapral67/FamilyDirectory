@@ -1,35 +1,29 @@
 package org.familydirectory.sdk.adminclient.enums;
 
-import java.util.List;
 import org.familydirectory.sdk.adminclient.enums.cognito.CognitoManagementOptions;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import static java.util.Collections.emptyList;
-import static java.util.Objects.isNull;
 
 public
 enum Commands {
-    CREATE(List.of(CreateOptions.values())),
+    CREATE(CreateOptions.values()),
     UPDATE(null),
     DELETE(null),
     TOGGLE_PDF_GENERATOR(null),
-    COGNITO_MANAGEMENT(List.of(CognitoManagementOptions.values())),
+    COGNITO_MANAGEMENT(CognitoManagementOptions.values()),
     TOOLKIT_CLEANER(null),
     EXIT(null);
 
     @Nullable
-    private final List<Enum<?>> options;
+    private final Enum<?>[] options;
 
-    Commands (final @Nullable List<Enum<?>> options) {
+    Commands (final @Nullable Enum<?>[] options) {
         this.options = options;
     }
 
-    @NotNull
+    @Nullable
     public final
-    List<Enum<?>> options () {
-        return isNull(this.options)
-                ? emptyList()
-                : this.options;
+    Enum<?>[] options () {
+        return this.options;
     }
 }

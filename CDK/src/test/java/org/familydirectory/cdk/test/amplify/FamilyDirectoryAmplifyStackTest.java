@@ -16,6 +16,7 @@ import software.amazon.awscdk.assertions.Template;
 import software.amazon.awscdk.services.amplify.alpha.CustomRule;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static org.familydirectory.assets.Constants.VERSION_STR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static software.amazon.awscdk.assertions.Match.objectLike;
@@ -93,7 +94,7 @@ class FamilyDirectoryAmplifyStackTest {
         assertEquals(1, spaMap.size());
         final List<Object> spaEnvironmentVariableList = spaEnvironmentVariablesCapture.asArray();
         assertEquals(FamilyDirectoryAmplifyStack.ReactEnvVar.values().length, spaEnvironmentVariableList.size());
-        assertTrue(spaEnvironmentVariableList.containsAll(List.of(Map.of("Name", FamilyDirectoryAmplifyStack.ReactEnvVar.BACKEND_VERSION.toString(), "Value", FamilyDirectoryCdkApp.VERSION),
+        assertTrue(spaEnvironmentVariableList.containsAll(List.of(Map.of("Name", FamilyDirectoryAmplifyStack.ReactEnvVar.BACKEND_VERSION.toString(), "Value", VERSION_STR),
                                                                   Map.of("Name", FamilyDirectoryAmplifyStack.ReactEnvVar.CLIENT_ID.toString(), "Value",
                                                                          singletonMap("Fn::ImportValue", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME)),
                                                                   Map.of("Name", FamilyDirectoryAmplifyStack.ReactEnvVar.AGE_OF_MAJORITY.toString(), "Value", String.valueOf(DdbUtils.AGE_OF_MAJORITY)),
