@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import org.familydirectory.assets.Constants;
 import org.familydirectory.sdk.adminclient.enums.Commands;
 import org.familydirectory.sdk.adminclient.enums.cognito.CognitoManagementOptions;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
@@ -53,6 +54,13 @@ class AdminClientTui {
     public static final String AWS_REGION = requireNonNull(getenv("AWS_REGION"), README);
     @NotNull
     public static final String AWS_ACCOUNT_ID = requireNonNull(getenv("AWS_ACCOUNT_ID"), README);
+    @NotNull
+    private static final String HELP_MSG = """
+                                           Family Directory AdminClient v%s
+                                             -d | --debug    show debug messages
+                                             -h | --help     show this message
+                                             -v | --version  show this message
+                                             -w | --window   prefer windowed mode""".formatted(Constants.VERSION_STR);
     private static boolean DEBUG = false;
 
     private
@@ -64,6 +72,10 @@ class AdminClientTui {
     void main (final String[] args) {
         final List<String> arguments = Arrays.asList(args);
         DEBUG = arguments.contains("-d") || arguments.contains("--debug");
+        if (arguments.contains("-h") || arguments.contains("--help") || arguments.contains("-v") || arguments.contains("--version")) {
+            System.out.println(HELP_MSG);
+            return;
+        }
         setLanternaSttyPropertyKey();
         try (final SdkClientProvider ignored = SdkClientProvider.getSdkClientProvider()) {
             try (final MemberPicker memberPicker = new MemberPicker(); final CognitoUserPicker cognitoPicker = new CognitoUserPicker(); final SpousePicker spousePicker = new SpousePicker()) {
@@ -71,7 +83,7 @@ class AdminClientTui {
                 cognitoPicker.start();
                 spousePicker.start();
 
-                final DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory().setPreferTerminalEmulator(true);
+                final DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory().setPreferTerminalEmulator(arguments.contains("-w") || arguments.contains("--window"));
                 try (final Screen screen = terminalFactory.createScreen()) {
                     screen.startScreen();
                     final WindowBasedTextGUI gui = new MultiWindowTextGUI(screen, new DefaultWindowManager(), new FamilyDirectoryBackground());
