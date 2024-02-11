@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'org.familydirectory.assets'
-version = '0.6'
+version = '0.7'
 
 compileJava {
     sourceCompatibility = '21'

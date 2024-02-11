@@ -14,7 +14,7 @@
 
     <groupId>org.familydirectory.assets.lambda.function.stream</groupId>
     <artifactId>familydirectorypdfgeneratorlambda</artifactId>
-    <version>0.6</version>
+    <version>0.7</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
