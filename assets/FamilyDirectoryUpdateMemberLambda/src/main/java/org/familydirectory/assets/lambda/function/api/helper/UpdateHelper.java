@@ -112,7 +112,7 @@ class UpdateHelper extends ApiHelper {
     public @NotNull
     PutItemRequest getPutRequest (final @NotNull Caller caller, final @NotNull EventWrapper eventWrapper) {
         if (caller.isAdmin()) {
-            this.logger.log("ADMIN <MEMBER,`%s`> update <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()));
+            this.logger.log("ADMIN <MEMBER,`%s`> update <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
         } else if (caller.memberId()
                          .equals(eventWrapper.ddbMemberId()))
         {

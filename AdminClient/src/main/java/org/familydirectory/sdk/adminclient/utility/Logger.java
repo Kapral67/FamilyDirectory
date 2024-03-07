@@ -8,6 +8,21 @@ import io.leego.banana.Font;
 import java.util.Arrays;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.TRACE;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.UNDEFINED;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN;
+import static io.leego.banana.Ansi.BG_BLACK;
+import static io.leego.banana.Ansi.BG_RED;
+import static io.leego.banana.Ansi.BLACK;
+import static io.leego.banana.Ansi.CYAN;
+import static io.leego.banana.Ansi.PURPLE;
+import static io.leego.banana.Ansi.RED;
+import static io.leego.banana.Ansi.WHITE;
+import static io.leego.banana.Ansi.YELLOW;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
@@ -20,14 +35,14 @@ class Logger implements LambdaLogger {
 
     public static
     void customLine (final @Nullable String message, final Ansi... styles) {
-        customLine(LogLevel.UNDEFINED, message, styles);
+        customLine(UNDEFINED, message, styles);
     }
 
     public static
     void customLine (final @NotNull LogLevel logLevel, final @Nullable String message, final Ansi... styles)
     {
         final StringBuilder sb = new StringBuilder();
-        if (!logLevel.equals(LogLevel.UNDEFINED)) {
+        if (!logLevel.equals(UNDEFINED)) {
             sb.append("[%s] ".formatted(logLevel.name()));
         }
         if (nonNull(message)) {
@@ -40,14 +55,14 @@ class Logger implements LambdaLogger {
 
     public static
     void custom (final @NotNull String prepended, final @Nullable String message, final Ansi... styles) {
-        custom(LogLevel.UNDEFINED, prepended, message, styles);
+        custom(UNDEFINED, prepended, message, styles);
     }
 
     public static
     void custom (final @NotNull LogLevel logLevel, final @NotNull String prepended, final @Nullable String message, final Ansi... styles)
     {
         final StringBuilder sb = new StringBuilder();
-        if (!logLevel.equals(LogLevel.UNDEFINED)) {
+        if (!logLevel.equals(UNDEFINED)) {
             sb.append("[%s] ".formatted(logLevel.name()));
         }
         if (nonNull(message)) {
@@ -61,13 +76,13 @@ class Logger implements LambdaLogger {
     @Override
     public
     void log (final String message) {
-        customLine(LogLevel.UNDEFINED, message);
+        customLine(UNDEFINED, message);
     }
 
     @Override
     public
     void log (final byte[] message) {
-        customLine(LogLevel.UNDEFINED, Arrays.toString(message));
+        customLine(UNDEFINED, Arrays.toString(message));
     }
 
     @Override
@@ -93,32 +108,32 @@ class Logger implements LambdaLogger {
 
     public static
     void fatal (final @Nullable String fatal) {
-        customLine(LogLevel.FATAL, fatal, Ansi.BLACK, Ansi.BG_RED);
+        customLine(FATAL, fatal, BLACK, BG_RED);
     }
 
     public static
     void error (final @Nullable String error) {
-        customLine(LogLevel.ERROR, error, Ansi.RED);
+        customLine(ERROR, error, RED);
     }
 
     public static
     void warn (final @Nullable String warn) {
-        customLine(LogLevel.WARN, warn, Ansi.YELLOW);
+        customLine(WARN, warn, YELLOW);
     }
 
     public static
     void info (final @Nullable String info) {
-        customLine(LogLevel.INFO, info, Ansi.CYAN);
+        customLine(INFO, info, CYAN);
     }
 
     public static
     void debug (final @Nullable String debug) {
-        customLine(LogLevel.DEBUG, debug, Ansi.PURPLE);
+        customLine(DEBUG, debug, PURPLE);
     }
 
     public static
     void trace (final @Nullable String trace) {
-        customLine(LogLevel.TRACE, trace, Ansi.BG_BLACK, Ansi.WHITE);
+        customLine(TRACE, trace, BG_BLACK, WHITE);
     }
 
     @Override
