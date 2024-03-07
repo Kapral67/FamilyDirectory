@@ -35,7 +35,7 @@ dependencies {
     implementation 'commons-validator:commons-validator:1.8.0'
     implementation 'org.apache.commons:commons-text:1.11.0'
     implementation 'org.apache.httpcomponents:httpcore:4.4.16'
-    implementation 'software.amazon.awscdk:aws-cdk-lib:2.127.0'
+    implementation 'software.amazon.awscdk:aws-cdk-lib:2.131.0'
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
     implementation 'com.amazonaws:aws-lambda-java-events:3.11.4'
     implementation platform('software.amazon.awssdk:bom:2.24.0')
