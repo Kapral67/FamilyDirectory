@@ -21,7 +21,7 @@
 
     <groupId>org.familydirectory.cdk</groupId>
     <artifactId>familydirectory-cdk</artifactId>
-    <version>0.71</version>
+    <version>0.75</version>
 
     <build>
         <plugins>
