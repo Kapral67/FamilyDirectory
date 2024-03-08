@@ -276,6 +276,9 @@ class PDPageHelperModel implements Closeable {
     public final
     void close () throws IOException {
         this.contents.close();
+        // https://github.com/apache/pdfbox/blob/93f0a8d3d0d95a7081c1e649b637db17e2aa1f09/examples/src/main/java/org/apache/pdfbox/examples/pdmodel/AddAnnotations.java#L305-L313
+        this.page.getAnnotations()
+                 .forEach(annotation -> annotation.constructAppearances(this.pdf));
     }
 
     public static final

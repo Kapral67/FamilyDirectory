@@ -2,6 +2,7 @@ package org.familydirectory.assets.lambda.function.stream.helper;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -9,6 +10,7 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.interactive.action.PDActionURI;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.member.Member;
@@ -385,8 +387,10 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
         // attach action to annotation object
         mailToLink.setAction(mailToLinkHref);
 
-        // attach annotation object to pdf
-        mailToLink.constructAppearances(this.pdf);
+        // add annotations to page
+        final List<PDAnnotation> pageAnnotations = new ArrayList<>(this.page.getAnnotations());
+        pageAnnotations.add(mailToLink);
+        this.page.setAnnotations(pageAnnotations);
 
         this.newLine(STANDARD_LINE_SPACING);
     }
