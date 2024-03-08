@@ -15,6 +15,7 @@
 ### Features
 
 - Deathday gets own line in Birthday Pdf (#845)
+- Emails clickable in FamilyDirectory Pdf (#870)
 
 ### Dependency Upgrade Tracking PRs
 
