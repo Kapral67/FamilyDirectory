@@ -20,7 +20,6 @@
  */
 package org.familydirectory.sdk.adminclient.utility.lanterna;
 
-import com.googlecode.lanterna.gui2.AnimatedLabel;
 import com.googlecode.lanterna.gui2.Panels;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
@@ -45,9 +44,9 @@ class EnhancedWaitingDialog extends DialogWindow {
     private static final String FORMAT_TEXT = "Please Wait for %d Seconds";
     private final long seconds;
     @NotNull
-    private final AnimatedLabel countDownLabel;
+    private final AnimatedLabel2 countDownLabel;
     @NotNull
-    private final AnimatedLabel spinningLine;
+    private final AnimatedLabel2 spinningLine;
 
     public
     EnhancedWaitingDialog (final @NotNull String title, final long seconds) {
@@ -58,14 +57,14 @@ class EnhancedWaitingDialog extends DialogWindow {
         }
         this.seconds = seconds;
         this.countDownLabel = this.getCountDownLabel();
-        this.spinningLine = AnimatedLabel.createClassicSpinningLine();
+        this.spinningLine = AnimatedLabel2.createClassicSpinningLine();
         this.setComponent(Panels.horizontal(this.countDownLabel, this.spinningLine));
     }
 
     @NotNull
     private
-    AnimatedLabel getCountDownLabel () {
-        final AnimatedLabel countDownLabel = new AnimatedLabel(FORMAT_TEXT.formatted(this.seconds));
+    AnimatedLabel2 getCountDownLabel () {
+        final AnimatedLabel2 countDownLabel = new AnimatedLabel2(FORMAT_TEXT.formatted(this.seconds));
         for (long sec = this.seconds - 1L; sec >= 0L; --sec) {
             countDownLabel.addFrame(FORMAT_TEXT.formatted(sec));
         }
@@ -100,11 +99,11 @@ class EnhancedWaitingDialog extends DialogWindow {
     /**
      * TODO: Delete this once <a href="https://github.com/mabe02/lanterna/issues/595">lantera issue #595</a> is resolved
      */
-    @Override
-    public
-    void close () {
-        super.close();
-        this.countDownLabel.stopAnimation();
-        this.spinningLine.stopAnimation();
-    }
+//    @Override
+//    public
+//    void close () {
+//        super.close();
+//        this.countDownLabel.stopAnimation();
+//        this.spinningLine.stopAnimation();
+//    }
 }

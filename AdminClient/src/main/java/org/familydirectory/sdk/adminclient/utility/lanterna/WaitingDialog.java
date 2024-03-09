@@ -18,7 +18,6 @@
  */
 package org.familydirectory.sdk.adminclient.utility.lanterna;
 
-import com.googlecode.lanterna.gui2.AnimatedLabel;
 import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.Panels;
@@ -42,13 +41,13 @@ import org.jetbrains.annotations.NotNull;
 public final
 class WaitingDialog extends DialogWindow {
     @NotNull
-    private final AnimatedLabel spinningLine;
+    private final AnimatedLabel2 spinningLine;
 
     private
     WaitingDialog (final String title, final String text) {
         super(title);
 
-        this.spinningLine = AnimatedLabel.createClassicSpinningLine();
+        this.spinningLine = AnimatedLabel2.createClassicSpinningLine();
         final Panel mainPanel = Panels.horizontal(new Label(text), this.spinningLine);
         this.setComponent(mainPanel);
     }
@@ -109,10 +108,10 @@ class WaitingDialog extends DialogWindow {
     /**
      * TODO: Delete this once <a href="https://github.com/mabe02/lanterna/issues/595">lantera issue #595</a> is resolved
      */
-    @Override
-    public
-    void close () {
-        super.close();
-        this.spinningLine.stopAnimation();
-    }
+//    @Override
+//    public
+//    void close () {
+//        super.close();
+//        this.spinningLine.stopAnimation();
+//    }
 }
