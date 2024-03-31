@@ -1,5 +1,23 @@
 # FamilyDirectory Release Notes
 
+## v0.71
+
+### IMPORTANT UPDATE INFO
+
+- Using AdminClient, go to FLAGS -> ISSUE_871 and execute
+
+- Manually Trigger Amplify Build in AWS Console
+
+- Follow **IMPORTANT UPDATE INFO** from v0.7
+
+### Bug Fixes
+
+- See Issue #871
+
+### Features
+
+- MEMBER Table Addresses now support either null, or between 2 & 3 address lines
+
 ## v0.7
 
 ### IMPORTANT UPDATE INFO

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
+import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -48,25 +49,12 @@ class MemberModel {
         return LocalDate.parse(date, DdbUtils.DATE_FORMATTER);
     }
 
-    public abstract @Nullable
-    String getEmail ();
-
-    public abstract @Nullable @UnmodifiableView
-    List<String> getAddress ();
-
-    public @Nullable @UnmodifiableView
-    Map<String, AttributeValue> getPhonesDdbMap () {
-        return (isNull(this.getPhones()))
-                ? null
-                : this.getPhones()
-                      .entrySet()
-                      .stream()
-                      .collect(toUnmodifiableMap(entry -> entry.getKey()
-                                                               .name(), entry -> AttributeValue.fromS(entry.getValue())));
+    public static @NotNull
+    List<String> convertAddressDdb (final @NotNull List<AttributeValue> ddb) {
+        return ddb.stream()
+                  .map(AttributeValue::s)
+                  .toList();
     }
-
-    public abstract @Nullable @UnmodifiableView
-    Map<PhoneType, String> getPhones ();
 
     public
     boolean isAdult () {
@@ -78,11 +66,6 @@ class MemberModel {
 
     public abstract @Nullable
     LocalDate getDeathday ();
-
-    public @NotNull
-    String getBirthdayString () {
-        return DdbUtils.DATE_FORMATTER.format(this.getBirthday());
-    }
 
     public @NotNull
     String getFullName () {
@@ -111,12 +94,6 @@ class MemberModel {
     public abstract @Nullable
     SuffixType getSuffix ();
 
-    public @Nullable
-    String getDeathdayString () {
-        return ofNullable(this.getDeathday()).map(DdbUtils.DATE_FORMATTER::format)
-                                             .orElse(null);
-    }
-
     public @NotNull
     String getDisplayName () {
         final StringBuilder displayName = new StringBuilder();
@@ -126,5 +103,134 @@ class MemberModel {
                                                    .value()));
         }
         return displayName.toString();
+    }
+
+    @Override
+    public
+    String toString () {
+        final StringBuilder stringBuilder = new StringBuilder("{");
+
+        for (final MemberTableParameter field : MemberTableParameter.values()) {
+            switch (field) {
+                case ID, FAMILY_ID -> {
+                    continue;
+                }
+                default -> stringBuilder.append("%s: ".formatted(field.jsonFieldName()));
+            }
+            switch (field) {
+                case FIRST_NAME -> stringBuilder.append("\"%s\"".formatted(this.getFirstName()));
+                case MIDDLE_NAME -> {
+                    final String middleName = this.getMiddleName();
+                    stringBuilder.append(isNull(middleName)
+                                                 ? "null"
+                                                 : "\"%s\"".formatted(middleName));
+                }
+                case LAST_NAME -> stringBuilder.append("\"%s\"".formatted(this.getLastName()));
+                case SUFFIX -> {
+                    final SuffixType suffix = this.getSuffix();
+                    stringBuilder.append(isNull(suffix)
+                                                 ? "null"
+                                                 : "\"%s\"".formatted(suffix.value()));
+                }
+                case BIRTHDAY -> stringBuilder.append("\"%s\"".formatted(this.getBirthdayString()));
+                case DEATHDAY -> {
+                    final String deathdate = this.getDeathdayString();
+                    stringBuilder.append(isNull(deathdate)
+                                                 ? "null"
+                                                 : "\"%s\"".formatted(deathdate));
+                }
+                case EMAIL -> {
+                    final String email = this.getEmail();
+                    stringBuilder.append(isNull(email)
+                                                 ? "null"
+                                                 : "\"%s\"".formatted(email));
+                }
+                case PHONES -> {
+                    final Map<PhoneType, String> phones = this.getPhones();
+                    if (isNull(phones)) {
+                        stringBuilder.append("null");
+                    } else {
+                        stringBuilder.append('{');
+
+                        for (final PhoneType phoneType : PhoneType.values()) {
+                            stringBuilder.append("%s: ".formatted(phoneType.getJson()));
+                            final String phone = phones.get(phoneType);
+                            stringBuilder.append(isNull(phone)
+                                                         ? "null"
+                                                         : "\"%s\"".formatted(phone))
+                                         .append(',');
+                        }
+
+                        stringBuilder.append('}');
+                    }
+                }
+                case ADDRESS -> {
+                    final List<String> addressLines = this.getAddress();
+                    if (isNull(addressLines)) {
+                        stringBuilder.append("null");
+                    } else {
+                        stringBuilder.append('[');
+
+                        for (final String line : addressLines) {
+                            stringBuilder.append(isNull(line)
+                                                         ? "null"
+                                                         : "\"%s\"".formatted(line))
+                                         .append(',');
+                        }
+
+                        stringBuilder.append(']');
+                    }
+                }
+                default -> throw new IllegalStateException("Unhandled Member Parameter: `%s`".formatted(field.jsonFieldName()));
+            }
+            stringBuilder.append(',');
+        }
+
+        return stringBuilder.append('}')
+                            .toString();
+    }
+
+    public abstract @Nullable @UnmodifiableView
+    Map<PhoneType, String> getPhones ();
+
+    public abstract @Nullable @UnmodifiableView
+    List<String> getAddress ();
+
+    public abstract @Nullable
+    String getEmail ();
+
+    public @Nullable
+    String getDeathdayString () {
+        return ofNullable(this.getDeathday()).map(DdbUtils.DATE_FORMATTER::format)
+                                             .orElse(null);
+    }
+
+    public @NotNull
+    String getBirthdayString () {
+        return DdbUtils.DATE_FORMATTER.format(this.getBirthday());
+    }
+
+    public @Nullable
+    List<AttributeValue> getAddressDdb () {
+        return MemberModel.revertAddressDdb(this.getAddress());
+    }
+
+    public static @Nullable
+    List<AttributeValue> revertAddressDdb (final @Nullable List<String> address) {
+        return ofNullable(address).map(l -> l.stream()
+                                             .map(AttributeValue::fromS)
+                                             .toList())
+                                  .orElse(null);
+    }
+
+    public @Nullable @UnmodifiableView
+    Map<String, AttributeValue> getPhonesDdbMap () {
+        return (isNull(this.getPhones()))
+                ? null
+                : this.getPhones()
+                      .entrySet()
+                      .stream()
+                      .collect(toUnmodifiableMap(entry -> entry.getKey()
+                                                               .name(), entry -> AttributeValue.fromS(entry.getValue())));
     }
 }

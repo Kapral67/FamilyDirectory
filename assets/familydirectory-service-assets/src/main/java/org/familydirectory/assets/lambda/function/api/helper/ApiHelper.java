@@ -1,5 +1,6 @@
 package org.familydirectory.assets.lambda.function.api.helper;
 
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import java.util.List;
@@ -12,6 +13,7 @@ import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
@@ -24,6 +26,17 @@ import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 
 public abstract
 class ApiHelper implements LambdaFunctionHelper {
+    protected final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
+    protected final @NotNull LambdaLogger logger;
+    protected final @NotNull APIGatewayProxyRequestEvent requestEvent;
+
+    public
+    ApiHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) {
+        super();
+        this.logger = requireNonNull(logger);
+        this.requestEvent = requireNonNull(requestEvent);
+        this.logger.log(this.requestEvent.toString(), DEBUG);
+    }
 
     @NotNull
     public final
@@ -34,10 +47,9 @@ class ApiHelper implements LambdaFunctionHelper {
         try {
             // https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html#http-api-develop-integrations-lambda.proxy-format
             @SuppressWarnings("unchecked")
-            final Map<String, Object> callerClaims = ((Map<String, Object>) ((Map<String, Object>) this.getRequestEvent()
-                                                                                                       .getRequestContext()
-                                                                                                       .getAuthorizer()
-                                                                                                       .get("jwt")).get("claims"));
+            final Map<String, Object> callerClaims = ((Map<String, Object>) ((Map<String, Object>) requireNonNull(this.getRequestEvent()).getRequestContext()
+                                                                                                                                         .getAuthorizer()
+                                                                                                                                         .get("jwt")).get("claims"));
             final String callerSub = Optional.of(callerClaims)
                                              .map(map -> map.get("sub"))
                                              .map(Object::toString)
@@ -61,9 +73,6 @@ class ApiHelper implements LambdaFunctionHelper {
 
         } catch (final NullPointerException | ClassCastException e) {
             LambdaUtils.logTrace(this.getLogger(), e, ERROR);
-            this.getLogger()
-                .log(this.getRequestEvent()
-                         .toString(), DEBUG);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_UNAUTHORIZED));
         }
 
@@ -72,8 +81,22 @@ class ApiHelper implements LambdaFunctionHelper {
         return new Caller(callerMemberId, caller, callerFamilyId, isCallerAdmin);
     }
 
-    public abstract @NotNull
-    APIGatewayProxyRequestEvent getRequestEvent ();
+    public final @NotNull
+    APIGatewayProxyRequestEvent getRequestEvent () {
+        return this.requestEvent;
+    }
+
+    @Override
+    public final @NotNull
+    LambdaLogger getLogger () {
+        return this.logger;
+    }
+
+    @Override
+    public final @NotNull
+    DynamoDbClient getDynamoDbClient () {
+        return this.dynamoDbClient;
+    }
 
     /**
      * This method does not distinguish between Members that do not have a Cognito Account and Members that have a Cognito Account, but their Cognito Account is not granted admin privileges

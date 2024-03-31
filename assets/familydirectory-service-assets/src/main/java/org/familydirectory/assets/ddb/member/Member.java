@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -13,6 +15,7 @@ import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberModel;
+import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.ddb.utils.LocalDateDeserializer;
 import org.jetbrains.annotations.Contract;
@@ -32,7 +35,8 @@ import static org.apache.commons.text.WordUtils.capitalizeFully;
 @JsonDeserialize(builder = Member.Builder.class)
 public final
 class Member extends MemberModel {
-    public static final int REQ_NON_NULL_ADDRESS_SIZE = 2;
+    public static final int MIN_NON_NULL_ADDRESS_SIZE = 2;
+    public static final int MAX_NON_NULL_ADDRESS_SIZE = 3;
     @JsonProperty("firstName")
     @NotNull
     private final String firstName;
@@ -81,6 +85,35 @@ class Member extends MemberModel {
         this.suffix = suffix;
     }
 
+    @UnmodifiableView
+    @NotNull
+    public static
+    Map<String, AttributeValue> retrieveDdbMap (final @NotNull MemberRecord memberRecord) {
+        final Map<String, AttributeValue> map = new HashMap<>();
+        final Member member = memberRecord.member();
+
+        for (final MemberTableParameter field : MemberTableParameter.values()) {
+            switch (field) {
+                case ID -> map.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.id()
+                                                                                           .toString()));
+                case FIRST_NAME -> map.put(field.jsonFieldName(), AttributeValue.fromS(member.getFirstName()));
+                case MIDDLE_NAME -> ofNullable(member.getMiddleName()).ifPresent(s -> map.put(field.jsonFieldName(), AttributeValue.fromS(s)));
+                case LAST_NAME -> map.put(field.jsonFieldName(), AttributeValue.fromS(member.getLastName()));
+                case SUFFIX -> ofNullable(member.getSuffix()).ifPresent(s -> map.put(field.jsonFieldName(), AttributeValue.fromS(s.value())));
+                case BIRTHDAY -> map.put(field.jsonFieldName(), AttributeValue.fromS(member.getBirthdayString()));
+                case DEATHDAY -> ofNullable(member.getDeathdayString()).ifPresent(s -> map.put(field.jsonFieldName(), AttributeValue.fromS(s)));
+                case EMAIL -> ofNullable(member.getEmail()).ifPresent(s -> map.put(field.jsonFieldName(), AttributeValue.fromS(s)));
+                case PHONES -> ofNullable(member.getPhonesDdbMap()).ifPresent(m -> map.put(field.jsonFieldName(), AttributeValue.fromM(m)));
+                case ADDRESS -> ofNullable(member.getAddressDdb()).ifPresent(l -> map.put(field.jsonFieldName(), AttributeValue.fromL(l)));
+                case FAMILY_ID -> map.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.familyId()
+                                                                                                  .toString()));
+                default -> throw new IllegalStateException("Unhandled Member Parameter: `%s`".formatted(field.jsonFieldName()));
+            }
+        }
+
+        return Collections.unmodifiableMap(map);
+    }
+
     @NotNull
     public static
     Member convertDdbMap (final @NotNull Map<String, AttributeValue> memberMap) {
@@ -95,10 +128,10 @@ class Member extends MemberModel {
                     case DEATHDAY -> memberBuilder.deathday(Member.convertStringToDate(av.s()));
                     case EMAIL -> memberBuilder.email(av.s());
                     case ADDRESS -> {
-                        if (!av.ss()
+                        if (!av.l()
                                .isEmpty())
                         {
-                            memberBuilder.address(av.ss());
+                            memberBuilder.address(Member.convertAddressDdb(av.l()));
                         }
                     }
                     case PHONES -> {
@@ -122,29 +155,6 @@ class Member extends MemberModel {
     public static
     Builder builder () {
         return new Builder();
-    }
-
-    @Override
-    @Nullable
-    public
-    String getEmail () {
-        return this.email;
-    }
-
-    @Override
-    @Nullable
-    @UnmodifiableView
-    public
-    List<String> getAddress () {
-        return this.address;
-    }
-
-    @Override
-    @Nullable
-    @UnmodifiableView
-    public
-    Map<PhoneType, String> getPhones () {
-        return this.phones;
     }
 
     @Override
@@ -187,6 +197,29 @@ class Member extends MemberModel {
     public
     SuffixType getSuffix () {
         return this.suffix;
+    }
+
+    @Override
+    @Nullable
+    @UnmodifiableView
+    public
+    Map<PhoneType, String> getPhones () {
+        return this.phones;
+    }
+
+    @Override
+    @Nullable
+    @UnmodifiableView
+    public
+    List<String> getAddress () {
+        return this.address;
+    }
+
+    @Override
+    @Nullable
+    public
+    String getEmail () {
+        return this.email;
     }
 
     public static final
@@ -366,14 +399,11 @@ class Member extends MemberModel {
         public
         Builder address (final @Nullable List<String> address) {
             this.checkBuildStatus();
-            final String addressSizeErrorMessage = "Address Must Be Exactly Two Lines";
             if (this.isAddressSet) {
                 throw new IllegalStateException("Address already set");
             } else if (isNull(address)) {
                 this.isAddressSet = true;
                 return this;
-            } else if (address.size() != REQ_NON_NULL_ADDRESS_SIZE) {
-                throw new IllegalArgumentException(addressSizeErrorMessage);
             }
             address.forEach(s -> {
                 if (nonNull(s) && s.contains(String.valueOf(DAGGER))) {
@@ -389,8 +419,11 @@ class Member extends MemberModel {
                                                     .toList())
                                    .filter(Predicate.not(List::isEmpty))
                                    .orElse(null);
-            if (nonNull(this.address) && this.address.size() != REQ_NON_NULL_ADDRESS_SIZE) {
-                throw new IllegalArgumentException(addressSizeErrorMessage);
+            final int addressSize = isNull(this.address)
+                    ? MIN_NON_NULL_ADDRESS_SIZE
+                    : this.address.size();
+            if (addressSize < MIN_NON_NULL_ADDRESS_SIZE || addressSize > MAX_NON_NULL_ADDRESS_SIZE) {
+                throw new IllegalArgumentException("Address must be between %d & %d lines inclusively".formatted(MIN_NON_NULL_ADDRESS_SIZE, MAX_NON_NULL_ADDRESS_SIZE));
             }
             this.isAddressSet = true;
             return this;

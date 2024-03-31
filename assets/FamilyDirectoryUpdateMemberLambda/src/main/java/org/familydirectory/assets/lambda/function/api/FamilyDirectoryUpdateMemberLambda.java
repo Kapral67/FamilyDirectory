@@ -8,6 +8,8 @@ import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.familydirectory.assets.lambda.function.api.helper.UpdateHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
@@ -27,8 +29,11 @@ class FamilyDirectoryUpdateMemberLambda implements RequestHandler<APIGatewayProx
             final UpdateHelper.EventWrapper updateEvent = updateHelper.getUpdateEvent(caller);
 
 //      Update Member
+            final PutItemRequest putItemRequest = updateHelper.getPutRequest(caller, updateEvent);
+            updateHelper.getLogger()
+                        .log(putItemRequest.toString(), DEBUG);
             updateHelper.getDynamoDbClient()
-                        .putItem(updateHelper.getPutRequest(caller, updateEvent));
+                        .putItem(putItemRequest);
 
             return new APIGatewayProxyResponseEvent().withStatusCode(SC_ACCEPTED);
 

@@ -22,9 +22,11 @@ import org.familydirectory.assets.Constants;
 import org.familydirectory.sdk.adminclient.enums.Commands;
 import org.familydirectory.sdk.adminclient.enums.cognito.CognitoManagementOptions;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
+import org.familydirectory.sdk.adminclient.enums.flags.Flags;
 import org.familydirectory.sdk.adminclient.events.cognito.CognitoManagementEvent;
 import org.familydirectory.sdk.adminclient.events.create.CreateEvent;
 import org.familydirectory.sdk.adminclient.events.delete.DeleteEvent;
+import org.familydirectory.sdk.adminclient.events.flag.FlagEvent;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.events.stream.TogglePdfGeneratorEvent;
 import org.familydirectory.sdk.adminclient.events.toolkitcleaner.ToolkitCleanerEvent;
@@ -125,6 +127,7 @@ class AdminClientTui {
                             case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(gui);
                             case COGNITO_MANAGEMENT -> new CognitoManagementEvent(gui, (CognitoManagementOptions) requireNonNull(option), cognitoPicker);
                             case TOOLKIT_CLEANER -> new ToolkitCleanerEvent(gui);
+                            case FLAGS -> new FlagEvent(gui, (Flags) requireNonNull(option));
                             case EXIT -> null;
                         })
                         {

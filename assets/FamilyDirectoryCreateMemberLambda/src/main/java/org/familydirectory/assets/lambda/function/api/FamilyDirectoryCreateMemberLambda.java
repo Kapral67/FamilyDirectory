@@ -10,6 +10,7 @@ import org.familydirectory.assets.lambda.function.api.models.CreateEvent;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
 import static org.apache.http.HttpStatus.SC_CREATED;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
@@ -31,6 +32,9 @@ class FamilyDirectoryCreateMemberLambda implements RequestHandler<APIGatewayProx
 
 //      Build Transaction
             final TransactWriteItemsRequest transaction = createHelper.buildCreateTransaction(caller, createEvent);
+
+            createHelper.getLogger()
+                        .log(transaction.toString(), DEBUG);
 
 //      Execute Transaction
             createHelper.getDynamoDbClient()
