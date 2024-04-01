@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
+import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.familydirectory.sdk.adminclient.events.model.MemberEventHelper;
@@ -170,7 +171,7 @@ class CreateEvent implements MemberEventHelper {
         transactionItems.add(TransactWriteItem.builder()
                                               .put(Put.builder()
                                                       .tableName(DdbTable.MEMBER.name())
-                                                      .item(MemberEventHelper.buildMember(memberRecord))
+                                                      .item(Member.retrieveDdbMap(memberRecord))
                                                       .build())
                                               .build());
         return TransactWriteItemsRequest.builder()

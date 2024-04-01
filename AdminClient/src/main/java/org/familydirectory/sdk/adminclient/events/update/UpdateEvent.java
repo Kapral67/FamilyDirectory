@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.sdk.adminclient.enums.Commands;
 import org.familydirectory.sdk.adminclient.events.model.MemberEventHelper;
@@ -54,7 +55,7 @@ class UpdateEvent implements MemberEventHelper {
                          .getSdkClient(DynamoDbClient.class)
                          .putItem(PutItemRequest.builder()
                                                 .tableName(DdbTable.MEMBER.name())
-                                                .item(MemberEventHelper.buildMember(memberRecord))
+                                                .item(Member.retrieveDdbMap(memberRecord))
                                                 .build());
         this.memberPicker.addEntry(memberRecord);
         for (final PickerModel pickerModel : this.pickerModels) {

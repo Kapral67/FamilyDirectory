@@ -6,22 +6,24 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.ddb.member.Member;
+import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.api.models.UpdateEvent;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN;
 import static java.util.Collections.singletonMap;
@@ -37,15 +39,10 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 public final
 class UpdateHelper extends ApiHelper {
     private final @NotNull ObjectMapper objectMapper = new ObjectMapper();
-    private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
-    private final @NotNull LambdaLogger logger;
-    private final @NotNull APIGatewayProxyRequestEvent requestEvent;
 
     public
     UpdateHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) {
-        super();
-        this.logger = requireNonNull(logger);
-        this.requestEvent = requireNonNull(requestEvent);
+        super(logger, requestEvent);
     }
 
     public @NotNull
@@ -53,6 +50,8 @@ class UpdateHelper extends ApiHelper {
         final UpdateEvent updateEvent;
         try {
             updateEvent = this.objectMapper.readValue(this.requestEvent.getBody(), UpdateEvent.class);
+            this.logger.log(updateEvent.member()
+                                       .toString(), DEBUG);
         } catch (final JsonProcessingException | IllegalArgumentException e) {
             this.logger.log("<MEMBER,`%s`> submitted invalid Update request".formatted(caller.memberId()), WARN);
             LambdaUtils.logTrace(this.logger, e, WARN);
@@ -135,70 +134,17 @@ class UpdateHelper extends ApiHelper {
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
         }
 
+        final Map<String, AttributeValue> item = Member.retrieveDdbMap(new MemberRecord(UUID.fromString(eventWrapper.ddbMemberId()), eventWrapper.updateEvent()
+                                                                                                                                                 .member(),
+                                                                                        UUID.fromString(eventWrapper.ddbFamilyId())));
+
+        this.logger.log(Member.convertDdbMap(item)
+                              .toString(), DEBUG);
+
         return PutItemRequest.builder()
                              .tableName(DdbTable.MEMBER.name())
-                             .item(this.buildMember(eventWrapper))
+                             .item(item)
                              .build();
-    }
-
-    private @NotNull
-    Map<String, AttributeValue> buildMember (final @NotNull EventWrapper eventWrapper) {
-        final Map<String, AttributeValue> member = new HashMap<>();
-
-        for (final MemberTableParameter field : MemberTableParameter.values()) {
-            switch (field) {
-                case ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbMemberId()));
-                case FIRST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
-                                                                                                      .member()
-                                                                                                      .getFirstName()));
-                case MIDDLE_NAME -> ofNullable(eventWrapper.updateEvent()
-                                                           .member()
-                                                           .getMiddleName()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
-                case LAST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
-                                                                                                     .member()
-                                                                                                     .getLastName()));
-                case SUFFIX -> ofNullable(eventWrapper.updateEvent()
-                                                      .member()
-                                                      .getSuffix()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s.value())));
-                case BIRTHDAY -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.updateEvent()
-                                                                                                    .member()
-                                                                                                    .getBirthdayString()));
-                case DEATHDAY -> ofNullable(eventWrapper.updateEvent()
-                                                        .member()
-                                                        .getDeathdayString()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
-                case EMAIL -> ofNullable(eventWrapper.updateEvent()
-                                                     .member()
-                                                     .getEmail()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
-                case PHONES -> ofNullable(eventWrapper.updateEvent()
-                                                      .member()
-                                                      .getPhonesDdbMap()).ifPresent(m -> member.put(field.jsonFieldName(), AttributeValue.fromM(m)));
-                case ADDRESS -> ofNullable(eventWrapper.updateEvent()
-                                                       .member()
-                                                       .getAddress()).ifPresent(ss -> member.put(field.jsonFieldName(), AttributeValue.fromSs(ss)));
-                case FAMILY_ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbFamilyId()));
-                default -> throw new IllegalStateException("Unhandled Member Parameter: `%s`".formatted(field.jsonFieldName()));
-            }
-        }
-
-        return member;
-    }
-
-    @Override
-    public @NotNull
-    LambdaLogger getLogger () {
-        return this.logger;
-    }
-
-    @Override
-    public @NotNull
-    DynamoDbClient getDynamoDbClient () {
-        return this.dynamoDbClient;
-    }
-
-    @Override
-    public @NotNull
-    APIGatewayProxyRequestEvent getRequestEvent () {
-        return this.requestEvent;
     }
 
     public

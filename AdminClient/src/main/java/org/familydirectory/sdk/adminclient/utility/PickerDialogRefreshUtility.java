@@ -47,17 +47,22 @@ class PickerDialogRefreshUtility {
             final WaitingDialog waitDialog = WaitingDialog.createDialog(this.title, this.waitText);
             waitDialog.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
             waitDialog.showDialog(requireNonNull(gui), false);
-            CompletableFuture.runAsync(() -> {
-                                 if (needsRefresh.get()) {
-                                     this.picker.refresh();
-                                 }
-                                 contentRef.set(this.picker.getEntries());
-                                 waitDialog.close();
-                             })
-                             .exceptionally(e -> {
-                                 throw new RuntimeException(e);
-                             });
+            final CompletableFuture<?> future = CompletableFuture.runAsync(() -> {
+                try {
+                    if (needsRefresh.get()) {
+                        this.picker.refresh();
+                    }
+                    contentRef.set(this.picker.getEntries());
+                } finally {
+                    waitDialog.close();
+                }
+            });
             waitDialog.waitUntilClosed();
+            try {
+                future.get();
+            } catch (final Throwable e) {
+                throw new RuntimeException(e);
+            }
             final RefreshableListSelectDialog<MemberRecord> listSelectDialog = new RefreshableListSelectDialog<>(this.title, this.description, true, contentRef.get(), new TerminalSize(20, 10));
             memberRecordRef.set(listSelectDialog.showDialog(gui));
             if (isNull(memberRecordRef.get())) {

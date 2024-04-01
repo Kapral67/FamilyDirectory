@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +19,7 @@ import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.jetbrains.annotations.NotNull;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN;
 import static java.util.Objects.isNull;
@@ -29,15 +30,10 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 public final
 class GetHelper extends ApiHelper {
     private final @NotNull ObjectMapper objectMapper = new ObjectMapper();
-    private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
-    private final @NotNull LambdaLogger logger;
-    private final @NotNull APIGatewayProxyRequestEvent requestEvent;
 
     public
     GetHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) {
-        super();
-        this.logger = requireNonNull(logger);
-        this.requestEvent = requireNonNull(requestEvent);
+        super(logger, requestEvent);
     }
 
     @NotNull
@@ -95,6 +91,7 @@ class GetHelper extends ApiHelper {
     }
 
     @NotNull
+    @UnmodifiableView
     private
     Map<String, Object> getResponseObject (final @NotNull Map<String, AttributeValue> memberMap) {
         final Map<String, Object> responseObject = new HashMap<>();
@@ -119,10 +116,11 @@ class GetHelper extends ApiHelper {
                 default -> this.logger.log("MemberTableParameter `%s` Not Handled in GET_MEMBER".formatted(param.name()), WARN);
             }
         }
-        return responseObject;
+        return Collections.unmodifiableMap(responseObject);
     }
 
     @NotNull
+    @UnmodifiableView
     private
     List<Map<String, Object>> getDescendantsObject (final @NotNull List<String> descendantIds) {
         final Comparator<Map<String, AttributeValue>> comparator = Comparator.comparing(entry -> Member.convertStringToDate(entry.get(MemberTableParameter.BIRTHDAY.jsonFieldName())
@@ -134,24 +132,6 @@ class GetHelper extends ApiHelper {
         descendantDdbMap.sort(comparator);
         final List<Map<String, Object>> descendantsObject = new ArrayList<>();
         descendantDdbMap.forEach(ddb -> descendantsObject.add(this.getResponseObject(ddb)));
-        return descendantsObject;
-    }
-
-    @Override
-    public @NotNull
-    APIGatewayProxyRequestEvent getRequestEvent () {
-        return this.requestEvent;
-    }
-
-    @Override
-    public @NotNull
-    LambdaLogger getLogger () {
-        return this.logger;
-    }
-
-    @Override
-    public @NotNull
-    DynamoDbClient getDynamoDbClient () {
-        return this.dynamoDbClient;
+        return Collections.unmodifiableList(descendantsObject);
     }
 }

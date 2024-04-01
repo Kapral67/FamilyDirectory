@@ -27,7 +27,7 @@ enum MemberTableParameter implements DdbTableParameter {
                                                          .projectionType(KEYS_ONLY)
                                                          .build()),
     PHONES(DdbType.MAP, "phones", null),
-    ADDRESS(DdbType.STR_SET, "address", null),
+    ADDRESS(DdbType.LIST, "address", null),
     FAMILY_ID(DdbType.STR, "familyId", null);
 
     @NotNull

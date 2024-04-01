@@ -23,7 +23,6 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeTy
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.Delete;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
@@ -48,17 +47,12 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 public final
 class DeleteHelper extends ApiHelper {
     private final @NotNull ObjectMapper objectMapper = new ObjectMapper();
-    private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
     private final @NotNull CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create();
     private final @NotNull String userPoolId = requireNonNull(getenv(LambdaUtils.EnvVar.COGNITO_USER_POOL_ID.name()));
-    private final @NotNull LambdaLogger logger;
-    private final @NotNull APIGatewayProxyRequestEvent requestEvent;
 
     public
     DeleteHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) {
-        super();
-        this.logger = requireNonNull(logger);
-        this.requestEvent = requireNonNull(requestEvent);
+        super(logger, requestEvent);
     }
 
     public @NotNull
@@ -272,28 +266,10 @@ class DeleteHelper extends ApiHelper {
     }
 
     @Override
-    public @NotNull
-    LambdaLogger getLogger () {
-        return this.logger;
-    }
-
-    @Override
-    public @NotNull
-    DynamoDbClient getDynamoDbClient () {
-        return this.dynamoDbClient;
-    }
-
-    @Override
     public
     void close () {
         super.close();
         this.cognitoClient.close();
-    }
-
-    @Override
-    public @NotNull
-    APIGatewayProxyRequestEvent getRequestEvent () {
-        return this.requestEvent;
     }
 
     public

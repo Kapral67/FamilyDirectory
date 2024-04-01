@@ -62,42 +62,6 @@ public
 interface MemberEventHelper extends EventHelper {
     @NotNull String ROOT_ID = DdbUtils.ROOT_MEMBER_ID;
 
-    @NotNull
-    static
-    Map<String, AttributeValue> buildMember (final @NotNull MemberRecord memberRecord) {
-        final Map<String, AttributeValue> member = new HashMap<>();
-
-        for (final MemberTableParameter field : MemberTableParameter.values()) {
-            switch (field) {
-                case ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.id()
-                                                                                              .toString()));
-                case FIRST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.member()
-                                                                                                      .getFirstName()));
-                case MIDDLE_NAME -> ofNullable(memberRecord.member()
-                                                           .getMiddleName()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
-                case LAST_NAME -> member.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.member()
-                                                                                                     .getLastName()));
-                case SUFFIX -> ofNullable(memberRecord.member()
-                                                      .getSuffix()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s.value())));
-                case BIRTHDAY -> member.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.member()
-                                                                                                    .getBirthdayString()));
-                case DEATHDAY -> ofNullable(memberRecord.member()
-                                                        .getDeathdayString()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
-                case EMAIL -> ofNullable(memberRecord.member()
-                                                     .getEmail()).ifPresent(s -> member.put(field.jsonFieldName(), AttributeValue.fromS(s)));
-                case PHONES -> ofNullable(memberRecord.member()
-                                                      .getPhonesDdbMap()).ifPresent(m -> member.put(field.jsonFieldName(), AttributeValue.fromM(m)));
-                case ADDRESS -> ofNullable(memberRecord.member()
-                                                       .getAddress()).ifPresent(ss -> member.put(field.jsonFieldName(), AttributeValue.fromSs(ss)));
-                case FAMILY_ID -> member.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.familyId()
-                                                                                                     .toString()));
-                default -> throw new IllegalStateException("Unhandled Member Parameter: `%s`".formatted(field.jsonFieldName()));
-            }
-        }
-
-        return member;
-    }
-
     static
     void deleteCognitoAccountAndNotify (final @NotNull String sub) {
         final SdkClientProvider sdkClientProvider = SdkClientProvider.getSdkClientProvider();
@@ -393,13 +357,14 @@ interface MemberEventHelper extends EventHelper {
                 }
                 case ADDRESS -> {
                     final List<String> addressLines = new ArrayList<>();
-                    for (int i = 1; i <= Member.REQ_NON_NULL_ADDRESS_SIZE && (i == 1 || !addressLines.isEmpty()); ++i) {
-                        final String desc = "[%s] Please Enter %s Line %d:".formatted((i == 1)
+                    for (int i = 1; i <= Member.MAX_NON_NULL_ADDRESS_SIZE && (i == 1 || !addressLines.isEmpty()); ++i) {
+                        final boolean isOptional = (i == 1 || i > Member.MIN_NON_NULL_ADDRESS_SIZE);
+                        final String desc = "[%s] Please Enter %s Line %d:".formatted(isOptional
                                                                                               ? "Optional"
                                                                                               : "Required", param.jsonFieldName(), i);
-                        final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, i == 1, true, null);
+                        final SkippableTextInputDialog dialog = new SkippableTextInputDialog(param.jsonFieldName(), desc, isOptional, true, null);
                         final String addressLine = dialog.showDialog(gui);
-                        if (nonNull(addressLine)) {
+                        if (!(isNull(addressLine) || addressLine.isBlank())) {
                             addressLines.add(addressLine);
                         }
                     }
