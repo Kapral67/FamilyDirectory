@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
@@ -109,10 +110,13 @@ class FlagEvent implements EventHelper {
                 waitDialog.waitUntilClosed();
                 try {
                     future.get();
-                } catch (final Throwable e) {
+                } catch (final ExecutionException e) {
+                    throw new RuntimeException(e);
+                } catch (final InterruptedException e) {
+                    Thread.currentThread()
+                          .interrupt();
                     throw new RuntimeException(e);
                 }
-                waitDialog.waitUntilClosed();
             }
             default -> throw new IllegalStateException("Unhandled Flag: %s".formatted(this.flag.name()));
         }

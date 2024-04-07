@@ -4,6 +4,7 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
@@ -60,7 +61,11 @@ class PickerDialogRefreshUtility {
             waitDialog.waitUntilClosed();
             try {
                 future.get();
-            } catch (final Throwable e) {
+            } catch (final ExecutionException e) {
+                throw new RuntimeException(e);
+            } catch (final InterruptedException e) {
+                Thread.currentThread()
+                      .interrupt();
                 throw new RuntimeException(e);
             }
             final RefreshableListSelectDialog<MemberRecord> listSelectDialog = new RefreshableListSelectDialog<>(this.title, this.description, true, contentRef.get(), new TerminalSize(20, 10));
