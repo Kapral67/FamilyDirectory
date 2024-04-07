@@ -9,12 +9,14 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
 import org.jetbrains.annotations.NotNull;
 import static java.util.Objects.requireNonNull;
 import static org.familydirectory.assets.ddb.models.member.MemberModel.DAGGER;
 
 public abstract
 class PDPageHelperModel implements Closeable {
+    protected static final float TEXT_SPACE_UNITS = 1000.0f;
     protected static final float SUBTITLE_FONT_SIZE = 8.0f;
     protected static final PDFont STANDARD_FONT = PDType1Font.HELVETICA;
     protected static final float STANDARD_FONT_SIZE = 10.0f;
@@ -33,6 +35,14 @@ class PDPageHelperModel implements Closeable {
     protected static final float LEFT_RIGHT_MARGIN = inch2px(0.5f);
     protected static final PDFont TITLE_FONT = PDType1Font.HELVETICA_BOLD;
     protected static final PDFont SUBTITLE_FONT = PDType1Font.HELVETICA_OBLIQUE;
+    protected static final PDBorderStyleDictionary INVISIBLE_BORDER;
+
+    static {
+        INVISIBLE_BORDER = new PDBorderStyleDictionary();
+        INVISIBLE_BORDER.setWidth(0.0f);
+    }
+
+    protected final @NotNull PDDocument pdf;
     protected final @NotNull PDPage page;
     protected final @NotNull PDPageContentStream contents;
     protected final @NotNull Location location = new Location(0.0f, 0.0f);
@@ -42,9 +52,10 @@ class PDPageHelperModel implements Closeable {
     protected
     PDPageHelperModel (final @NotNull PDDocument pdf, final @NotNull PDPage page, final @NotNull String title, final @NotNull LocalDate subtitle, final int pageNumber) throws IOException {
         super();
+        this.pdf = requireNonNull(pdf);
         this.page = requireNonNull(page);
-        requireNonNull(pdf).addPage(this.page);
-        this.contents = new PDPageContentStream(pdf, this.page);
+        this.pdf.addPage(this.page);
+        this.contents = new PDPageContentStream(this.pdf, this.page);
         this.addTitle(requireNonNull(title));
         this.addSubtitle(requireNonNull(subtitle).format(DISPLAY_DATE_FORMATTER));
         this.addTopLine();
@@ -58,7 +69,7 @@ class PDPageHelperModel implements Closeable {
     protected static
     float getTextSpaceUnits (final @NotNull PDFont font, final @NotNull String text) throws IOException {
         // https://javadoc.io/static/org.apache.pdfbox/pdfbox/2.0.30/org/apache/pdfbox/pdmodel/font/PDFont.html#getStringWidth-java.lang.String-
-        return font.getStringWidth(text) / 1000.0f;
+        return font.getStringWidth(text) / TEXT_SPACE_UNITS;
     }
 
     protected static
@@ -69,6 +80,18 @@ class PDPageHelperModel implements Closeable {
     protected static
     float getTextWidth (final @NotNull PDFont font, final float fontSize, final @NotNull String text) throws IOException {
         return getTextSpaceUnits(font, text) * fontSize;
+    }
+
+    protected static
+    float getAbsoluteFontAscentFromBaseline (final @NotNull PDFont font, final float fontSize) {
+        return Math.abs(font.getFontDescriptor()
+                            .getAscent()) / TEXT_SPACE_UNITS * fontSize;
+    }
+
+    protected static
+    float getAbsoluteFontDescentFromBaseline (final @NotNull PDFont font, final float fontSize) {
+        return Math.abs(font.getFontDescriptor()
+                            .getDescent()) / TEXT_SPACE_UNITS * fontSize;
     }
 
     protected
@@ -253,6 +276,9 @@ class PDPageHelperModel implements Closeable {
     public final
     void close () throws IOException {
         this.contents.close();
+        // https://github.com/apache/pdfbox/blob/93f0a8d3d0d95a7081c1e649b637db17e2aa1f09/examples/src/main/java/org/apache/pdfbox/examples/pdmodel/AddAnnotations.java#L305-L313
+        this.page.getAnnotations()
+                 .forEach(annotation -> annotation.constructAppearances(this.pdf));
     }
 
     public static final

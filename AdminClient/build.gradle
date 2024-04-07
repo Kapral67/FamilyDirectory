@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'org.familydirectory.sdk.adminclient'
-version = '0.71'
+version = '0.75'
 
 compileJava {
     sourceCompatibility = '21'
@@ -19,13 +19,13 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.familydirectory.assets:familydirectory-service-assets:0.71'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
+    implementation 'org.familydirectory.assets:familydirectory-service-assets:0.75'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
     implementation 'org.jetbrains:annotations:24.1.0'
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
     implementation 'org.slf4j:slf4j-nop:2.0.12'
-    implementation 'software.amazon.awscdk:aws-cdk-lib:2.127.0'
-    implementation platform('software.amazon.awssdk:bom:2.24.0')
+    implementation 'software.amazon.awscdk:aws-cdk-lib:2.136.0'
+    implementation platform('software.amazon.awssdk:bom:2.25.26')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:sesv2'

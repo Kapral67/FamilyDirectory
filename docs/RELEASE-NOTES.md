@@ -1,5 +1,53 @@
 # FamilyDirectory Release Notes
 
+## v0.75
+
+### IMPORTANT UPDATE INFO
+
+- After Updating, please trigger Stream Function Invocation by Toggling PDF Generator OFF and ON (use the AdminClient)
+
+- see **v0.7 IMPORTANT UPDATE INFO**
+
+### Bug Fixes
+
+- Normalize usage of static enum constants LogLevel & Ansi (#844)
+- Future handling in AdminClient: wait for futures to complete
+
+### Features
+
+- Deathday gets own line in Birthday Pdf (#845)
+- Emails clickable in FamilyDirectory Pdf (#870)
+
+### Dependency Upgrade Tracking PRs
+
+- #811
+
+- #814
+
+- #817
+
+- #821
+
+- #827
+
+- #828
+
+- #831
+
+- #839
+
+- #840
+
+- #846 - #869
+
+- #881
+
+- #886
+
+- #893
+
+- #900 - #924
+
 ## v0.71
 
 ### IMPORTANT UPDATE INFO

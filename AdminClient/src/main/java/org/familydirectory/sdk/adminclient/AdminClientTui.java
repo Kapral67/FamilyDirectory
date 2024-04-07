@@ -66,7 +66,6 @@ class AdminClientTui {
                                              -t | --text        COLOR  background text color
                                              -v | --version            show this message
                                              -w | --window             prefer windowed mode
-                                                                                      
                                            COLOR:
                                              [ BLACK, BLUE, CYAN, GREEN, MAGENTA, RED, WHITE, YELLOW ]""".formatted(Constants.VERSION_STR);
     private static boolean DEBUG = false;

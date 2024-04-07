@@ -2,10 +2,16 @@ package org.familydirectory.assets.lambda.function.stream.helper;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionURI;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.lambda.function.stream.helper.models.PDPageHelperModel;
@@ -13,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static org.familydirectory.assets.ddb.models.member.MemberModel.DAGGER;
 
@@ -113,14 +120,10 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
             }
         }
         if (nonNull(member.getEmail())) {
-            this.contents.setFont(STANDARD_FONT, emailFontSize);
-            this.addColumnAgnosticText(member.getEmail());
-            this.newLine(STANDARD_LINE_SPACING);
+            this.addEmailToBodyTextBlock(STANDARD_FONT, emailFontSize, member.getEmail(), null);
         }
         if (nonNull(spouse) && nonNull(spouse.getEmail())) {
-            this.contents.setFont(STANDARD_FONT, emailFontSize);
-            this.addColumnAgnosticText(spouse.getEmail());
-            this.newLine(STANDARD_LINE_SPACING);
+            this.addEmailToBodyTextBlock(STANDARD_FONT, emailFontSize, spouse.getEmail(), null);
         }
 
 //  PRINT MEMBER AND SPOUSE MOBILE PHONES (MEMBER FIRST)
@@ -167,11 +170,9 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
 
 //          ADD DESCENDANT EMAIL
                 if (nonNull(desc.getEmail())) {
-                    final String email = "%s%s".formatted(TAB, desc.getEmail());
-                    final float fontSize = this.getColumnFittedFontSize(email, STANDARD_FONT, STANDARD_FONT_SIZE);
-                    this.contents.setFont(STANDARD_FONT, fontSize);
-                    this.addColumnAgnosticText(email);
-                    this.newLine(STANDARD_LINE_SPACING);
+                    final String displayEmail = "%s%s".formatted(TAB, desc.getEmail());
+                    final float fontSize = this.getColumnFittedFontSize(displayEmail, STANDARD_FONT, STANDARD_FONT_SIZE);
+                    this.addEmailToBodyTextBlock(STANDARD_FONT, fontSize, desc.getEmail(), displayEmail);
                 }
 
 //          ADD DESCENDANT MOBILE PHONE
@@ -353,5 +354,44 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
             this.addColumnAgnosticText(line);
             this.newLine(STANDARD_LINE_SPACING);
         }
+    }
+
+    private
+    void addEmailToBodyTextBlock (final PDFont font, final float fontSize, final @NotNull String email, @Nullable String display) throws IOException {
+        if (isNull(display)) {
+            display = requireNonNull(email);
+        }
+
+        // append display text to pdf
+        this.contents.setFont(font, fontSize);
+        this.addColumnAgnosticText(display);
+
+        // create annotation object for mailto link
+        final PDAnnotationLink mailToLink = new PDAnnotationLink();
+        mailToLink.setBorderStyle(INVISIBLE_BORDER);
+
+        // create clickable area on pdf
+        final PDRectangle mailToLinkBox = new PDRectangle();
+        mailToLinkBox.setLowerLeftX(this.location.x);
+        mailToLinkBox.setLowerLeftY(this.location.y - getAbsoluteFontDescentFromBaseline(font, fontSize));
+        mailToLinkBox.setUpperRightX(this.location.x + getTextWidth(font, fontSize, display));
+        mailToLinkBox.setUpperRightY(this.location.y + getAbsoluteFontAscentFromBaseline(font, fontSize));
+
+        // clickable area attached to annotation object
+        mailToLink.setRectangle(mailToLinkBox);
+
+        // create action for when clicked
+        final PDActionURI mailToLinkHref = new PDActionURI();
+        mailToLinkHref.setURI("mailto:%s".formatted(email));
+
+        // attach action to annotation object
+        mailToLink.setAction(mailToLinkHref);
+
+        // add annotations to page
+        final List<PDAnnotation> pageAnnotations = new ArrayList<>(this.page.getAnnotations());
+        pageAnnotations.add(mailToLink);
+        this.page.setAnnotations(pageAnnotations);
+
+        this.newLine(STANDARD_LINE_SPACING);
     }
 }

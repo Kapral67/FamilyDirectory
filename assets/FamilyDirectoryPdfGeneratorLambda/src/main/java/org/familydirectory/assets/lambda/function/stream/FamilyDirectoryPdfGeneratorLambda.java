@@ -3,7 +3,6 @@ package org.familydirectory.assets.lambda.function.stream;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
-import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.ZipEntry;
@@ -14,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
 import static java.lang.System.getenv;
 import static java.util.Objects.requireNonNull;
 
@@ -46,7 +46,7 @@ class FamilyDirectoryPdfGeneratorLambda implements RequestHandler<DynamodbEvent,
             return null;
 
         } catch (final Throwable e) {
-            LambdaUtils.logTrace(context.getLogger(), e, LogLevel.FATAL);
+            LambdaUtils.logTrace(context.getLogger(), e, FATAL);
             throw e;
         }
     }

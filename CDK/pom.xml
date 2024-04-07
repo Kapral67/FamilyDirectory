@@ -13,22 +13,22 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cdk.version>2.127.0</cdk.version>
-        <cdk-alpha.version>2.127.0-alpha.0</cdk-alpha.version>
+        <cdk.version>2.136.0</cdk.version>
+        <cdk-alpha.version>2.136.0-alpha.0</cdk-alpha.version>
         <constructs.version>10.3.0</constructs.version>
         <junit.version>5.10.2</junit.version>
     </properties>
 
     <groupId>org.familydirectory.cdk</groupId>
     <artifactId>familydirectory-cdk</artifactId>
-    <version>0.71</version>
+    <version>0.75</version>
 
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.12.1</version>
+                <version>3.13.0</version>
                 <configuration>
                     <source>21</source>
                     <target>21</target>
@@ -38,7 +38,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>3.2.0</version>
                 <configuration>
                     <mainClass>org.familydirectory.cdk.FamilyDirectoryCdkApp</mainClass>
                 </configuration>
@@ -51,7 +51,7 @@
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
-                <version>2.24.0</version>
+                <version>2.25.26</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

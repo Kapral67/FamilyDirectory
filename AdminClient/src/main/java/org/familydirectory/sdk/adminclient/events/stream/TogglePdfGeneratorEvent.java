@@ -85,19 +85,19 @@ class TogglePdfGeneratorEvent implements EventHelper {
     @NotNull
     private static
     EventSourceMappingConfiguration getEventSourceMappingConfig (final @NotNull String functionName) {
-        CompletableFuture<EventSourceMappingConfiguration> future = new CompletableFuture<>();
-        try (ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor()) {
+        final CompletableFuture<EventSourceMappingConfiguration> future = new CompletableFuture<>();
+        try (final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor()) {
             executorService.scheduleAtFixedRate(() -> {
                 try {
-                    EventSourceMappingConfiguration eventSourceMapping = SdkClientProvider.getSdkClientProvider()
-                                                                                          .getSdkClient(LambdaClient.class)
-                                                                                          .listEventSourceMappings(ListEventSourceMappingsRequest.builder()
-                                                                                                                                                 .functionName(requireNonNull(functionName))
-                                                                                                                                                 .build())
-                                                                                          .eventSourceMappings()
-                                                                                          .stream()
-                                                                                          .findFirst()
-                                                                                          .orElseThrow();
+                    final EventSourceMappingConfiguration eventSourceMapping = SdkClientProvider.getSdkClientProvider()
+                                                                                                .getSdkClient(LambdaClient.class)
+                                                                                                .listEventSourceMappings(ListEventSourceMappingsRequest.builder()
+                                                                                                                                                       .functionName(requireNonNull(functionName))
+                                                                                                                                                       .build())
+                                                                                                .eventSourceMappings()
+                                                                                                .stream()
+                                                                                                .findFirst()
+                                                                                                .orElseThrow();
 
                     if (eventSourceMapping.state()
                                           .equalsIgnoreCase(ENABLED) || eventSourceMapping.state()
