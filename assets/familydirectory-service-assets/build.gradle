@@ -29,7 +29,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
     implementation 'org.jetbrains:annotations:24.1.0'
     implementation 'com.googlecode.libphonenumber:libphonenumber:8.13.32'
     implementation 'commons-validator:commons-validator:1.8.0'
