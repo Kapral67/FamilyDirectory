@@ -6,7 +6,7 @@
 
 - After Updating, please trigger Stream Function Invocation by Toggling PDF Generator OFF and ON (use the AdminClient)
 
-- see **v0.7 IMPORTANT UPDATE INFO**
+- see **v0.71 IMPORTANT UPDATE INFO**
 
 ### Bug Fixes
 
