@@ -11,6 +11,7 @@
 ### Bug Fixes
 
 - Normalize usage of static enum constants LogLevel & Ansi (#844)
+- Future handling in AdminClient: wait for futures to complete
 
 ### Features
 
@@ -38,6 +39,14 @@
 - #840
 
 - #846 - #869
+
+- #881
+
+- #886
+
+- #893
+
+- #900 - #924
 
 ## v0.71
 
