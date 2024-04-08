@@ -65,8 +65,6 @@ class UpdateHelper extends ApiHelper {
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_NOT_FOUND));
         }
 
-        final String ddbMemberId = ddbMemberMap.get(MemberTableParameter.ID.jsonFieldName())
-                                               .s();
         final String ddbFamilyId = ddbMemberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
                                                .s();
         final String ddbMemberEmail = ofNullable(ddbMemberMap.get(MemberTableParameter.EMAIL.jsonFieldName())).map(AttributeValue::s)
@@ -92,7 +90,7 @@ class UpdateHelper extends ApiHelper {
                                                                   .getFirst()
                                                                   .get(MemberTableParameter.ID.jsonFieldName())
                                                                   .s();
-                this.logger.log("<MEMBER,`%s`> Requested Update For <MEMBER,`%s`>, but <MEMBER,`%s`> Already Claims <EMAIL,`%s`>".formatted(caller.memberId(), ddbMemberId, emailResponseMemberId,
+                this.logger.log("<MEMBER,`%s`> Requested Update For <MEMBER,`%s`>, but <MEMBER,`%s`> Already Claims <EMAIL,`%s`>".formatted(caller.memberId(), updateEvent.id(), emailResponseMemberId,
                                                                                                                                             updateMemberEmail), WARN);
                 throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
                                                                               .withBody("EMAIL Already Registered With Another Member"));
@@ -105,38 +103,45 @@ class UpdateHelper extends ApiHelper {
                                                                                                                                            .filter(Predicate.not(String::isBlank))
                                                                                                                                            .map(s -> LocalDate.parse(s, DdbUtils.DATE_FORMATTER))
                                                                                                                                            .orElse(null));
-        return new EventWrapper(updateEvent, ddbMemberId, ddbFamilyId, ddbMemberIsAdult);
+        return new EventWrapper(updateEvent, ddbFamilyId, ddbMemberIsAdult);
     }
 
     public @NotNull
     PutItemRequest getPutRequest (final @NotNull Caller caller, final @NotNull EventWrapper eventWrapper) {
         if (caller.isAdmin()) {
-            this.logger.log("ADMIN <MEMBER,`%s`> update <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
+            this.logger.log("ADMIN <MEMBER,`%s`> update <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.updateEvent()
+                                                                                                                .id()), INFO);
         } else if (caller.memberId()
-                         .equals(eventWrapper.ddbMemberId()))
+                         .equals(eventWrapper.updateEvent()
+                                             .id()))
         {
             this.logger.log("<MEMBER,`%s`> update SELF".formatted(caller.memberId()), INFO);
         } else if (caller.memberId()
                          .equals(eventWrapper.ddbFamilyId()) || caller.familyId()
-                                                                      .equals(eventWrapper.ddbMemberId()))
+                                                                      .equals(eventWrapper.updateEvent()
+                                                                                          .id()))
         {
-            this.logger.log("<MEMBER,`%s`> update <SPOUSE,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
+            this.logger.log("<MEMBER,`%s`> update <SPOUSE,`%s`>".formatted(caller.memberId(), eventWrapper.updateEvent()
+                                                                                                          .id()), INFO);
         } else if (!eventWrapper.ddbMemberIsAdult() &&
                    ofNullable(requireNonNull(this.getDdbItem(caller.familyId(), DdbTable.FAMILY)).get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
                                                                                                                                                         .filter(Predicate.not(List::isEmpty))
                                                                                                                                                         .filter(ss -> ss.contains(
-                                                                                                                                                                eventWrapper.ddbMemberId()))
+                                                                                                                                                                eventWrapper.updateEvent()
+                                                                                                                                                                            .id()))
                                                                                                                                                         .isPresent())
         {
-            this.logger.log("<MEMBER,`%s`> update <DESCENDANT,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
+            this.logger.log("<MEMBER,`%s`> update <DESCENDANT,`%s`>".formatted(caller.memberId(), eventWrapper.updateEvent()
+                                                                                                              .id()), INFO);
         } else {
-            this.logger.log("<MEMBER,`%s`> attempted to update <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), WARN);
+            this.logger.log("<MEMBER,`%s`> attempted to update <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.updateEvent()
+                                                                                                                       .id()), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
         }
 
-        final Map<String, AttributeValue> item = Member.retrieveDdbMap(new MemberRecord(UUID.fromString(eventWrapper.ddbMemberId()), eventWrapper.updateEvent()
-                                                                                                                                                 .member(),
-                                                                                        UUID.fromString(eventWrapper.ddbFamilyId())));
+        final Map<String, AttributeValue> item = Member.retrieveDdbMap(new MemberRecord(UUID.fromString(eventWrapper.updateEvent()
+                                                                                                                    .id()), eventWrapper.updateEvent()
+                                                                                                                                        .member(), UUID.fromString(eventWrapper.ddbFamilyId())));
 
         this.logger.log(Member.convertDdbMap(item)
                               .toString(), DEBUG);
@@ -148,6 +153,6 @@ class UpdateHelper extends ApiHelper {
     }
 
     public
-    record EventWrapper(@NotNull UpdateEvent updateEvent, @NotNull String ddbMemberId, @NotNull String ddbFamilyId, boolean ddbMemberIsAdult) {
+    record EventWrapper(@NotNull UpdateEvent updateEvent, @NotNull String ddbFamilyId, boolean ddbMemberIsAdult) {
     }
 }

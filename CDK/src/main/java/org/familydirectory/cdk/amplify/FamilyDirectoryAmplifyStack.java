@@ -32,6 +32,7 @@ import software.amazon.awscdk.services.amplify.alpha.GitHubSourceCodeProvider;
 import software.amazon.awscdk.services.amplify.alpha.Platform;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awssdk.services.amplify.model.JobType;
 import software.constructs.Construct;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
@@ -55,6 +56,10 @@ class FamilyDirectoryAmplifyStack extends Stack {
     public static final Platform AMPLIFY_PLATFORM = Platform.WEB;
     public static final List<CustomRule> AMPLIFY_CUSTOM_RULES = singletonList(CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT);
     public static final String AMPLIFY_SURNAME_FIELD = "Item.%s.S".formatted(MemberTableParameter.LAST_NAME.jsonFieldName());
+    public static final String AMPLIFY_APP_DEPLOYMENT_RESOURCE_ID = "AppDeployment";
+    public static final List<String> AMPLIFY_APP_DEPLOYMENT_RESOURCE_POLICY_STATEMENT_ACTIONS = singletonList("amplify:StartJob");
+    public static final String AMPLIFY_APP_DEPLOYMENT_JOB_REASON = "Amplify Stack CDK Deployment";
+    public static final JobType AMPLIFY_APP_DEPLOYMENT_JOB_TYPE = JobType.RELEASE;
 
     public
     FamilyDirectoryAmplifyStack (final Construct scope, final String id, final StackProps stackProps) {
@@ -109,6 +114,28 @@ class FamilyDirectoryAmplifyStack extends Stack {
                                                                                           .pullRequestPreview(AMPLIFY_ROOT_BRANCH_PULL_REQUEST_PREVIEW)
                                                                                           .build());
         spaRootDomain.mapRoot(spaRootBranch);
+
+        final AwsSdkCall appDeploymentResourceSdkCall = AwsSdkCall.builder()
+                                                                  .service("amplify")
+                                                                  .action("StartJob")
+                                                                  .parameters(
+                                                                          Map.of("appId", spa.getAppId(), "branchName", spaRootBranch.getBranchName(), "jobReason", AMPLIFY_APP_DEPLOYMENT_JOB_REASON,
+                                                                                 "jobType", AMPLIFY_APP_DEPLOYMENT_JOB_TYPE.toString()))
+                                                                  .physicalResourceId(PhysicalResourceId.of(String.valueOf(Instant.now()
+                                                                                                                                  .getEpochSecond())))
+                                                                  .region(FamilyDirectoryCdkApp.DEFAULT_REGION)
+                                                                  .build();
+        final PolicyStatement appDeploymentResourcePolicyStatement = PolicyStatement.Builder.create()
+                                                                                            .actions(AMPLIFY_APP_DEPLOYMENT_RESOURCE_POLICY_STATEMENT_ACTIONS)
+                                                                                            .effect(Effect.ALLOW)
+                                                                                            .resources(singletonList("%s/branches/%s/jobs/*".formatted(spa.getArn(), spaRootBranch.getBranchName())))
+                                                                                            .build();
+        final AwsCustomResourceProps appDeploymentResourceProps = AwsCustomResourceProps.builder()
+                                                                                        .onCreate(appDeploymentResourceSdkCall)
+                                                                                        .onUpdate(appDeploymentResourceSdkCall)
+                                                                                        .policy(AwsCustomResourcePolicy.fromStatements(singletonList(appDeploymentResourcePolicyStatement)))
+                                                                                        .build();
+        new AwsCustomResource(this, AMPLIFY_APP_DEPLOYMENT_RESOURCE_ID, appDeploymentResourceProps);
     }
 
     public

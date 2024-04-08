@@ -17,17 +17,18 @@ import static java.util.Objects.requireNonNull;
 public
 enum ApiFunction implements LambdaFunctionModel {
     CREATE_MEMBER("CreateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"), DdbTable.MEMBER,
-                                         List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, singletonList(HttpMethod.POST), "create"),
+                                         List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, null, singletonList(HttpMethod.POST), "create"),
     DELETE_MEMBER("DeleteMember", Map.of(DdbTable.COGNITO, List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query"), DdbTable.FAMILY,
                                          List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:UpdateItem"), DdbTable.MEMBER, List.of("dynamodb:DeleteItem", "dynamodb:GetItem")),
-                  List.of("cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"), List.of("ses:SendEmail", "ses:SendRawEmail"), null, singletonList(HttpMethod.POST), "delete"),
+                  List.of("cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"), List.of("ses:SendEmail", "ses:SendRawEmail"), null, null, singletonList(HttpMethod.POST), "delete"),
     GET_MEMBER("GetMember",
                Map.of(DdbTable.COGNITO, List.of("dynamodb:GetItem", "dynamodb:Query"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null,
-               null, null, singletonList(HttpMethod.GET), "get"),
-    GET_PDF("GetPdf", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null, null, singletonList("s3:GetObject"),
+               null, null, null, singletonList(HttpMethod.GET), "get"),
+    GET_PDF("GetPdf", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null, null, singletonList("s3:GetObject"), null,
             singletonList(HttpMethod.GET), "pdf"),
     UPDATE_MEMBER("UpdateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER,
-                                         List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, singletonList(HttpMethod.PUT), "update");
+                                         List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, singletonList("amplify:StartJob"), singletonList(HttpMethod.PUT),
+                  "update");
 
     @NotNull
     private final String functionName;
@@ -39,19 +40,22 @@ enum ApiFunction implements LambdaFunctionModel {
     private final List<String> sesActions;
     @Nullable
     private final List<String> sssActions;
+    @Nullable
+    private final List<String> amplifyActions;
     @NotNull
     private final String endpoint;
     @NotNull
     private final List<HttpMethod> methods;
 
     ApiFunction (final @NotNull String functionName, final @Nullable Map<DdbTable, List<String>> ddbActions, final @Nullable List<String> cognitoActions, final @Nullable List<String> sesActions,
-                 final @Nullable List<String> sssActions, final @NotNull List<HttpMethod> methods, final @NotNull String endpoint)
+                 final @Nullable List<String> sssActions, final @Nullable List<String> amplifyActions, final @NotNull List<HttpMethod> methods, final @NotNull String endpoint)
     {
         this.functionName = "FamilyDirectory%sLambda".formatted(requireNonNull(functionName));
         this.ddbActions = ddbActions;
         this.cognitoActions = cognitoActions;
         this.sesActions = sesActions;
         this.sssActions = sssActions;
+        this.amplifyActions = amplifyActions;
         this.methods = requireNonNull(methods);
         this.endpoint = requireNonNull(endpoint);
     }
@@ -103,6 +107,12 @@ enum ApiFunction implements LambdaFunctionModel {
     public @Nullable
     List<String> sssActions () {
         return this.sssActions;
+    }
+
+    @Override
+    public @Nullable
+    List<String> amplifyActions () {
+        return this.amplifyActions;
     }
 
     @Override

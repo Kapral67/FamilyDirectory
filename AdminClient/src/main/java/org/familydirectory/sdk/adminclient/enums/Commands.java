@@ -13,6 +13,7 @@ enum Commands {
     TOGGLE_PDF_GENERATOR(null),
     COGNITO_MANAGEMENT(CognitoManagementOptions.values()),
     TOOLKIT_CLEANER(null),
+    AMPLIFY_DEPLOYMENT(null),
     FLAGS(Flags.values()),
     EXIT(null);
 

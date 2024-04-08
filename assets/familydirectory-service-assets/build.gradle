@@ -41,4 +41,5 @@ dependencies {
     implementation platform('software.amazon.awssdk:bom:2.25.26')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:sesv2'
+    implementation 'software.amazon.awssdk:amplify'
 }

@@ -102,6 +102,14 @@ class FamilyDirectoryCdkApp {
                                                                                                             .stackName(SSS_STACK_NAME)
                                                                                                             .build());
 
+        final FamilyDirectoryAmplifyStack amplifyStack = new FamilyDirectoryAmplifyStack(app, AMPLIFY_STACK_NAME, StackProps.builder()
+                                                                                                                            .env(DEFAULT_ENV)
+                                                                                                                            .stackName(AMPLIFY_STACK_NAME)
+                                                                                                                            .build());
+        amplifyStack.addDependency(domainStack);
+        amplifyStack.addDependency(dynamoDbStack);
+        amplifyStack.addDependency(cognitoStack);
+
         final FamilyDirectoryLambdaStack lambdaStack = new FamilyDirectoryLambdaStack(app, LAMBDA_STACK_NAME, StackProps.builder()
                                                                                                                         .env(DEFAULT_ENV)
                                                                                                                         .stackName(LAMBDA_STACK_NAME)
@@ -119,15 +127,6 @@ class FamilyDirectoryCdkApp {
         apiGatewayStack.addDependency(domainStack);
         apiGatewayStack.addDependency(cognitoStack);
         apiGatewayStack.addDependency(lambdaStack);
-
-        final FamilyDirectoryAmplifyStack amplifyStack = new FamilyDirectoryAmplifyStack(app, AMPLIFY_STACK_NAME, StackProps.builder()
-                                                                                                                            .env(DEFAULT_ENV)
-                                                                                                                            .stackName(AMPLIFY_STACK_NAME)
-                                                                                                                            .build());
-        amplifyStack.addDependency(domainStack);
-        amplifyStack.addDependency(dynamoDbStack);
-        amplifyStack.addDependency(cognitoStack);
-        amplifyStack.addDependency(apiGatewayStack);
 
         app.synth();
     }

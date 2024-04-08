@@ -46,9 +46,9 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 
 public final
 class DeleteHelper extends ApiHelper {
+    private static final @NotNull String USER_POOL_ID = requireNonNull(getenv(LambdaUtils.EnvVar.COGNITO_USER_POOL_ID.name()));
     private final @NotNull ObjectMapper objectMapper = new ObjectMapper();
     private final @NotNull CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create();
-    private final @NotNull String userPoolId = requireNonNull(getenv(LambdaUtils.EnvVar.COGNITO_USER_POOL_ID.name()));
 
     public
     DeleteHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) {
@@ -233,7 +233,7 @@ class DeleteHelper extends ApiHelper {
             final ListUsersRequest listUsersRequest = ListUsersRequest.builder()
                                                                       .filter("sub = \"%s\"".formatted(ddbMemberCognitoSub))
                                                                       .limit(1)
-                                                                      .userPoolId(this.userPoolId)
+                                                                      .userPoolId(USER_POOL_ID)
                                                                       .build();
             final UserType ddbMemberCognitoUser = ofNullable(this.cognitoClient.listUsers(listUsersRequest)).filter(ListUsersResponse::hasUsers)
                                                                                                             .map(ListUsersResponse::users)
@@ -244,7 +244,7 @@ class DeleteHelper extends ApiHelper {
                                                             .filter(Predicate.not(String::isBlank))
                                                             .orElseThrow();
             this.cognitoClient.adminDeleteUser(AdminDeleteUserRequest.builder()
-                                                                     .userPoolId(this.userPoolId)
+                                                                     .userPoolId(USER_POOL_ID)
                                                                      .username(ddbMemberCognitoUsername)
                                                                      .build());
             this.logger.log("Cognito Account Deleted for <MEMBER,`%s`>: <USERNAME,`%s`>".formatted(ddbMemberId, ddbMemberCognitoUsername), INFO);

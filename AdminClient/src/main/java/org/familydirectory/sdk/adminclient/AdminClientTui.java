@@ -23,6 +23,7 @@ import org.familydirectory.sdk.adminclient.enums.Commands;
 import org.familydirectory.sdk.adminclient.enums.cognito.CognitoManagementOptions;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.familydirectory.sdk.adminclient.enums.flags.Flags;
+import org.familydirectory.sdk.adminclient.events.amplify.AmplifyDeploymentEvent;
 import org.familydirectory.sdk.adminclient.events.cognito.CognitoManagementEvent;
 import org.familydirectory.sdk.adminclient.events.create.CreateEvent;
 import org.familydirectory.sdk.adminclient.events.delete.DeleteEvent;
@@ -126,6 +127,7 @@ class AdminClientTui {
                             case TOGGLE_PDF_GENERATOR -> new TogglePdfGeneratorEvent(gui);
                             case COGNITO_MANAGEMENT -> new CognitoManagementEvent(gui, (CognitoManagementOptions) requireNonNull(option), cognitoPicker);
                             case TOOLKIT_CLEANER -> new ToolkitCleanerEvent(gui);
+                            case AMPLIFY_DEPLOYMENT -> new AmplifyDeploymentEvent(gui);
                             case FLAGS -> new FlagEvent(gui, (Flags) requireNonNull(option));
                             case EXIT -> null;
                         })
@@ -169,7 +171,7 @@ class AdminClientTui {
     @Nullable
     private static
     String getSttyPath () {
-        final String PATH = System.getenv("PATH");
+        final String PATH = getenv("PATH");
         if (nonNull(PATH)) {
             try {
                 for (final String dir : PATH.split(File.pathSeparator)) {
