@@ -40,7 +40,6 @@ public final
 class LambdaFunctionConstructUtility {
     public static final Runtime RUNTIME = JAVA_21;
     public static final Architecture ARCHITECTURE = ARM_64;
-    public static final String ROOT_ID = DdbUtils.ROOT_MEMBER_ID;
 
     private
     LambdaFunctionConstructUtility () {
@@ -70,7 +69,7 @@ class LambdaFunctionConstructUtility {
                                    switch (env) {
                                        case COGNITO_USER_POOL_ID -> ofNullable(userPool).map(IUserPool::getUserPoolId)
                                                                                         .ifPresent(id -> function.addEnvironment(env.name(), id));
-                                       case ROOT_ID -> function.addEnvironment(env.name(), ROOT_ID);
+                                       case ROOT_ID -> function.addEnvironment(env.name(), DdbUtils.ROOT_MEMBER_ID);
                                        case HOSTED_ZONE_NAME -> ofNullable(hostedZone).map(IHostedZone::getZoneName)
                                                                                       .ifPresent(hostedZoneName -> function.addEnvironment(env.name(), hostedZoneName));
                                        case S3_PDF_BUCKET_NAME -> ofNullable(pdfBucket).map(IBucket::getBucketName)

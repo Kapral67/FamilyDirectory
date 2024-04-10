@@ -11,7 +11,6 @@ import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.apigateway.FamilyDirectoryApiGatewayStack;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
-import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.SecretValue;
@@ -69,7 +68,7 @@ class FamilyDirectoryAmplifyStack extends Stack {
                                                                       .service("dynamodb")
                                                                       .action("GetItem")
                                                                       .parameters(Map.of("TableName", AMPLIFY_ROOT_MEMBER_SURNAME_RESOURCE_POLICY_STATEMENT_RESOURCE.name(), "Key",
-                                                                                         Map.of(DdbTableParameter.PK.getName(), Map.of("S", LambdaFunctionConstructUtility.ROOT_ID))))
+                                                                                         Map.of(DdbTableParameter.PK.getName(), Map.of("S", DdbUtils.ROOT_MEMBER_ID))))
                                                                       .physicalResourceId(PhysicalResourceId.of(String.valueOf(Instant.now()
                                                                                                                                       .getEpochSecond())))
                                                                       .region(FamilyDirectoryCdkApp.DEFAULT_REGION)

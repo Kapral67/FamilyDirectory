@@ -1,11 +1,11 @@
 ## Apr 07 2024
 
-- rearrange CdkApp Stacks, so we can provide Amplify appId and branchName to ApiFunction::UpdateMember
-- update LambdaFunctionConstructUtility to handle amplify permissions
-- bump version
-- ensure that AmplifyUtils works for both AdminClient and ApiFunction::UpdateMember
-- ensure to update any CDK tests
-- run stream function automatically on cdk deployment
+- [x] rearrange CdkApp Stacks, so we can provide Amplify appId and branchName to ApiFunction::UpdateMember
+- [ ] update LambdaFunctionConstructUtility to handle amplify permissions
+- [ ] bump version
+- [ ] ensure that AmplifyUtils works for both AdminClient and ApiFunction::UpdateMember
+- [ ] ensure to update any CDK tests
+- [ ] run stream function automatically on cdk deployment
 
 ---
 

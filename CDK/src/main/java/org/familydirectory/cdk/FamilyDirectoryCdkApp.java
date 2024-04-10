@@ -119,6 +119,7 @@ class FamilyDirectoryCdkApp {
         lambdaStack.addDependency(dynamoDbStack);
         lambdaStack.addDependency(cognitoStack);
         lambdaStack.addDependency(sssStack);
+        lambdaStack.addDependency(amplifyStack);
 
         final FamilyDirectoryApiGatewayStack apiGatewayStack = new FamilyDirectoryApiGatewayStack(app, API_STACK_NAME, StackProps.builder()
                                                                                                                                  .env(DEFAULT_ENV)
