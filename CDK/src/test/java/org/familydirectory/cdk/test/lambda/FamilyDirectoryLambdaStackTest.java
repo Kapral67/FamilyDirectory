@@ -174,6 +174,17 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                            entry("ParallelizationFactor", FamilyDirectoryLambdaStack.DDB_STREAM_PARALLELIZATION_FACTOR),
                                                                                                            entry("StartingPosition", "LATEST"))));
             }
+
+            if (function.equals(StreamFunction.PDF_GENERATOR)) {
+                final Map<String, Map<String, Object>> pdfGeneratorVersionMap = template.findResources("AWS::Lambda::Version", objectLike(
+                        singletonMap("Properties", singletonMap("FunctionName", singletonMap("Ref", functionIdCapture.asString())))));
+                assertEquals(1, pdfGeneratorVersionMap.size());
+                template.hasResourceProperties("Custom::Trigger", objectLike(Map.of("HandlerArn", singletonMap("Ref", pdfGeneratorVersionMap.keySet()
+                                                                                                                                            .iterator()
+                                                                                                                                            .next()), "InvocationType", "Event", "Timeout",
+                                                                                    "%d".formatted(function.timeoutSeconds()
+                                                                                                           .intValue() * 1000))));
+            }
         }
     }
 
@@ -345,6 +356,38 @@ class FamilyDirectoryLambdaStackTest {
                             @SuppressWarnings("unchecked")
                             final List<String> actions = (List<String>) actionsObj;
                             if (actions.containsAll(sssActions)) {
+                                fail = false;
+                                break;
+                            }
+                        }
+                    }
+                } catch (final ClassCastException e) {
+                    fail(failMessage, e);
+                }
+            }
+            if (fail) {
+                fail(failMessage);
+            }
+        });
+        ofNullable(function.amplifyActions()).ifPresent(amplifyActions -> {
+            final String failMessage = "Function: %s | Amplify | Actions: %s".formatted(function.functionName(), amplifyActions.toString());
+            boolean fail = true;
+            for (final Object o : statements) {
+                try {
+                    @SuppressWarnings("unchecked")
+                    final Map<String, Object> statement = (Map<String, Object>) o;
+                    if (statement.get("Effect")
+                                 .equals("Allow") && statement.get("Resource")
+                                                              .equals(FamilyDirectoryCdkApp.GLOBAL_RESOURCE))
+                    {
+                        final Object actionsObj = statement.get("Action");
+                        if (actionsObj instanceof String && amplifyActions.size() == 1 && actionsObj.equals(amplifyActions.getFirst())) {
+                            fail = false;
+                            break;
+                        } else if (actionsObj instanceof List) {
+                            @SuppressWarnings("unchecked")
+                            final List<String> actions = (List<String>) actionsObj;
+                            if (actions.containsAll(amplifyActions)) {
                                 fail = false;
                                 break;
                             }

@@ -13,6 +13,8 @@ import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awscdk.CfnOutput;
+import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.SecretValue;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -35,6 +37,7 @@ import software.amazon.awssdk.services.amplify.model.JobType;
 import software.constructs.Construct;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
+import static java.util.Optional.ofNullable;
 import static org.familydirectory.assets.Constants.VERSION_STR;
 import static software.amazon.awscdk.Fn.importValue;
 
@@ -44,10 +47,11 @@ class FamilyDirectoryAmplifyStack extends Stack {
     public static final List<String> AMPLIFY_ROOT_MEMBER_SURNAME_RESOURCE_POLICY_STATEMENT_ACTIONS = singletonList("dynamodb:GetItem");
     public static final DdbTable AMPLIFY_ROOT_MEMBER_SURNAME_RESOURCE_POLICY_STATEMENT_RESOURCE = DdbTable.MEMBER;
     public static final String AMPLIFY_APP_RESOURCE_ID = "SinglePageApp";
+    public static final String AMPLIFY_APP_ID_EXPORT_NAME = "%sId".formatted(AMPLIFY_APP_RESOURCE_ID);
     public static final boolean AMPLIFY_APP_AUTO_BRANCH_DELETE = false;
     public static final String REACT_APP_REDIRECT_URI = "%s%s".formatted(FamilyDirectoryCdkApp.HTTPS_PREFIX, FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
     public static final String REACT_APP_API_DOMAIN = "%s%s".formatted(FamilyDirectoryCdkApp.HTTPS_PREFIX, FamilyDirectoryApiGatewayStack.API_DOMAIN_NAME);
-    public static final String AMPLIFY_ROOT_BRANCH_NAME = "main";
+    public static final String AMPLIFY_ROOT_BRANCH_NAME = ofNullable(getenv("ORG_FAMILYDIRECTORY_AMPLIFY_BRANCH_NAME")).orElse("main");
     public static final boolean AMPLIFY_ROOT_BRANCH_PULL_REQUEST_PREVIEW = false;
     public static final String AMPLIFY_REPOSITORY_OWNER = getenv("ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER");
     public static final String AMPLIFY_REPOSITORY_NAME = getenv("ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME");
@@ -113,6 +117,11 @@ class FamilyDirectoryAmplifyStack extends Stack {
                                                                                           .pullRequestPreview(AMPLIFY_ROOT_BRANCH_PULL_REQUEST_PREVIEW)
                                                                                           .build());
         spaRootDomain.mapRoot(spaRootBranch);
+
+        new CfnOutput(this, AMPLIFY_APP_ID_EXPORT_NAME, CfnOutputProps.builder()
+                                                                      .exportName(AMPLIFY_APP_ID_EXPORT_NAME)
+                                                                      .value(spa.getAppId())
+                                                                      .build());
 
         final AwsSdkCall appDeploymentResourceSdkCall = AwsSdkCall.builder()
                                                                   .service("amplify")

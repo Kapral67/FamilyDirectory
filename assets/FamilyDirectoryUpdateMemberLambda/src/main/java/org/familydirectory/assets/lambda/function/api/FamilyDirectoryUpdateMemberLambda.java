@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
 import static java.lang.System.getenv;
+import static java.util.Objects.requireNonNull;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 
@@ -44,7 +45,8 @@ class FamilyDirectoryUpdateMemberLambda implements RequestHandler<APIGatewayProx
 
             {
                 try (final AmplifyClient amplifyClient = AmplifyClient.create()) {
-                    AmplifyUtils.appDeployment(amplifyClient, "<MEMBER,`%s`> update ROOT".formatted(caller.memberId()));
+                    AmplifyUtils.appDeployment(amplifyClient, "<MEMBER,`%s`> update ROOT".formatted(caller.memberId()), requireNonNull(getenv(LambdaUtils.EnvVar.AMPLIFY_APP_ID.name())),
+                                               requireNonNull(getenv(LambdaUtils.EnvVar.AMPLIFY_BRANCH_NAME.name())));
                 }
             }
 

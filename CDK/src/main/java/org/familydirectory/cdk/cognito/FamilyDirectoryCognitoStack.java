@@ -105,7 +105,8 @@ class FamilyDirectoryCognitoStack extends Stack {
         final IPublicHostedZone hostedZone = PublicHostedZone.fromPublicHostedZoneAttributes(this, FamilyDirectoryDomainStack.HOSTED_ZONE_RESOURCE_ID, hostedZoneAttrs);
 
 //  Cognito Trigger Lambda Functions
-        final Map<LambdaFunctionModel, Function> cognitoTriggerLambdaFunctions = LambdaFunctionConstructUtility.constructFunctionMap(this, List.of(TriggerFunction.values()), hostedZone, null, null);
+        final Map<LambdaFunctionModel, Function> cognitoTriggerLambdaFunctions = LambdaFunctionConstructUtility.constructFunctionMap(this, List.of(TriggerFunction.values()), hostedZone, null, null,
+                                                                                                                                     null);
 
         final UserPoolProps userPoolProps = UserPoolProps.builder()
                                                          .accountRecovery(AccountRecovery.EMAIL_ONLY)

@@ -9,10 +9,12 @@ import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
+import org.familydirectory.cdk.amplify.FamilyDirectoryAmplifyStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
+import software.amazon.awscdk.services.amplify.alpha.IApp;
 import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.iam.IRole;
 import software.amazon.awscdk.services.iam.Role;
@@ -48,7 +50,7 @@ class LambdaFunctionConstructUtility {
 
     public static @NotNull
     <T extends LambdaFunctionModel> Map<T, Function> constructFunctionMap (final @NotNull Construct scope, final @NotNull List<T> values, final @Nullable IHostedZone hostedZone,
-                                                                           final @Nullable IUserPool userPool, final @Nullable IBucket pdfBucket)
+                                                                           final @Nullable IUserPool userPool, final @Nullable IBucket pdfBucket, final @Nullable IApp spaApp)
     {
         return values.stream()
                      .collect(Collectors.toUnmodifiableMap(f -> f, f -> {
@@ -74,6 +76,9 @@ class LambdaFunctionConstructUtility {
                                                                                       .ifPresent(hostedZoneName -> function.addEnvironment(env.name(), hostedZoneName));
                                        case S3_PDF_BUCKET_NAME -> ofNullable(pdfBucket).map(IBucket::getBucketName)
                                                                                        .ifPresent(name -> function.addEnvironment(env.name(), name));
+                                       case AMPLIFY_APP_ID -> ofNullable(spaApp).map(IApp::getAppId)
+                                                                                .ifPresent(id -> function.addEnvironment(env.name(), id));
+                                       case AMPLIFY_BRANCH_NAME -> function.addEnvironment(env.name(), FamilyDirectoryAmplifyStack.AMPLIFY_ROOT_BRANCH_NAME);
                                        default -> {
                                        }
                                    }
@@ -133,6 +138,12 @@ class LambdaFunctionConstructUtility {
                                                                                                                                       .resources(singletonList("%s/%s".formatted(pdfBucketArn,
                                                                                                                                                                                  FamilyDirectoryCdkApp.GLOBAL_RESOURCE)))
                                                                                                                                       .build())));
+
+//      Assign Amplify Permissions
+            ofNullable(k.amplifyActions()).ifPresent(actions -> v.addToRolePolicy(create().effect(ALLOW)
+                                                                                          .actions(actions)
+                                                                                          .resources(singletonList(FamilyDirectoryCdkApp.GLOBAL_RESOURCE))
+                                                                                          .build()));
         });
     }
 
@@ -171,6 +182,12 @@ class LambdaFunctionConstructUtility {
                                                                                                                                                                "%s/%s".formatted(pdfBucketArn,
                                                                                                                                                                                  FamilyDirectoryCdkApp.GLOBAL_RESOURCE)))
                                                                                                                                                        .build())));
+
+//      Assign Amplify Permissions
+            ofNullable(f.amplifyActions()).ifPresent(actions -> executionRole.addToPrincipalPolicy(create().effect(ALLOW)
+                                                                                                           .actions(actions)
+                                                                                                           .resources(singletonList(FamilyDirectoryCdkApp.GLOBAL_RESOURCE))
+                                                                                                           .build()));
         });
     }
 }

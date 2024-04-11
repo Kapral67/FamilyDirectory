@@ -68,7 +68,7 @@ class UpdateEvent implements MemberEventHelper {
                            .equals(ROOT_ID))
         {
             AmplifyUtils.appDeployment(SdkClientProvider.getSdkClientProvider()
-                                                        .getSdkClient(AmplifyClient.class), "AdminClient Update ROOT");
+                                                        .getSdkClient(AmplifyClient.class), "AdminClient Update ROOT", null, null);
         }
     }
 

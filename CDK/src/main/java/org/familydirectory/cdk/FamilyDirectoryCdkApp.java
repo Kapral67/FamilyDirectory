@@ -97,11 +97,6 @@ class FamilyDirectoryCdkApp {
         cognitoStack.addDependency(cognitoUsEastOneStack);
         cognitoStack.addDependency(dynamoDbStack);
 
-        final FamilyDirectorySssStack sssStack = new FamilyDirectorySssStack(app, SSS_STACK_NAME, StackProps.builder()
-                                                                                                            .env(DEFAULT_ENV)
-                                                                                                            .stackName(SSS_STACK_NAME)
-                                                                                                            .build());
-
         final FamilyDirectoryAmplifyStack amplifyStack = new FamilyDirectoryAmplifyStack(app, AMPLIFY_STACK_NAME, StackProps.builder()
                                                                                                                             .env(DEFAULT_ENV)
                                                                                                                             .stackName(AMPLIFY_STACK_NAME)
@@ -109,6 +104,11 @@ class FamilyDirectoryCdkApp {
         amplifyStack.addDependency(domainStack);
         amplifyStack.addDependency(dynamoDbStack);
         amplifyStack.addDependency(cognitoStack);
+
+        final FamilyDirectorySssStack sssStack = new FamilyDirectorySssStack(app, SSS_STACK_NAME, StackProps.builder()
+                                                                                                            .env(DEFAULT_ENV)
+                                                                                                            .stackName(SSS_STACK_NAME)
+                                                                                                            .build());
 
         final FamilyDirectoryLambdaStack lambdaStack = new FamilyDirectoryLambdaStack(app, LAMBDA_STACK_NAME, StackProps.builder()
                                                                                                                         .env(DEFAULT_ENV)

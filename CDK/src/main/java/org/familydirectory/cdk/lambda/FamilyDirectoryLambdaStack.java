@@ -8,12 +8,15 @@ import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
 import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
+import org.familydirectory.cdk.amplify.FamilyDirectoryAmplifyStack;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
 import org.familydirectory.cdk.sss.FamilyDirectorySssStack;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.amplify.alpha.App;
+import software.amazon.awscdk.services.amplify.alpha.IApp;
 import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.dynamodb.Table;
@@ -30,6 +33,9 @@ import software.amazon.awscdk.services.s3.BucketAttributes;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.ssm.IStringParameter;
 import software.amazon.awscdk.services.ssm.StringParameter;
+import software.amazon.awscdk.triggers.InvocationType;
+import software.amazon.awscdk.triggers.Trigger;
+import software.amazon.awscdk.triggers.TriggerProps;
 import software.constructs.Construct;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -47,6 +53,7 @@ class FamilyDirectoryLambdaStack extends Stack {
     public static final Number DDB_STREAM_RETRY_ATTEMPTS = 0;
     public static final boolean DDB_STREAM_ENABLED = true;
     public static final List<String> DDB_STREAM_POLICY_ACTIONS = List.of("dynamodb:DescribeStream", "dynamodb:GetRecords", "dynamodb:GetShardIterator");
+    public static final String PDF_GENERATOR_TRIGGER_RESOURCE_ID = "PdfGeneratorTrigger";
 
     public
     FamilyDirectoryLambdaStack (final Construct scope, final String id, final StackProps stackProps)
@@ -68,16 +75,17 @@ class FamilyDirectoryLambdaStack extends Stack {
                                                                                                                                                FamilyDirectorySssStack.S3_PDF_BUCKET_NAME_EXPORT_NAME))
                                                                                                                                        .region(FamilyDirectoryCdkApp.DEFAULT_REGION)
                                                                                                                                        .build());
+        final IApp spaApp = App.fromAppId(this, FamilyDirectoryAmplifyStack.AMPLIFY_APP_RESOURCE_ID, importValue(FamilyDirectoryAmplifyStack.AMPLIFY_APP_ID_EXPORT_NAME));
 
 //  API Lambda Functions
-        LambdaFunctionConstructUtility.constructFunctionPermissions(LambdaFunctionConstructUtility.constructFunctionMap(this, List.of(ApiFunction.values()), hostedZone, userPool, pdfBucket), userPool,
-                                                                    pdfBucket);
+        LambdaFunctionConstructUtility.constructFunctionPermissions(LambdaFunctionConstructUtility.constructFunctionMap(this, List.of(ApiFunction.values()), hostedZone, userPool, pdfBucket, spaApp),
+                                                                    userPool, pdfBucket);
 
 //  Cognito Trigger Permissions
         LambdaFunctionConstructUtility.constructFunctionPermissions(this, List.of(TriggerFunction.values()), userPool, null);
 
 //  Stream Functions
-        final Map<StreamFunction, Function> streamFunctionMap = LambdaFunctionConstructUtility.constructFunctionMap(this, List.of(StreamFunction.values()), null, null, pdfBucket);
+        final Map<StreamFunction, Function> streamFunctionMap = LambdaFunctionConstructUtility.constructFunctionMap(this, List.of(StreamFunction.values()), null, null, pdfBucket, null);
 
         for (final Map.Entry<StreamFunction, Function> entry : streamFunctionMap.entrySet()) {
             final StreamFunction streamFunction = entry.getKey();
@@ -110,5 +118,12 @@ class FamilyDirectoryLambdaStack extends Stack {
         }
 
         LambdaFunctionConstructUtility.constructFunctionPermissions(streamFunctionMap, null, pdfBucket);
+
+        new Trigger(this, PDF_GENERATOR_TRIGGER_RESOURCE_ID, TriggerProps.builder()
+                                                                         .handler(streamFunctionMap.get(StreamFunction.PDF_GENERATOR))
+                                                                         .invocationType(InvocationType.EVENT)
+                                                                         .timeout(streamFunctionMap.get(StreamFunction.PDF_GENERATOR)
+                                                                                                   .getTimeout())
+                                                                         .build());
     }
 }

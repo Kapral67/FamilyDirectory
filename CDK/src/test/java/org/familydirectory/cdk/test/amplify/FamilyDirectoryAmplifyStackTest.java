@@ -137,6 +137,9 @@ class FamilyDirectoryAmplifyStackTest {
                 Map.of("AppId", singletonMap("Fn::GetAtt", List.of(spaId, "AppId")), "DomainName", FamilyDirectoryDomainStack.HOSTED_ZONE_NAME, "EnableAutoSubDomain", false, "SubDomainSettings",
                        singletonList(Map.of("BranchName", singletonMap("Fn::GetAtt", List.of(spaBranchId, "BranchName")), "Prefix", "")))));
 
+        template.hasOutput(FamilyDirectoryAmplifyStack.AMPLIFY_APP_ID_EXPORT_NAME,
+                           objectLike(Map.of("Value", singletonMap("Fn::GetAtt", List.of(spaId, "AppId")), "Export", singletonMap("Name", FamilyDirectoryAmplifyStack.AMPLIFY_APP_ID_EXPORT_NAME))));
+
         final Capture tmpCapture = new Capture();
         final Map<String, Map<String, Object>> appDeploymentResourcePolicyMap = template.findResources("AWS::IAM::Policy", objectLike(singletonMap("Properties", singletonMap("PolicyDocument",
                                                                                                                                                                               singletonMap("Statement",
