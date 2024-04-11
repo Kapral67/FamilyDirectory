@@ -97,6 +97,14 @@ class FamilyDirectoryCdkApp {
         cognitoStack.addDependency(cognitoUsEastOneStack);
         cognitoStack.addDependency(dynamoDbStack);
 
+        final FamilyDirectoryAmplifyStack amplifyStack = new FamilyDirectoryAmplifyStack(app, AMPLIFY_STACK_NAME, StackProps.builder()
+                                                                                                                            .env(DEFAULT_ENV)
+                                                                                                                            .stackName(AMPLIFY_STACK_NAME)
+                                                                                                                            .build());
+        amplifyStack.addDependency(domainStack);
+        amplifyStack.addDependency(dynamoDbStack);
+        amplifyStack.addDependency(cognitoStack);
+
         final FamilyDirectorySssStack sssStack = new FamilyDirectorySssStack(app, SSS_STACK_NAME, StackProps.builder()
                                                                                                             .env(DEFAULT_ENV)
                                                                                                             .stackName(SSS_STACK_NAME)
@@ -111,6 +119,7 @@ class FamilyDirectoryCdkApp {
         lambdaStack.addDependency(dynamoDbStack);
         lambdaStack.addDependency(cognitoStack);
         lambdaStack.addDependency(sssStack);
+        lambdaStack.addDependency(amplifyStack);
 
         final FamilyDirectoryApiGatewayStack apiGatewayStack = new FamilyDirectoryApiGatewayStack(app, API_STACK_NAME, StackProps.builder()
                                                                                                                                  .env(DEFAULT_ENV)
@@ -119,15 +128,6 @@ class FamilyDirectoryCdkApp {
         apiGatewayStack.addDependency(domainStack);
         apiGatewayStack.addDependency(cognitoStack);
         apiGatewayStack.addDependency(lambdaStack);
-
-        final FamilyDirectoryAmplifyStack amplifyStack = new FamilyDirectoryAmplifyStack(app, AMPLIFY_STACK_NAME, StackProps.builder()
-                                                                                                                            .env(DEFAULT_ENV)
-                                                                                                                            .stackName(AMPLIFY_STACK_NAME)
-                                                                                                                            .build());
-        amplifyStack.addDependency(domainStack);
-        amplifyStack.addDependency(dynamoDbStack);
-        amplifyStack.addDependency(cognitoStack);
-        amplifyStack.addDependency(apiGatewayStack);
 
         app.synth();
     }

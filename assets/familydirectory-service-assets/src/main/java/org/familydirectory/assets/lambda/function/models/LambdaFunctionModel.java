@@ -36,6 +36,11 @@ interface LambdaFunctionModel {
         return null;
     }
 
+    default @Nullable
+    List<String> amplifyActions () {
+        return null;
+    }
+
     default @NotNull
     String arnExportName () {
         return "%sArn".formatted(this.functionName());

@@ -1,16 +1,11 @@
-## Mar 08 2024
+## Apr 10 2024
 
-### Known Bugs
-
-#### AdminClientTui
-
-##### Thread Execution Race Condition (mabe02/lanterna#595)
-
-1. cdk deploy
-2. toolkit cleaner
-3. pdf generator -> off
-4. pdf generator -> on
-5. exit
+- [x] rearrange CdkApp Stacks, so we can provide Amplify appId and branchName to ApiFunction::UpdateMember
+- [x] update LambdaFunctionConstructUtility to handle amplify permissions
+- [x] bump version
+- [x] ensure that AmplifyUtils works for both AdminClient and ApiFunction::UpdateMember
+- [x] ensure to update any CDK tests
+- [x] run stream function automatically on cdk deployment
 
 ---
 

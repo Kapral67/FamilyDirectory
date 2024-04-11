@@ -3,6 +3,7 @@ package org.familydirectory.cdk.test.cognito;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
@@ -89,7 +90,7 @@ class FamilyDirectoryCognitoStackTest {
 
         for (final TriggerFunction trigger : TriggerFunction.values()) {
             template.hasResourceProperties("AWS::Lambda::Function", objectLike(Map.of("Architectures", singletonList(LambdaFunctionConstructUtility.ARCHITECTURE.toString()), "Environment",
-                                                                                      singletonMap("Variables", Map.of(LambdaUtils.EnvVar.ROOT_ID.name(), LambdaFunctionConstructUtility.ROOT_ID,
+                                                                                      singletonMap("Variables", Map.of(LambdaUtils.EnvVar.ROOT_ID.name(), DdbUtils.ROOT_MEMBER_ID,
                                                                                                                        LambdaUtils.EnvVar.HOSTED_ZONE_NAME.name(),
                                                                                                                        FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)), "Handler", trigger.handler(),
                                                                                       "MemorySize", trigger.memorySize(), "Role",

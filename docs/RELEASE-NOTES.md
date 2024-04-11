@@ -1,5 +1,22 @@
 # FamilyDirectory Release Notes
 
+## v0.8
+
+### Bug Fixes
+
+- Better Window Transitions in AdminClient
+- not-functionality-impacting misc code improvements
+
+### Features
+
+- Auto-Build frontend on CDK Deployments
+- Generate Pdfs on CDK Deployments
+- Auto-Build frontend on UPDATE to ROOT MEMBER
+
+### Dependency Upgrade Tracking PRs
+
+- #926 - #948
+
 ## v0.75
 
 ### IMPORTANT UPDATE INFO

@@ -4,6 +4,7 @@ import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.familydirectory.assets.amplify.utility.AmplifyUtils;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
@@ -13,6 +14,7 @@ import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
 import org.familydirectory.sdk.adminclient.utility.pickers.MemberPicker;
 import org.familydirectory.sdk.adminclient.utility.pickers.model.PickerModel;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awssdk.services.amplify.AmplifyClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import static java.util.Objects.nonNull;
@@ -60,6 +62,14 @@ class UpdateEvent implements MemberEventHelper {
         this.memberPicker.addEntry(memberRecord);
         for (final PickerModel pickerModel : this.pickerModels) {
             pickerModel.addEntry(memberRecord);
+        }
+        if (memberRecord.id()
+                        .toString()
+                        .equals(ROOT_ID))
+        {
+            AmplifyUtils.appDeployment(SdkClientProvider.getSdkClientProvider()
+                                                        .getSdkClient(AmplifyClient.class), "AdminClient Update ROOT", memberRecord.member()
+                                                                                                                                   .getLastName(), null, null);
         }
     }
 

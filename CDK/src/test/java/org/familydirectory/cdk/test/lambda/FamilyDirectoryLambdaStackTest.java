@@ -70,7 +70,7 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                                                                                                                                                                                                       FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME),
                                                                                                                                                                                                                                                                          LambdaUtils.EnvVar.HOSTED_ZONE_NAME.name(),
                                                                                                                                                                                                                                                                          FamilyDirectoryDomainStack.HOSTED_ZONE_NAME,
-                                                                                                                                                                                                                                                                         LambdaUtils.EnvVar.ROOT_ID.name(), LambdaFunctionConstructUtility.ROOT_ID,
+                                                                                                                                                                                                                                                                         LambdaUtils.EnvVar.ROOT_ID.name(), DdbUtils.ROOT_MEMBER_ID,
                                                                                                                                                                                                                                                                          LambdaUtils.EnvVar.S3_PDF_BUCKET_NAME.name(),
                                                                                                                                                                                                                                                                          singletonMap("Fn::ImportValue",
                                                                                                                                                                                                                                                                                       FamilyDirectorySssStack.S3_PDF_BUCKET_NAME_EXPORT_NAME))),
@@ -132,7 +132,7 @@ class FamilyDirectoryLambdaStackTest {
 
             final Capture policyResourcesCapture = new Capture();
             final Map<String, Map<String, Object>> functionMap = template.findResources("AWS::Lambda::Function", objectLike(Map.of("Properties", Map.of("Architectures", singletonList(
-                                                                                                                                                                LambdaFunctionConstructUtility.ARCHITECTURE.toString()), "Environment", singletonMap("Variables", Map.of(LambdaUtils.EnvVar.ROOT_ID.name(), LambdaFunctionConstructUtility.ROOT_ID,
+                                                                                                                                                                LambdaFunctionConstructUtility.ARCHITECTURE.toString()), "Environment", singletonMap("Variables", Map.of(LambdaUtils.EnvVar.ROOT_ID.name(), DdbUtils.ROOT_MEMBER_ID,
                                                                                                                                                                                                                                                                          LambdaUtils.EnvVar.S3_PDF_BUCKET_NAME.name(),
                                                                                                                                                                                                                                                                          singletonMap("Fn::ImportValue",
                                                                                                                                                                                                                                                                                       FamilyDirectorySssStack.S3_PDF_BUCKET_NAME_EXPORT_NAME))),
@@ -173,6 +173,17 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                            entry("MaximumRetryAttempts", FamilyDirectoryLambdaStack.DDB_STREAM_RETRY_ATTEMPTS),
                                                                                                            entry("ParallelizationFactor", FamilyDirectoryLambdaStack.DDB_STREAM_PARALLELIZATION_FACTOR),
                                                                                                            entry("StartingPosition", "LATEST"))));
+            }
+
+            if (function.equals(StreamFunction.PDF_GENERATOR)) {
+                final Map<String, Map<String, Object>> pdfGeneratorVersionMap = template.findResources("AWS::Lambda::Version", objectLike(
+                        singletonMap("Properties", singletonMap("FunctionName", singletonMap("Ref", functionIdCapture.asString())))));
+                assertEquals(1, pdfGeneratorVersionMap.size());
+                template.hasResourceProperties("Custom::Trigger", objectLike(Map.of("HandlerArn", singletonMap("Ref", pdfGeneratorVersionMap.keySet()
+                                                                                                                                            .iterator()
+                                                                                                                                            .next()), "InvocationType", "Event", "Timeout",
+                                                                                    "%d".formatted(function.timeoutSeconds()
+                                                                                                           .intValue() * 1000))));
             }
         }
     }
@@ -345,6 +356,38 @@ class FamilyDirectoryLambdaStackTest {
                             @SuppressWarnings("unchecked")
                             final List<String> actions = (List<String>) actionsObj;
                             if (actions.containsAll(sssActions)) {
+                                fail = false;
+                                break;
+                            }
+                        }
+                    }
+                } catch (final ClassCastException e) {
+                    fail(failMessage, e);
+                }
+            }
+            if (fail) {
+                fail(failMessage);
+            }
+        });
+        ofNullable(function.amplifyActions()).ifPresent(amplifyActions -> {
+            final String failMessage = "Function: %s | Amplify | Actions: %s".formatted(function.functionName(), amplifyActions.toString());
+            boolean fail = true;
+            for (final Object o : statements) {
+                try {
+                    @SuppressWarnings("unchecked")
+                    final Map<String, Object> statement = (Map<String, Object>) o;
+                    if (statement.get("Effect")
+                                 .equals("Allow") && statement.get("Resource")
+                                                              .equals(FamilyDirectoryCdkApp.GLOBAL_RESOURCE))
+                    {
+                        final Object actionsObj = statement.get("Action");
+                        if (actionsObj instanceof String && amplifyActions.size() == 1 && actionsObj.equals(amplifyActions.getFirst())) {
+                            fail = false;
+                            break;
+                        } else if (actionsObj instanceof List) {
+                            @SuppressWarnings("unchecked")
+                            final List<String> actions = (List<String>) actionsObj;
+                            if (actions.containsAll(amplifyActions)) {
                                 fail = false;
                                 break;
                             }

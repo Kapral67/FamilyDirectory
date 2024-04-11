@@ -6,14 +6,18 @@ import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.familydirectory.sdk.adminclient.AdminClientTui;
 import org.familydirectory.sdk.adminclient.enums.ByteDivisor;
 import org.familydirectory.sdk.adminclient.enums.Commands;
 import org.familydirectory.sdk.adminclient.events.model.EventHelper;
 import org.familydirectory.sdk.adminclient.records.ToolkitCleanerResponse;
 import org.familydirectory.sdk.adminclient.utility.SdkClientProvider;
+import org.familydirectory.sdk.adminclient.utility.lanterna.WaitingDialog;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient;
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest;
@@ -60,18 +64,39 @@ class ToolkitCleanerEvent implements EventHelper {
         if (msgDialog.showDialog(this.gui)
                      .equals(MessageDialogButton.Yes))
         {
-            final ToolkitCleanerResponse response = this.cleanObjects(this.extractTemplateHashes(this.getStackNames()));
-            final StringBuilder responseBuilder = new StringBuilder("Deleted Items: %d | ".formatted(response.deletedItems()));
-            final double bytes = response.reclaimed(ByteDivisor.NONE);
-            if (bytes < ByteDivisor.KILO.divisor()) {
-                responseBuilder.append("Reclaimed Space: %d Bytes".formatted(response.reclaimedBytes()));
-            } else if (bytes < ByteDivisor.MEGA.divisor()) {
-                responseBuilder.append("Reclaimed Space: %f KiB".formatted(response.reclaimed(ByteDivisor.KIBI)));
-            } else if (bytes < ByteDivisor.GIGA.divisor()) {
-                responseBuilder.append("Reclaimed Space: %f MiB".formatted(response.reclaimed(ByteDivisor.MEBI)));
-            } else {
-                responseBuilder.append("Reclaimed Space: %f GiB".formatted(response.reclaimed(ByteDivisor.GIBI)));
+            final WaitingDialog waitDialog = WaitingDialog.createDialog(Commands.TOOLKIT_CLEANER.name(), "Please Wait...");
+            waitDialog.setHints(AdminClientTui.EXTRA_WINDOW_HINTS);
+            waitDialog.showDialog(requireNonNull(this.gui), false);
+            final StringBuilder responseBuilder = new StringBuilder();
+            final CompletableFuture<?> future = CompletableFuture.runAsync(() -> {
+                try {
+                    final ToolkitCleanerResponse response = this.cleanObjects(this.extractTemplateHashes(this.getStackNames()));
+                    responseBuilder.append("Deleted Items: %d | ".formatted(response.deletedItems()));
+                    final double bytes = response.reclaimed(ByteDivisor.NONE);
+                    if (bytes < ByteDivisor.KILO.divisor()) {
+                        responseBuilder.append("Reclaimed Space: %d Bytes".formatted(response.reclaimedBytes()));
+                    } else if (bytes < ByteDivisor.MEGA.divisor()) {
+                        responseBuilder.append("Reclaimed Space: %f KiB".formatted(response.reclaimed(ByteDivisor.KIBI)));
+                    } else if (bytes < ByteDivisor.GIGA.divisor()) {
+                        responseBuilder.append("Reclaimed Space: %f MiB".formatted(response.reclaimed(ByteDivisor.MEBI)));
+                    } else {
+                        responseBuilder.append("Reclaimed Space: %f GiB".formatted(response.reclaimed(ByteDivisor.GIBI)));
+                    }
+                } finally {
+                    waitDialog.close();
+                }
+            });
+            waitDialog.waitUntilClosed();
+            try {
+                future.get();
+            } catch (final ExecutionException e) {
+                throw new RuntimeException(e);
+            } catch (final InterruptedException e) {
+                Thread.currentThread()
+                      .interrupt();
+                throw new RuntimeException(e);
             }
+
             new MessageDialogBuilder().setTitle(Commands.TOOLKIT_CLEANER.name())
                                       .setText(responseBuilder.toString())
                                       .addButton(MessageDialogButton.OK)

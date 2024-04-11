@@ -154,39 +154,37 @@ Want More Info? [See the Poster](.misc/Poster.pdf)
 
     - Wait Until DNS Propagates, Then Continue
 
-    2. Now, deploy the `FamilyDirectoryApiGatewayStack`
+    2. Now, deploy the `FamilyDirectoryCognitoStack`
 
-        - This stack should cause all stacks except `FamilyDirectoryAmplifyStack` to deploy along with because they are
-          all dependents of this stack.
+        - This stack should cause the following stacks to be deployed as well:
 
-        - Since there lots of artifacts being deployed and dns validation occurring on some stacks, this will take
-          a while
+            - `FamilyDirectorySesStack`
+
+            - `FamilyDirectoryCognitoUsEastOneStack`
+
+            - `FamilyDirectoryDynamoDbStack`
+
+        - This may take awhile, so please be patient
 
     3. If you used the `stage.bash` script to build this repo, then `AdminClient` is already built for you
 
-        - Before deploying the `FamilyDirectoryAmplifyStack`, you need to create the root member
+        - Before continuing, you need to create the root member
 
         - The `AdminClient` has the capability to walk you through this
 
         - Just run `AdminClient`, select **CREATE** command, then **ROOT** option, and fill in the prompts
 
-            - This is also a good time to enable the PDF Generation, there is also a command for this in
-              the `AdminClient`
+            - **Note** do not try to create additional members or utilize other functions of `AdminClient` just yet
 
-            - **Note** if you have a lot of Members you want to pre-fill your directory with (use `AdminClient` for
-              this), it is best to keep the PDF Generator off until just before you create the last member
+    4. Now, deploy the `FamilyDirectoryApiGatewayStack`
 
-    4. Now, deploy the `FamilyDirectoryAmplifyStack`
+    5. Now is a good time to use `AdminClient` to call **TOOLKIT_CLEANER** as well as prefill your FamilyDirectory with members
 
-        - After deploying this stack, we need to go into Amplify in the AWS Management Console to trigger the first
-          build
+        - **TOOLKIT_CLEANER** will free up unused S3 CDK assets reducing cost of your FamilyDirectory
 
-        - Go to the Amplify Service and click SinglePageApp, then click the run button
+            - It is good practice to use **TOOLKIT_CLEANER** after all CDK deployments
 
-            - If you don't see SinglePageApp, then you are probably in the wrong region, make sure you're in the region
-              you set as `${AWS_REGION}`
-
-    5. Finally, we need to enable Production Access to SES
+    6. Finally, we need to enable Production Access to SES
 
         1. Go to SES in AWS Management Console
 
@@ -197,10 +195,10 @@ Want More Info? [See the Poster](.misc/Poster.pdf)
         4. For the **Mail type** select **TRANSACTIONAL**
 
         5. For the **Website URL** enter `https://${ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME}`
-
+    
         6. For the **Use case description** put something to the effect
            of `"For emailing account-holders of this application"`
-
+    
     - *It may take up to 24 hours for your Production Access Request to be approved, users are not able to sign-up until
       this is complete*
 
@@ -218,7 +216,7 @@ For backend updates:
 
 1. Follow steps 1, 2, & 4 from **Steps to Deploy** (We don't need to bootstrap, so step 3 is not needed)
 
-2. Deploy the `AmplifyStack` (e.g. `cdk deploy FamilyDirectoryAmplifyStack`)
+2. Deploy the `FamilyDirectoryApiGatewayStack` (e.g. `cdk deploy FamilyDirectoryApiGatewayStack`)
 
     - **Note**: *You must be in the `CDK` directory to run `cdk` commands*
 
