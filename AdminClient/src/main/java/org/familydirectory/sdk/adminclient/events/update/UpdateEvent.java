@@ -63,12 +63,13 @@ class UpdateEvent implements MemberEventHelper {
         for (final PickerModel pickerModel : this.pickerModels) {
             pickerModel.addEntry(memberRecord);
         }
-        if (ddbMemberRecord.id()
-                           .toString()
-                           .equals(ROOT_ID))
+        if (memberRecord.id()
+                        .toString()
+                        .equals(ROOT_ID))
         {
             AmplifyUtils.appDeployment(SdkClientProvider.getSdkClientProvider()
-                                                        .getSdkClient(AmplifyClient.class), "AdminClient Update ROOT", null, null);
+                                                        .getSdkClient(AmplifyClient.class), "AdminClient Update ROOT", memberRecord.member()
+                                                                                                                                   .getLastName(), null, null);
         }
     }
 

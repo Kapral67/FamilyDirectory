@@ -43,7 +43,7 @@ class AmplifyDeploymentEvent implements EventHelper {
             final CompletableFuture<?> future = CompletableFuture.runAsync(() -> {
                 try {
                     AmplifyUtils.appDeployment(SdkClientProvider.getSdkClientProvider()
-                                                                .getSdkClient(AmplifyClient.class), "AdminClient Requested", null, null);
+                                                                .getSdkClient(AmplifyClient.class), "AdminClient Requested", null, null, null);
                 } finally {
                     waitDialog.close();
                 }
