@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import static org.familydirectory.assets.Constants.VERSION_STR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static software.amazon.awscdk.assertions.Match.objectLike;
 
 public
@@ -98,20 +99,24 @@ class FamilyDirectoryAmplifyStackTest {
                                                                                                                                             FamilyDirectoryAmplifyStack.AMPLIFY_REPOSITORY_OWNER,
                                                                                                                                             FamilyDirectoryAmplifyStack.AMPLIFY_REPOSITORY_NAME)))));
         assertEquals(1, spaMap.size());
+        final List<Object> expectedEnvironmentVariableList = List.of(Map.of("Name", AmplifyUtils.ReactEnvVar.BACKEND_VERSION.toString(), "Value", VERSION_STR),
+                                                                     Map.of("Name", AmplifyUtils.ReactEnvVar.CLIENT_ID.toString(), "Value",
+                                                                            singletonMap("Fn::ImportValue", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME)),
+                                                                     Map.of("Name", AmplifyUtils.ReactEnvVar.AGE_OF_MAJORITY.toString(), "Value", String.valueOf(DdbUtils.AGE_OF_MAJORITY)),
+                                                                     Map.of("Name", AmplifyUtils.ReactEnvVar.AGE_OF_SUPER_MAJORITY.toString(), "Value", String.valueOf(DdbUtils.AGE_OF_SUPER_MAJORITY)),
+                                                                     Map.of("Name", AmplifyUtils.ReactEnvVar.SURNAME.toString(), "Value",
+                                                                            singletonMap("Fn::GetAtt", List.of(rootMemberSurnameResourceId, FamilyDirectoryAmplifyStack.AMPLIFY_SURNAME_FIELD))),
+                                                                     Map.of("Name", AmplifyUtils.ReactEnvVar.AUTH_DOMAIN.toString(), "Value", FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME),
+                                                                     Map.of("Name", AmplifyUtils.ReactEnvVar.USER_POOL_ID.toString(), "Value",
+                                                                            singletonMap("Fn::ImportValue", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)),
+                                                                     Map.of("Name", AmplifyUtils.ReactEnvVar.API_DOMAIN.toString(), "Value", FamilyDirectoryAmplifyStack.REACT_APP_API_DOMAIN),
+                                                                     Map.of("Name", AmplifyUtils.ReactEnvVar.REDIRECT_URI.toString(), "Value", FamilyDirectoryAmplifyStack.REACT_APP_REDIRECT_URI),
+                                                                     Map.of("Name", AmplifyUtils.ReactEnvVar.AWS_REGION.toString(), "Value", FamilyDirectoryCdkApp.DEFAULT_REGION));
+        if (expectedEnvironmentVariableList.size() < AmplifyUtils.ReactEnvVar.values().length) {
+            fail("Amplify Test Missing Environment Variables");
+        }
         final List<Object> spaEnvironmentVariableList = spaEnvironmentVariablesCapture.asArray();
-        assertEquals(AmplifyUtils.ReactEnvVar.values().length, spaEnvironmentVariableList.size());
-        assertTrue(spaEnvironmentVariableList.containsAll(List.of(Map.of("Name", AmplifyUtils.ReactEnvVar.BACKEND_VERSION.toString(), "Value", VERSION_STR),
-                                                                  Map.of("Name", AmplifyUtils.ReactEnvVar.CLIENT_ID.toString(), "Value",
-                                                                         singletonMap("Fn::ImportValue", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME)),
-                                                                  Map.of("Name", AmplifyUtils.ReactEnvVar.AGE_OF_MAJORITY.toString(), "Value", String.valueOf(DdbUtils.AGE_OF_MAJORITY)),
-                                                                  Map.of("Name", AmplifyUtils.ReactEnvVar.SURNAME.toString(), "Value",
-                                                                         singletonMap("Fn::GetAtt", List.of(rootMemberSurnameResourceId, FamilyDirectoryAmplifyStack.AMPLIFY_SURNAME_FIELD))),
-                                                                  Map.of("Name", AmplifyUtils.ReactEnvVar.AUTH_DOMAIN.toString(), "Value", FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME),
-                                                                  Map.of("Name", AmplifyUtils.ReactEnvVar.USER_POOL_ID.toString(), "Value",
-                                                                         singletonMap("Fn::ImportValue", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)),
-                                                                  Map.of("Name", AmplifyUtils.ReactEnvVar.API_DOMAIN.toString(), "Value", FamilyDirectoryAmplifyStack.REACT_APP_API_DOMAIN),
-                                                                  Map.of("Name", AmplifyUtils.ReactEnvVar.REDIRECT_URI.toString(), "Value", FamilyDirectoryAmplifyStack.REACT_APP_REDIRECT_URI),
-                                                                  Map.of("Name", AmplifyUtils.ReactEnvVar.AWS_REGION.toString(), "Value", FamilyDirectoryCdkApp.DEFAULT_REGION))));
+        assertTrue(spaEnvironmentVariableList.containsAll(expectedEnvironmentVariableList));
         final String spaId = spaMap.entrySet()
                                    .iterator()
                                    .next()

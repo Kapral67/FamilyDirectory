@@ -104,7 +104,8 @@ class FamilyDirectoryAmplifyStack extends Stack {
                                                                               Map.entry(AmplifyUtils.ReactEnvVar.AWS_REGION.toString(), FamilyDirectoryCdkApp.DEFAULT_REGION),
                                                                               Map.entry(AmplifyUtils.ReactEnvVar.USER_POOL_ID.toString(),
                                                                                         importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)),
-                                                                              Map.entry(AmplifyUtils.ReactEnvVar.AGE_OF_MAJORITY.toString(), String.valueOf(DdbUtils.AGE_OF_MAJORITY))))
+                                                                              Map.entry(AmplifyUtils.ReactEnvVar.AGE_OF_MAJORITY.toString(), String.valueOf(DdbUtils.AGE_OF_MAJORITY)),
+                                                                              Map.entry(AmplifyUtils.ReactEnvVar.AGE_OF_SUPER_MAJORITY.toString(), String.valueOf(DdbUtils.AGE_OF_SUPER_MAJORITY))))
                                           .platform(AMPLIFY_PLATFORM)
                                           .sourceCodeProvider(GitHubSourceCodeProvider.Builder.create()
                                                                                               .owner(AMPLIFY_REPOSITORY_OWNER)

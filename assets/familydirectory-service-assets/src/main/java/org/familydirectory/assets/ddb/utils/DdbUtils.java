@@ -12,7 +12,7 @@ import static com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat.INT
 import static java.time.LocalDate.now;
 import static java.time.Period.between;
 import static java.time.format.DateTimeFormatter.ofPattern;
-import static java.util.Objects.isNull;
+import static java.util.Optional.ofNullable;
 
 public
 enum DdbUtils {
@@ -22,6 +22,7 @@ enum DdbUtils {
     public static final PhoneNumberUtil PHONE_NUMBER_UTIL = PhoneNumberUtil.getInstance();
     public static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     public static final int AGE_OF_MAJORITY = 18;
+    public static final int AGE_OF_SUPER_MAJORITY = 25;
     public static final String NAME_VALIDATOR_REGEX = "[^A-Za-z\\-'_]+";
     public static final String NAME_SPECIAL_CHAR_REGEX = "['\\-]+";
     public static final String ROOT_MEMBER_ID = "00000000-0000-0000-0000-000000000000";
@@ -47,8 +48,12 @@ enum DdbUtils {
 
     public static
     boolean isPersonAdult (final @NotNull LocalDate birthday, final @Nullable LocalDate deathday) {
-        return (isNull(deathday))
-                ? (between(birthday, now()).getYears() >= AGE_OF_MAJORITY)
-                : (between(birthday, deathday).getYears() >= AGE_OF_MAJORITY);
+        return getPersonAge(birthday, deathday) >= AGE_OF_MAJORITY;
+    }
+
+    public static
+    int getPersonAge (final @NotNull LocalDate birthday, final @Nullable LocalDate deathday) {
+        final LocalDate endDate = ofNullable(deathday).orElse(now());
+        return between(birthday, endDate).getYears();
     }
 }

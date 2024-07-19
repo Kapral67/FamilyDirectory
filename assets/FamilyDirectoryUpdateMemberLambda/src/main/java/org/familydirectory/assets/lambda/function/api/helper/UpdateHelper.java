@@ -97,13 +97,14 @@ class UpdateHelper extends ApiHelper {
             }
         }
 
-        final boolean ddbMemberIsAdult = DdbUtils.isPersonAdult(LocalDate.parse(ddbMemberMap.get(MemberTableParameter.BIRTHDAY.jsonFieldName())
-                                                                                            .s(), DdbUtils.DATE_FORMATTER),
-                                                                ofNullable(ddbMemberMap.get(MemberTableParameter.DEATHDAY.jsonFieldName())).map(AttributeValue::s)
-                                                                                                                                           .filter(Predicate.not(String::isBlank))
-                                                                                                                                           .map(s -> LocalDate.parse(s, DdbUtils.DATE_FORMATTER))
-                                                                                                                                           .orElse(null));
-        return new EventWrapper(updateEvent, ddbFamilyId, ddbMemberIsAdult);
+        final LocalDate ddbMemberBirthday = LocalDate.parse(ddbMemberMap.get(MemberTableParameter.BIRTHDAY.jsonFieldName())
+                                                                        .s(), DdbUtils.DATE_FORMATTER);
+        final LocalDate ddbMemberDeathday = ofNullable(ddbMemberMap.get(MemberTableParameter.DEATHDAY.jsonFieldName())).map(AttributeValue::s)
+                                                                                                                       .filter(Predicate.not(String::isBlank))
+                                                                                                                       .map(s -> LocalDate.parse(s, DdbUtils.DATE_FORMATTER))
+                                                                                                                       .orElse(null);
+        final boolean ddbMemberIsSuperAdult = DdbUtils.getPersonAge(ddbMemberBirthday, ddbMemberDeathday) >= DdbUtils.AGE_OF_SUPER_MAJORITY;
+        return new EventWrapper(updateEvent, ddbFamilyId, ddbMemberIsSuperAdult);
     }
 
     public @NotNull
@@ -123,7 +124,7 @@ class UpdateHelper extends ApiHelper {
         {
             this.logger.log("<MEMBER,`%s`> update <SPOUSE,`%s`>".formatted(caller.memberId(), eventWrapper.updateEvent()
                                                                                                           .id()), INFO);
-        } else if (!eventWrapper.ddbMemberIsAdult() &&
+        } else if (!eventWrapper.ddbMemberIsSuperAdult() &&
                    ofNullable(requireNonNull(this.getDdbItem(caller.familyId(), DdbTable.FAMILY)).get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
                                                                                                                                                         .filter(Predicate.not(List::isEmpty))
                                                                                                                                                         .filter(ss -> ss.contains(
@@ -153,6 +154,6 @@ class UpdateHelper extends ApiHelper {
     }
 
     public
-    record EventWrapper(@NotNull UpdateEvent updateEvent, @NotNull String ddbFamilyId, boolean ddbMemberIsAdult) {
+    record EventWrapper(@NotNull UpdateEvent updateEvent, @NotNull String ddbFamilyId, boolean ddbMemberIsSuperAdult) {
     }
 }

@@ -67,6 +67,11 @@ class MemberModel {
     public abstract @Nullable
     LocalDate getDeathday ();
 
+    public final
+    int getAge () {
+        return DdbUtils.getPersonAge(this.getBirthday(), this.getDeathday());
+    }
+
     public @NotNull
     String getFullName () {
         final StringBuilder fullName = new StringBuilder();

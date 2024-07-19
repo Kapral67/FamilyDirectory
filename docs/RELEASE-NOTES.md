@@ -1,5 +1,19 @@
 # FamilyDirectory Release Notes
 
+## v0.9
+
+### Notes
+
+As this project approaches relative stability, **Dependency Upgrade Tracking PRs** will no longer be included in the **Release Notes** (also I have a job and no-one reads these anyways)
+
+### Bug Fixes
+
+- N/A
+
+### Features
+
+- Descendants now editable until AGE_OF_SUPER_MAJORITY, currently 25, through non-admin route
+
 ## v0.8
 
 ### Bug Fixes

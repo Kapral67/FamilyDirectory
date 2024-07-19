@@ -89,7 +89,8 @@ enum AmplifyUtils {
         SURNAME,
         AWS_REGION,
         USER_POOL_ID,
-        AGE_OF_MAJORITY;
+        AGE_OF_MAJORITY,
+        AGE_OF_SUPER_MAJORITY;
 
         public static final String PREFIX = "REACT_APP_";
 
