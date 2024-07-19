@@ -14,7 +14,7 @@
 
     <groupId>org.familydirectory.assets.lambda.function.api</groupId>
     <artifactId>familydirectorygetpdflambda</artifactId>
-    <version>0.8</version>
+    <version>0.9</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
