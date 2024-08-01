@@ -25,7 +25,7 @@ dependencies {
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
     implementation 'org.slf4j:slf4j-nop:2.0.13'
     implementation 'software.amazon.awscdk:aws-cdk-lib:2.149.0'
-    implementation platform('software.amazon.awssdk:bom:2.26.21')
+    implementation platform('software.amazon.awssdk:bom:2.26.27')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:sesv2'
