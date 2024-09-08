@@ -33,7 +33,6 @@ class FamilyDirectoryPdfGeneratorLambda implements RequestHandler<DynamodbEvent,
             final String pdfKey;
             final RequestBody pdfRequestBody;
             try (final PdfHelper pdfHelper = new PdfHelper(logger)) {
-                logger.log("Generated PDFs Checkpoint", DEBUG);
                 final String rootMemberSurname = pdfHelper.getRootMemberSurname();
                 pdfKey = pdfHelper.getPdfS3Key(rootMemberSurname);
                 pdfRequestBody = zipPdfBundle(pdfHelper, rootMemberSurname);
@@ -72,11 +71,7 @@ class FamilyDirectoryPdfGeneratorLambda implements RequestHandler<DynamodbEvent,
             final String directoryPdfFileName = "%sFamilyDirectory.pdf".formatted(requireNonNull(rootMemberSurname));
             final ZipEntry familyDirectoryZip = new ZipEntry(directoryPdfFileName);
             zos.putNextEntry(familyDirectoryZip);
-            pdfHelper.getLogger()
-                     .log("Begin Zipping %s".formatted(directoryPdfFileName), DEBUG);
             pdfHelper.saveDirectoryPdf(ios);
-            pdfHelper.getLogger()
-                     .log("End Zipping %s".formatted(directoryPdfFileName), DEBUG);
             zos.closeEntry();
             pdfHelper.getLogger()
                      .log("Closed Entry %s".formatted(directoryPdfFileName), DEBUG);
@@ -84,11 +79,7 @@ class FamilyDirectoryPdfGeneratorLambda implements RequestHandler<DynamodbEvent,
             final String birthdayPdfFileName = "%sFamilyBirthdays.pdf".formatted(rootMemberSurname);
             final ZipEntry birthdayZip = new ZipEntry(birthdayPdfFileName);
             zos.putNextEntry(birthdayZip);
-            pdfHelper.getLogger()
-                     .log("Begin Zipping %s".formatted(birthdayPdfFileName), DEBUG);
             pdfHelper.saveBirthdayPdf(ios);
-            pdfHelper.getLogger()
-                     .log("End Zipping %s".formatted(birthdayPdfFileName), DEBUG);
             zos.closeEntry();
             pdfHelper.getLogger()
                      .log("Closed Entry %s".formatted(birthdayPdfFileName), DEBUG);
