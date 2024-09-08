@@ -52,9 +52,7 @@ class FamilyDirectorySssStackTest {
                                                                                                                                                   "PublicAccessBlockConfiguration",
                                                                                                                                                   Map.of("BlockPublicAcls", true, "BlockPublicPolicy",
                                                                                                                                                          true, "IgnorePublicAcls", true,
-                                                                                                                                                         "RestrictPublicBuckets", true),
-                                                                                                                                                  "VersioningConfiguration",
-                                                                                                                                                  singletonMap("Status", "Enabled")))));
+                                                                                                                                                         "RestrictPublicBuckets", true)))));
         assertEquals(1, bucketMap.size());
 
         final String pdfBucketId = bucketMap.entrySet()

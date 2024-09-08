@@ -126,8 +126,9 @@ mvn package || exit 3
 # CDK
 cd "$STAGE_DIR/CDK" || script_error
 rm -rf target
-mvn package || exit 3
 rm -rf cdk*.out
+mvn package || exit 3
+cdk synth
 
 # Return to current directory
 cd "$CURRENT_DIR" || script_error
