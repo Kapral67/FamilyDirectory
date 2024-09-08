@@ -34,6 +34,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static java.lang.System.getenv;
 import static java.util.Objects.isNull;
@@ -81,22 +82,29 @@ class PdfHelper implements LambdaFunctionHelper {
         }
         this.generateDirectoryPdf();
         this.generateBirthdayPdf();
+        this.logger.log("PdfHelper Ctor Complete", DEBUG);
     }
 
     public
     void saveDirectoryPdf (final @NotNull OutputStream os) throws IOException {
+        this.logger.log("Begin Saving Directory Pdf", DEBUG);
         this.familyDirectoryPdf.save(os);
+        this.logger.log("End Saving Directory Pdf", DEBUG);
     }
 
     public
     void saveBirthdayPdf (final @NotNull OutputStream os) throws IOException {
+        this.logger.log("Begin Saving Birthday Pdf", DEBUG);
         this.dayPdf.save(os);
+        this.logger.log("End Saving Birthday Pdf", DEBUG);
     }
 
     private
     void generateDirectoryPdf () throws IOException {
         this.newFamilyDirectoryPage();
+        this.logger.log("Begin Build Directory Pdf", INFO);
         this.traverse(ROOT_MEMBER_ID);
+        this.logger.log("End Build Directory Pdf", INFO);
         this.familyDirectoryPage.close();
     }
 
@@ -109,6 +117,7 @@ class PdfHelper implements LambdaFunctionHelper {
 
     private
     void buildDayPdf () throws IOException {
+        this.logger.log("Begin Build Day Pdf", INFO);
         for (final Month month : Month.values()) {
             this.dayLists.get(month)
                          .sort(DAY_OF_MONTH_COMPARATOR);
@@ -144,6 +153,7 @@ class PdfHelper implements LambdaFunctionHelper {
                 }
             }
         }
+        this.logger.log("End Build Day Pdf", INFO);
     }
 
     private

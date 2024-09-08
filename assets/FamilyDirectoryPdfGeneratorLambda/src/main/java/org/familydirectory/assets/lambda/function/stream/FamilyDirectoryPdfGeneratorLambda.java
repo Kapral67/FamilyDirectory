@@ -33,18 +33,24 @@ class FamilyDirectoryPdfGeneratorLambda implements RequestHandler<DynamodbEvent,
             final String pdfKey;
             final RequestBody pdfRequestBody;
             try (final PdfHelper pdfHelper = new PdfHelper(logger)) {
+                logger.log("Generated PDFs Checkpoint", DEBUG);
                 final String rootMemberSurname = pdfHelper.getRootMemberSurname();
                 pdfKey = pdfHelper.getPdfS3Key(rootMemberSurname);
                 pdfRequestBody = zipPdfBundle(pdfHelper, rootMemberSurname);
+                logger.log("Zipped PDFs Checkpoint", DEBUG);
             }
 
+            pdfRequestBody.optionalContentLength()
+                          .ifPresent(len -> logger.log("PdfRequestBody Content Length: %d".formatted(len), DEBUG));
             final PutObjectRequest pdfPutRequest = PutObjectRequest.builder()
                                                                    .bucket(getenv(LambdaUtils.EnvVar.S3_PDF_BUCKET_NAME.name()))
                                                                    .key(pdfKey)
                                                                    .contentType("application/zip")
                                                                    .build();
             try (final S3Client s3Client = S3Client.create()) {
+                logger.log("Begin S3 Upload", DEBUG);
                 s3Client.putObject(pdfPutRequest, pdfRequestBody);
+                logger.log("Finished S3 Upload", DEBUG);
             }
 
             return null;
@@ -57,16 +63,35 @@ class FamilyDirectoryPdfGeneratorLambda implements RequestHandler<DynamodbEvent,
 
     private static @NotNull
     RequestBody zipPdfBundle (final @NotNull PdfHelper pdfHelper, final @NotNull String rootMemberSurname) throws IOException {
+        pdfHelper.getLogger()
+                 .log("Entered zipPdfBundle", DEBUG);
         try (final var bos = new S3ByteArrayOutputStream(); final var zos = new ZipOutputStream(bos); final var ios = new IgnoredCloseOutputStream(zos)) {
-            final ZipEntry familyDirectoryZip = new ZipEntry("%sFamilyDirectory.pdf".formatted(requireNonNull(rootMemberSurname)));
-            zos.putNextEntry(familyDirectoryZip);
-            pdfHelper.saveDirectoryPdf(ios);
-            zos.closeEntry();
+            pdfHelper.getLogger()
+                     .log("Created zip output streams", DEBUG);
 
-            final ZipEntry birthdayZip = new ZipEntry("%sFamilyBirthdays.pdf".formatted(rootMemberSurname));
-            zos.putNextEntry(birthdayZip);
-            pdfHelper.saveBirthdayPdf(ios);
+            final String directoryPdfFileName = "%sFamilyDirectory.pdf".formatted(requireNonNull(rootMemberSurname));
+            final ZipEntry familyDirectoryZip = new ZipEntry(directoryPdfFileName);
+            zos.putNextEntry(familyDirectoryZip);
+            pdfHelper.getLogger()
+                     .log("Begin Zipping %s".formatted(directoryPdfFileName), DEBUG);
+            pdfHelper.saveDirectoryPdf(ios);
+            pdfHelper.getLogger()
+                     .log("End Zipping %s".formatted(directoryPdfFileName), DEBUG);
             zos.closeEntry();
+            pdfHelper.getLogger()
+                     .log("Closed Entry %s".formatted(directoryPdfFileName), DEBUG);
+
+            final String birthdayPdfFileName = "%sFamilyBirthdays.pdf".formatted(rootMemberSurname);
+            final ZipEntry birthdayZip = new ZipEntry(birthdayPdfFileName);
+            zos.putNextEntry(birthdayZip);
+            pdfHelper.getLogger()
+                     .log("Begin Zipping %s".formatted(birthdayPdfFileName), DEBUG);
+            pdfHelper.saveBirthdayPdf(ios);
+            pdfHelper.getLogger()
+                     .log("End Zipping %s".formatted(birthdayPdfFileName), DEBUG);
+            zos.closeEntry();
+            pdfHelper.getLogger()
+                     .log("Closed Entry %s".formatted(birthdayPdfFileName), DEBUG);
 
             return bos.requestBody();
         }
