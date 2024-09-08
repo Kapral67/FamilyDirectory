@@ -57,31 +57,33 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
 
 //  PRINT ADDRESS TO PDF
         Boolean memberIsLandlineHolder = null;
-        if (nonNull(member.getAddress())) {
+        List<String> address = member.getAddress();
+        if (nonNull(address)) {
             memberIsLandlineHolder = true;
-            this.addAddressToBodyTextBlock(member.getAddress());
-        } else if (nonNull(spouse) && nonNull(spouse.getAddress())) {
+            this.addAddressToBodyTextBlock(address);
+        }
+        address = ofNullable(spouse).map(Member::getAddress)
+                                    .orElse(null);
+        if (isNull(memberIsLandlineHolder) && nonNull(address)) {
             memberIsLandlineHolder = false;
-            this.addAddressToBodyTextBlock(spouse.getAddress());
+            this.addAddressToBodyTextBlock(address);
         }
 
 //  PRINT LANDLINE PHONE TO PDF
         float phoneFontSize = STANDARD_FONT_SIZE;
-        if (ofNullable(member.getPhones()).filter(m -> m.containsKey(PhoneType.MOBILE))
-                                          .isPresent())
-        {
-            final float fontSize = this.getColumnFittedFontSize(member.getPhones()
-                                                                      .get(PhoneType.MOBILE), STANDARD_FONT, STANDARD_FONT_SIZE);
+        final String memberMobilePhone = ofNullable(member.getPhones()).map(m -> m.get(PhoneType.MOBILE))
+                                                                       .orElse(null);
+        if (nonNull(memberMobilePhone)) {
+            final float fontSize = this.getColumnFittedFontSize(memberMobilePhone, STANDARD_FONT, STANDARD_FONT_SIZE);
             if (fontSize < phoneFontSize) {
                 phoneFontSize = fontSize;
             }
         }
-        if (ofNullable(spouse).map(Member::getPhones)
-                              .filter(m -> m.containsKey(PhoneType.MOBILE))
-                              .isPresent())
-        {
-            final float fontSize = this.getColumnFittedFontSize(spouse.getPhones()
-                                                                      .get(PhoneType.MOBILE), STANDARD_FONT, STANDARD_FONT_SIZE);
+        final String spouseMobilePhone = ofNullable(spouse).map(Member::getPhones)
+                                                           .map(m -> m.get(PhoneType.MOBILE))
+                                                           .orElse(null);
+        if (nonNull(spouseMobilePhone)) {
+            final float fontSize = this.getColumnFittedFontSize(spouseMobilePhone, STANDARD_FONT, STANDARD_FONT_SIZE);
             if (fontSize < phoneFontSize) {
                 phoneFontSize = fontSize;
             }
@@ -90,57 +92,52 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
             final Member landLineHolder = memberIsLandlineHolder
                     ? member
                     : spouse;
-            if (ofNullable(landLineHolder.getPhones()).filter(m -> m.containsKey(PhoneType.LANDLINE))
-                                                      .isPresent())
-            {
-                final float fontSize = this.getColumnFittedFontSize(landLineHolder.getPhones()
-                                                                                  .get(PhoneType.LANDLINE), STANDARD_FONT, STANDARD_FONT_SIZE);
+            final String landlinePhone = ofNullable(landLineHolder.getPhones()).map(m -> m.get(PhoneType.LANDLINE))
+                                                                               .orElse(null);
+            if (nonNull(landlinePhone)) {
+                final float fontSize = this.getColumnFittedFontSize(landlinePhone, STANDARD_FONT, STANDARD_FONT_SIZE);
                 if (fontSize < phoneFontSize) {
                     phoneFontSize = fontSize;
                 }
                 this.contents.setFont(STANDARD_FONT, phoneFontSize);
-                this.addColumnAgnosticText(landLineHolder.getPhones()
-                                                         .get(PhoneType.LANDLINE));
+                this.addColumnAgnosticText(landlinePhone);
                 this.newLine(STANDARD_LINE_SPACING);
             }
         }
 
 //  PRINT MEMBER AND SPOUSE EMAILS (MEMBER FIRST)
         float emailFontSize = STANDARD_FONT_SIZE;
-        if (nonNull(member.getEmail())) {
-            final float fontSize = this.getColumnFittedFontSize(member.getEmail(), STANDARD_FONT, STANDARD_FONT_SIZE);
+        final String memberEmail = member.getEmail();
+        if (nonNull(memberEmail)) {
+            final float fontSize = this.getColumnFittedFontSize(memberEmail, STANDARD_FONT, STANDARD_FONT_SIZE);
             if (fontSize < emailFontSize) {
                 emailFontSize = fontSize;
             }
         }
-        if (nonNull(spouse) && nonNull(spouse.getEmail())) {
-            final float fontSize = this.getColumnFittedFontSize(spouse.getEmail(), STANDARD_FONT, STANDARD_FONT_SIZE);
+        final String spouseEmail = ofNullable(spouse).map(Member::getEmail)
+                                                     .orElse(null);
+        if (nonNull(spouseEmail)) {
+            final float fontSize = this.getColumnFittedFontSize(spouseEmail, STANDARD_FONT, STANDARD_FONT_SIZE);
             if (fontSize < emailFontSize) {
                 emailFontSize = fontSize;
             }
         }
-        if (nonNull(member.getEmail())) {
-            this.addEmailToBodyTextBlock(STANDARD_FONT, emailFontSize, member.getEmail(), null);
+        if (nonNull(memberEmail)) {
+            this.addEmailToBodyTextBlock(STANDARD_FONT, emailFontSize, memberEmail, null);
         }
-        if (nonNull(spouse) && nonNull(spouse.getEmail())) {
-            this.addEmailToBodyTextBlock(STANDARD_FONT, emailFontSize, spouse.getEmail(), null);
+        if (nonNull(spouseEmail)) {
+            this.addEmailToBodyTextBlock(STANDARD_FONT, emailFontSize, spouseEmail, null);
         }
 
 //  PRINT MEMBER AND SPOUSE MOBILE PHONES (MEMBER FIRST)
-        if (nonNull(member.getPhones()) && member.getPhones()
-                                                 .containsKey(PhoneType.MOBILE))
-        {
+        if (nonNull(memberMobilePhone)) {
             this.contents.setFont(STANDARD_FONT, phoneFontSize);
-            this.addColumnAgnosticText(member.getPhones()
-                                             .get(PhoneType.MOBILE));
+            this.addColumnAgnosticText(memberMobilePhone);
             this.newLine(STANDARD_LINE_SPACING);
         }
-        if (nonNull(spouse) && nonNull(spouse.getPhones()) && spouse.getPhones()
-                                                                    .containsKey(PhoneType.MOBILE))
-        {
+        if (nonNull(spouseMobilePhone)) {
             this.contents.setFont(STANDARD_FONT, phoneFontSize);
-            this.addColumnAgnosticText(spouse.getPhones()
-                                             .get(PhoneType.MOBILE));
+            this.addColumnAgnosticText(spouseMobilePhone);
             this.newLine(STANDARD_LINE_SPACING);
         }
 
@@ -156,34 +153,24 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
                 this.addColumnAgnosticText(header);
                 this.newLine(STANDARD_LINE_SPACING);
 
-//          ADD DESCENDANT BIRTHDAY
-                this.addColumnRightJustifiedText("%s%s".formatted(TAB, desc.getBirthday()
-                                                                           .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT, STANDARD_FONT_SIZE);
-                this.newLine(STANDARD_LINE_SPACING);
-
-//          ADD DESCENDANT DEATHDAY
-                if (nonNull(desc.getDeathday())) {
-                    this.addColumnRightJustifiedText("%s%c%s".formatted(TAB, DAGGER, desc.getDeathday()
-                                                                                         .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT, STANDARD_FONT_SIZE);
-                    this.newLine(STANDARD_LINE_SPACING);
-                }
+                this.addMemberDatesToBodyTextBlock(desc, TAB);
 
 //          ADD DESCENDANT EMAIL
-                if (nonNull(desc.getEmail())) {
-                    final String displayEmail = "%s%s".formatted(TAB, desc.getEmail());
+                final String email = desc.getEmail();
+                if (nonNull(email)) {
+                    final String displayEmail = "%s%s".formatted(TAB, email);
                     final float fontSize = this.getColumnFittedFontSize(displayEmail, STANDARD_FONT, STANDARD_FONT_SIZE);
-                    this.addEmailToBodyTextBlock(STANDARD_FONT, fontSize, desc.getEmail(), displayEmail);
+                    this.addEmailToBodyTextBlock(STANDARD_FONT, fontSize, email, displayEmail);
                 }
 
 //          ADD DESCENDANT MOBILE PHONE
-                if (nonNull(desc.getPhones()) && desc.getPhones()
-                                                     .containsKey(PhoneType.MOBILE))
-                {
-                    final String phone = "%s%s".formatted(TAB, desc.getPhones()
-                                                                   .get(PhoneType.MOBILE));
-                    final float fontSize = this.getColumnFittedFontSize(phone, STANDARD_FONT, STANDARD_FONT_SIZE);
+                final String descMobilePhone = ofNullable(desc.getPhones()).map(m -> m.get(PhoneType.MOBILE))
+                                                                           .map(phone -> TAB + phone)
+                                                                           .orElse(null);
+                if (nonNull(descMobilePhone)) {
+                    final float fontSize = this.getColumnFittedFontSize(descMobilePhone, STANDARD_FONT, STANDARD_FONT_SIZE);
                     this.contents.setFont(STANDARD_FONT, fontSize);
-                    this.addColumnAgnosticText(phone);
+                    this.addColumnAgnosticText(descMobilePhone);
                     this.newLine(STANDARD_LINE_SPACING);
                 }
             }
@@ -259,9 +246,9 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
         if (nonNull(member.getEmail())) {
             blockSizeYOffset += STANDARD_LINE_SPACING;
         }
-        if (nonNull(member.getAddress())) {
-            blockSizeYOffset += STANDARD_LINE_SPACING * member.getAddress()
-                                                              .size();
+        final List<String> address = member.getAddress();
+        if (nonNull(address)) {
+            blockSizeYOffset += STANDARD_LINE_SPACING * address.size();
             if (ofNullable(member.getPhones()).filter(m -> m.containsKey(PhoneType.LANDLINE))
                                               .isPresent())
             {
@@ -313,30 +300,25 @@ class PDFamilyDirectoryPageHelper extends PDPageHelperModel {
             this.newLine(STANDARD_LINE_SPACING);
         }
 
+        this.addMemberDatesToBodyTextBlock(member, "");
+
+        if (nonNull(spouse)) {
+            this.addMemberDatesToBodyTextBlock(spouse, "");
+        }
+    }
+
+    private
+    void addMemberDatesToBodyTextBlock (final @NotNull Member member, final @NotNull String prefix) throws IOException {
 //  ADD MEMBER BIRTHDAY
-        this.addColumnRightJustifiedText(member.getBirthday()
-                                               .format(DISPLAY_DATE_FORMATTER), STANDARD_FONT, STANDARD_FONT_SIZE);
+        this.addColumnRightJustifiedText("%s%s".formatted(prefix, member.getBirthday()
+                                                                        .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT, STANDARD_FONT_SIZE);
         this.newLine(STANDARD_LINE_SPACING);
 
 //  ADD MEMBER DEATHDAY
-        if (nonNull(member.getDeathday())) {
-            this.addColumnRightJustifiedText("%c%s".formatted(DAGGER, member.getDeathday()
-                                                                            .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT, STANDARD_FONT_SIZE);
+        final LocalDate memberDeathday = member.getDeathday();
+        if (nonNull(memberDeathday)) {
+            this.addColumnRightJustifiedText("%s%c%s".formatted(prefix, DAGGER, memberDeathday.format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT, STANDARD_FONT_SIZE);
             this.newLine(STANDARD_LINE_SPACING);
-        }
-
-        if (nonNull(spouse)) {
-//      ADD SPOUSE BIRTHDAY
-            this.addColumnRightJustifiedText(spouse.getBirthday()
-                                                   .format(DISPLAY_DATE_FORMATTER), STANDARD_FONT, STANDARD_FONT_SIZE);
-            this.newLine(STANDARD_LINE_SPACING);
-
-//      ADD SPOUSE DEATHDAY
-            if (nonNull(spouse.getDeathday())) {
-                this.addColumnRightJustifiedText("%c%s".formatted(DAGGER, spouse.getDeathday()
-                                                                                .format(DISPLAY_DATE_FORMATTER)), STANDARD_FONT, STANDARD_FONT_SIZE);
-                this.newLine(STANDARD_LINE_SPACING);
-            }
         }
     }
 

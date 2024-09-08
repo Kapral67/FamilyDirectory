@@ -1,12 +1,14 @@
 package org.familydirectory.assets.lambda.function.stream.helper;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +43,7 @@ import static java.util.Optional.ofNullable;
 
 public final
 class PdfHelper implements LambdaFunctionHelper {
+    public static final @NotNull DynamoDbClient DDB_CLIENT = DynamoDbClient.create();
     private static final @NotNull String ROOT_MEMBER_ID = requireNonNull(getenv(LambdaUtils.EnvVar.ROOT_ID.name()));
     private static final @NotNull Comparator<Map.Entry<String, Member>> DESCENDANT_COMPARATOR = Comparator.comparing(entry -> entry.getValue()
                                                                                                                                    .getBirthday());
@@ -48,33 +51,22 @@ class PdfHelper implements LambdaFunctionHelper {
                                                                                                                                                         .member()
                                                                                                                                                         .getBirthday()
                                                                                                                                                         .getDayOfMonth());
-    @NotNull
-    private final PDDocument familyDirectoryPdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly());
-    @NotNull
-    private final PDDocument dayPdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly());
-    @NotNull
-    private final LocalDate date = LocalDate.now();
-    @NotNull
-    private final DynamoDbClient dynamoDbClient = DynamoDbClient.create();
-    @NotNull
-    private final LambdaLogger logger;
-    @NotNull
-    private final Set<MemberRecord> members;
-    @NotNull
-    private final Map<String, Map<String, AttributeValue>> families;
-    @NotNull
-    private final String familyDirectoryTitle;
-    @NotNull
-    private final String dayTitle;
-    @NotNull
-    private final EnumMap<Month, List<Map.Entry<PDDayPageHelper.Day, MemberRecord>>> dayLists;
+    private final @NotNull PDDocument familyDirectoryPdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly());
+    private final @NotNull PDDocument dayPdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly());
+    private final @NotNull LocalDate date = LocalDate.now();
+    private final @NotNull LambdaLogger logger;
+    private final @NotNull Set<MemberRecord> members;
+    private final @NotNull Map<String, Map<String, AttributeValue>> families;
+    private final @NotNull String familyDirectoryTitle;
+    private final @NotNull String dayTitle;
+    private final @NotNull EnumMap<Month, List<Map.Entry<PDDayPageHelper.Day, MemberRecord>>> dayLists;
     private PDDayPageHelper dayPage = null;
     private PDFamilyDirectoryPageHelper familyDirectoryPage = null;
     private int familyDirectoryPageNumber = 0;
     private int dayPageNumber = 0;
 
     public
-    PdfHelper (final @NotNull LambdaLogger logger) {
+    PdfHelper (final @NotNull LambdaLogger logger) throws IOException {
         super();
         this.logger = requireNonNull(logger);
         this.members = new HashSet<>();
@@ -87,6 +79,80 @@ class PdfHelper implements LambdaFunctionHelper {
         for (final Month value : Month.values()) {
             this.dayLists.put(value, new ArrayList<>());
         }
+        this.generateDirectoryPdf();
+        this.generateBirthdayPdf();
+    }
+
+    public
+    void saveDirectoryPdf (final @NotNull OutputStream os) throws IOException {
+        this.familyDirectoryPdf.save(os);
+    }
+
+    public
+    void saveBirthdayPdf (final @NotNull OutputStream os) throws IOException {
+        this.dayPdf.save(os);
+    }
+
+    private
+    void generateDirectoryPdf () throws IOException {
+        this.newFamilyDirectoryPage();
+        this.traverse(ROOT_MEMBER_ID);
+        this.familyDirectoryPage.close();
+    }
+
+    private
+    void generateBirthdayPdf () throws IOException {
+        this.newDayPage();
+        this.buildDayPdf();
+        this.dayPage.close();
+    }
+
+    private
+    void buildDayPdf () throws IOException {
+        for (final Month month : Month.values()) {
+            this.dayLists.get(month)
+                         .sort(DAY_OF_MONTH_COMPARATOR);
+            this.logger.log("Begin Processing Month: `%s`".formatted(month.name()), INFO);
+            final List<Map.Entry<PDDayPageHelper.Day, MemberRecord>> monthDayList = this.dayLists.get(month);
+            for (int i = 0; i < monthDayList.size(); ++i) {
+                final Map.Entry<PDDayPageHelper.Day, MemberRecord> monthDayListEntry = monthDayList.get(i);
+                final PDDayPageHelper.Day day = monthDayListEntry.getKey();
+                final MemberRecord currentMemberRecord = monthDayListEntry.getValue();
+                final LocalDate date = (day.equals(PDDayPageHelper.Day.BIRTH))
+                        ? currentMemberRecord.member()
+                                             .getBirthday()
+                        : requireNonNull(currentMemberRecord.member()
+                                                            .getDeathday());
+                this.logger.log("Encountered %s: `%s` for Member: `%s`".formatted(day.name(), date, currentMemberRecord.id()
+                                                                                                                       .toString()), INFO);
+
+                try {
+                    this.dayPage.addDay(currentMemberRecord, (i == 0)
+                            ? month
+                            : null, day);
+                } catch (final PDPageHelperModel.NewPageException e) {
+                    this.newDayPage();
+                    try {
+                        this.dayPage.addDay(currentMemberRecord, (i == 0)
+                                ? month
+                                : null, day);
+                    } catch (final PDPageHelperModel.NewPageException x) {
+                        final IOException thrown = new IOException(x);
+                        thrown.addSuppressed(e);
+                        throw thrown;
+                    }
+                }
+            }
+        }
+    }
+
+    private
+    void newDayPage () throws IOException {
+        if (nonNull(this.dayPage)) {
+            this.dayPage.close();
+        }
+        this.dayPage = new PDDayPageHelper(this.dayPdf, new PDPage(), this.dayTitle, this.date, ++this.dayPageNumber);
+        this.logger.log("Create Birthday Page %d".formatted(this.dayPageNumber), INFO);
     }
 
     @Contract("null -> null; !null -> !null")
@@ -142,87 +208,12 @@ class PdfHelper implements LambdaFunctionHelper {
         this.logger.log("Create Family Directory Page %d".formatted(this.familyDirectoryPageNumber), INFO);
     }
 
-    @Contract("-> new")
-    @NotNull
-    public
-    PdfBundle getPdfBundle () throws IOException {
-
-        this.newFamilyDirectoryPage();
-        this.traverse(ROOT_MEMBER_ID);
-        this.familyDirectoryPage.close();
-
-        this.newDayPage();
-        this.buildDayPdf();
-        this.dayPage.close();
-
-        try (final ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream()) {
-            this.familyDirectoryPdf.save(pdfOutputStream);
-            final byte[] familyDirectoryArr = pdfOutputStream.toByteArray();
-
-            pdfOutputStream.reset();
-
-            this.dayPdf.save(pdfOutputStream);
-            final byte[] birthdayArr = pdfOutputStream.toByteArray();
-
-            return new PdfBundle(familyDirectoryArr, birthdayArr);
-        }
-    }
-
-    private
-    void buildDayPdf () throws IOException {
-        for (final Month month : Month.values()) {
-            this.dayLists.get(month)
-                         .sort(DAY_OF_MONTH_COMPARATOR);
-            this.logger.log("Begin Processing Month: `%s`".formatted(month.name()), INFO);
-            final List<Map.Entry<PDDayPageHelper.Day, MemberRecord>> monthDayList = this.dayLists.get(month);
-            for (int i = 0; i < monthDayList.size(); ++i) {
-                final Map.Entry<PDDayPageHelper.Day, MemberRecord> monthDayListEntry = monthDayList.get(i);
-                final PDDayPageHelper.Day day = monthDayListEntry.getKey();
-                final MemberRecord currentMemberRecord = monthDayListEntry.getValue();
-                final LocalDate date = (day.equals(PDDayPageHelper.Day.BIRTH))
-                        ? currentMemberRecord.member()
-                                             .getBirthday()
-                        : requireNonNull(currentMemberRecord.member()
-                                                            .getDeathday());
-                this.logger.log("Encountered %s: `%s` for Member: `%s`".formatted(day.name(), date, currentMemberRecord.id()
-                                                                                                                       .toString()), INFO);
-
-                try {
-                    this.dayPage.addDay(currentMemberRecord, (i == 0)
-                            ? month
-                            : null, day);
-                } catch (final PDPageHelperModel.NewPageException e) {
-                    this.newDayPage();
-                    try {
-                        this.dayPage.addDay(currentMemberRecord, (i == 0)
-                                ? month
-                                : null, day);
-                    } catch (final PDPageHelperModel.NewPageException x) {
-                        final IOException thrown = new IOException(x);
-                        thrown.addSuppressed(e);
-                        throw thrown;
-                    }
-                }
-            }
-        }
-    }
-
-    private
-    void newDayPage () throws IOException {
-        if (nonNull(this.dayPage)) {
-            this.dayPage.close();
-        }
-        this.dayPage = new PDDayPageHelper(this.dayPdf, new PDPage(), this.dayTitle, this.date, ++this.dayPageNumber);
-        this.logger.log("Create Birthday Page %d".formatted(this.dayPageNumber), INFO);
-    }
-
     private
     void traverse (final @NotNull String id) throws IOException {
         this.logger.log("Begin Processing Id: %s".formatted(id), INFO);
 
         final @NotNull Map<String, AttributeValue> family = this.retrieveFamily(id);
-        final @NotNull Member member = this.retrieveMember(id)
-                                           .member();
+        final @NotNull Member member = requireNonNull(this.retrieveMember(id)).member();
         final @Nullable Member spouse = ofNullable(this.retrieveMember(ofNullable(family.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
                                                                                                                                           .filter(Predicate.not(String::isBlank))
                                                                                                                                           .orElse(null))).map(MemberRecord::member)
@@ -307,22 +298,32 @@ class PdfHelper implements LambdaFunctionHelper {
     @Override
     public @NotNull
     DynamoDbClient getDynamoDbClient () {
-        return this.dynamoDbClient;
+        return DDB_CLIENT;
     }
 
     @Override
     public
     void close () {
-        LambdaFunctionHelper.super.close();
+        final Deque<Exception> closeExceptions = new ArrayDeque<>(3);
+        try {
+            LambdaFunctionHelper.super.close();
+        } catch (final Exception e) {
+            closeExceptions.push(e);
+        }
         try {
             this.familyDirectoryPdf.close();
-            this.dayPdf.close();
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
+        } catch (final Exception e) {
+            closeExceptions.push(e);
         }
-    }
-
-    public
-    record PdfBundle(byte[] familyDirectoryPdf, byte[] birthdayPdf) {
+        try {
+            this.dayPdf.close();
+        } catch (final Exception e) {
+            closeExceptions.push(e);
+        }
+        if (!closeExceptions.isEmpty()) {
+            final RuntimeException closeException = new RuntimeException(closeExceptions.pop());
+            closeExceptions.forEach(closeException::addSuppressed);
+            throw closeException;
+        }
     }
 }

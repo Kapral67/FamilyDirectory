@@ -19,6 +19,7 @@ import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.api.models.UpdateEvent;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awscdk.services.dynamodb.GlobalSecondaryIndexProps;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -73,12 +74,12 @@ class UpdateHelper extends ApiHelper {
                                                     .getEmail();
 
         if (nonNull(updateMemberEmail) && !updateMemberEmail.equals(ddbMemberEmail)) {
+            final GlobalSecondaryIndexProps emailGsiProps = requireNonNull(MemberTableParameter.EMAIL.gsiProps());
             final QueryRequest emailRequest = QueryRequest.builder()
                                                           .tableName(DdbTable.MEMBER.name())
-                                                          .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())
-                                                          .keyConditionExpression("%s = :email".formatted(MemberTableParameter.EMAIL.gsiProps()
-                                                                                                                                    .getPartitionKey()
-                                                                                                                                    .getName()))
+                                                          .indexName(emailGsiProps.getIndexName())
+                                                          .keyConditionExpression("%s = :email".formatted(emailGsiProps.getPartitionKey()
+                                                                                                                       .getName()))
                                                           .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(updateMemberEmail)))
                                                           .limit(1)
                                                           .build();
