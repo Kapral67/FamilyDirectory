@@ -64,27 +64,34 @@ class FamilyDirectoryPdfGeneratorLambda implements RequestHandler<DynamodbEvent,
     RequestBody zipPdfBundle (final @NotNull PdfHelper pdfHelper, final @NotNull String rootMemberSurname) throws IOException {
         pdfHelper.getLogger()
                  .log("Entered zipPdfBundle", DEBUG);
-        try (final var bos = new S3ByteArrayOutputStream(); final var zos = new ZipOutputStream(bos); final var ios = new IgnoredCloseOutputStream(zos)) {
-            pdfHelper.getLogger()
-                     .log("Created zip output streams", DEBUG);
+        final RequestBody ret;
+        try (final var bos = new S3ByteArrayOutputStream()) {
+            try (final var zos = new ZipOutputStream(bos); final var ios = new IgnoredCloseOutputStream(zos)) {
+                pdfHelper.getLogger()
+                         .log("Created zip output streams", DEBUG);
 
-            final String directoryPdfFileName = "%sFamilyDirectory.pdf".formatted(requireNonNull(rootMemberSurname));
-            final ZipEntry familyDirectoryZip = new ZipEntry(directoryPdfFileName);
-            zos.putNextEntry(familyDirectoryZip);
-            pdfHelper.saveDirectoryPdf(ios);
-            zos.closeEntry();
-            pdfHelper.getLogger()
-                     .log("Closed Entry %s".formatted(directoryPdfFileName), DEBUG);
+                final String directoryPdfFileName = "%sFamilyDirectory.pdf".formatted(requireNonNull(rootMemberSurname));
+                final ZipEntry familyDirectoryZip = new ZipEntry(directoryPdfFileName);
+                zos.putNextEntry(familyDirectoryZip);
+                pdfHelper.saveDirectoryPdf(ios);
+                zos.closeEntry();
+                pdfHelper.getLogger()
+                         .log("Closed Entry %s".formatted(directoryPdfFileName), DEBUG);
 
-            final String birthdayPdfFileName = "%sFamilyBirthdays.pdf".formatted(rootMemberSurname);
-            final ZipEntry birthdayZip = new ZipEntry(birthdayPdfFileName);
-            zos.putNextEntry(birthdayZip);
-            pdfHelper.saveBirthdayPdf(ios);
-            zos.closeEntry();
-            pdfHelper.getLogger()
-                     .log("Closed Entry %s".formatted(birthdayPdfFileName), DEBUG);
-
-            return bos.requestBody();
+                final String birthdayPdfFileName = "%sFamilyBirthdays.pdf".formatted(rootMemberSurname);
+                final ZipEntry birthdayZip = new ZipEntry(birthdayPdfFileName);
+                zos.putNextEntry(birthdayZip);
+                pdfHelper.saveBirthdayPdf(ios);
+                zos.closeEntry();
+                pdfHelper.getLogger()
+                         .log("Closed Entry %s".formatted(birthdayPdfFileName), DEBUG);
+            }
+            // S3ByteArrayOutputStream::requestBody implicitly calls OutputStream::close
+            // We want to let ZipOutputStream close out before closing the underlying OutputStream
+            // Therefore, nest the ZipOutputStream in its own try-with-resources block
+            ret = bos.requestBody();
         }
+
+        return ret;
     }
 }

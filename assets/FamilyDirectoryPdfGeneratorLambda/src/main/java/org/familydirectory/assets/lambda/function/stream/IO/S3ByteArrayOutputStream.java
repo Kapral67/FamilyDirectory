@@ -7,6 +7,7 @@ import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.ContentStreamProvider;
+import static java.util.Objects.isNull;
 
 public final
 class S3ByteArrayOutputStream extends OutputStream {
@@ -14,6 +15,7 @@ class S3ByteArrayOutputStream extends OutputStream {
     private volatile byte[] buf;
     private volatile int count = 0;
     private volatile boolean closed = false;
+    private volatile RequestBody requestBody = null;
 
     public
     S3ByteArrayOutputStream () {
@@ -61,9 +63,11 @@ class S3ByteArrayOutputStream extends OutputStream {
     }
 
     public synchronized @NotNull
-    RequestBody requestBody () throws IOException {
-        this.validateStream();
+    RequestBody requestBody () {
         this.close();
-        return RequestBody.fromContentProvider(ContentStreamProvider.fromByteArrayUnsafe(this.buf), this.buf.length, "application/octet-stream");
+        if (isNull(this.requestBody)) {
+            this.requestBody = RequestBody.fromContentProvider(ContentStreamProvider.fromByteArrayUnsafe(this.buf), this.buf.length, "application/octet-stream");
+        }
+        return this.requestBody;
     }
 }
