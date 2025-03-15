@@ -14,7 +14,7 @@ compileJava {
 repositories {
     mavenCentral()
     maven {
-        url "${project.projectDir}/../assets/familydirectory-service-assets/.mvn"
+        url = "${project.projectDir}/../assets/familydirectory-service-assets/.mvn"
     }
 }
 

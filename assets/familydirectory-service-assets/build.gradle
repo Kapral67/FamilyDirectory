@@ -19,7 +19,7 @@ publishing {
     }
     repositories {
         maven {
-            url "${project.rootDir}/.mvn"
+            url = "${project.rootDir}/.mvn"
         }
     }
 }
