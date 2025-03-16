@@ -43,7 +43,7 @@ dependencies {
     implementation 'software.amazon.awssdk:amplify'
     implementation 'software.constructs:constructs:10.3.0'
     // Unstable Dependencies
-    implementation 'software.amazon.awscdk:amplify-alpha:2.149.0-alpha.0'
+    implementation 'software.amazon.awscdk:amplify-alpha:2.184.1-alpha.0'
 }
 
 application {
