@@ -24,7 +24,6 @@ dependencies {
     implementation 'org.jetbrains:annotations:24.1.0'
     implementation 'io.leego:banana:2.1.0'
     implementation 'com.googlecode.lanterna:lanterna:3.1.2'
-    implementation platform('software.amazon.awssdk:bom:2.26.21')
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:sesv2'

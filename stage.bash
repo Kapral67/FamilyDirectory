@@ -75,13 +75,20 @@ STAGE_DIR="$(pwd)"
 # service assets
 cd "$STAGE_DIR/assets/familydirectory-service-assets" || script_error
 rm -rf .mvn
+echo "BUILDING SERVICE ASSETS"
 ./gradlew clean build || exit 3
+echo
+echo "PUBLISHING SERVICE ASSETS"
 ./gradlew publish || exit 3
 clean_maven_local
 
 # ADMIN CLIENT
 cd "$STAGE_DIR/AdminClient" || script_error
+echo
+echo "BUILDING ADMIN CLIENT"
 ./gradlew clean build || exit 3
+echo
+echo "PACKAGING ADMIN CLIENT"
 ./gradlew distTar || exit 3
 tar xf "build/distributions/AdminClient-$ORG_FAMILYDIRECTORY_VERSION.tar" -C build/distributions || script_error
 rm -f AdminClient
@@ -91,43 +98,63 @@ ln -s "$STAGE_DIR/AdminClient/build/distributions/AdminClient-$ORG_FAMILYDIRECTO
 ## API
 cd "$STAGE_DIR/assets/FamilyDirectoryCreateMemberLambda" || script_error
 rm -rf target
-mvn package || exit 3
+echo
+echo "BUILDING CREATE MEMBER LAMBDA"
+./gradlew clean build || exit 3
 
 cd "$STAGE_DIR/assets/FamilyDirectoryUpdateMemberLambda" || script_error
 rm -rf target
-mvn package || exit 3
+echo
+echo "BUILDING UPDATE MEMBER LAMBDA"
+./gradlew clean build || exit 3
 
 cd "$STAGE_DIR/assets/FamilyDirectoryDeleteMemberLambda" || script_error
 rm -rf target
-mvn package || exit 3
+echo
+echo "BUILDING DELETE MEMBER LAMBDA"
+./gradlew clean build || exit 3
 
 cd "$STAGE_DIR/assets/FamilyDirectoryGetMemberLambda" || script_error
 rm -rf target
-mvn package || exit 3
+echo
+echo "BUILDING GET MEMBER LAMBDA"
+./gradlew clean build || exit 3
 
 cd "$STAGE_DIR/assets/FamilyDirectoryGetPdfLambda" || script_error
 rm -rf target
-mvn package || exit 3
+echo
+echo "BUILDING GET PDF LAMBDA"
+./gradlew clean build || exit 3
 
 ## COGNITO
 cd "$STAGE_DIR/assets/FamilyDirectoryCognitoPreSignUpTrigger" || script_error
 rm -rf target
-mvn package || exit 3
+echo
+echo "BUILDING COGNITO PRE SIGN UP TRIGGER"
+./gradlew clean build || exit 3
 
 cd "$STAGE_DIR/assets/FamilyDirectoryCognitoPostConfirmationTrigger" || script_error
 rm -rf target
-mvn package || exit 3
+echo
+echo "BUILDING COGNITO POST CONFIRMATION TRIGGER"
+./gradlew clean build || exit 3
 
 ## PDF
 cd "$STAGE_DIR/assets/FamilyDirectoryPdfGeneratorLambda" || script_error
 rm -rf target
-mvn package || exit 3
+echo
+echo "BUILDING PDF GENERATOR LAMBDA"
+./gradlew clean build || exit 3
 
 # CDK
 cd "$STAGE_DIR/CDK" || script_error
 rm -rf target
 rm -rf cdk*.out
+echo
+echo "BUILDING CDK"
 mvn package || exit 3
+echo
+echo "SYNTHESIZING CDK"
 cdk synth
 
 # Return to current directory
