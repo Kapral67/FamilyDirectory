@@ -4,15 +4,9 @@ Want More Info? [See the Poster](.misc/Poster.pdf)
 
 ### Prerequisites
 
-1. Core Utilities (for using [stage.bash](stage.bash)):
+1. [Java JDK 21 or greater](https://docs.aws.amazon.com/corretto/latest/corretto-21-ug/downloads-list.html)
 
-    1. [Bash](https://www.gnu.org/software/bash/)
-
-    2. [Tar](https://www.gnu.org/software/tar/)
-
-2. [Java JDK 21 or greater](https://docs.aws.amazon.com/corretto/latest/corretto-21-ug/downloads-list.html)
-
-3. [AWS CDK ToolKit](https://docs.aws.amazon.com/cdk/v2/guide/cli.html)
+2. [AWS CDK ToolKit](https://docs.aws.amazon.com/cdk/v2/guide/cli.html)
 
     - *For `cdk` usage, see [CDK-GettingStarted.md](docs/CDK-GettingStarted.md)*
 
@@ -116,14 +110,7 @@ Want More Info? [See the Poster](.misc/Poster.pdf)
         - `cdk bootstrap "aws://$AWS_ACCOUNT_ID/us-east-1` (Only needed if your chosen region from step 1 is
           not `us-east-1`)
 
-
-4. If on a `*nix` system, you can use the `stage.bash` script to build this project in the correct order
-
-    - If on Windows or other `non *nix` system, you will have to use the `stage.bash` script as a guide to build this
-      project manually
-
-        - Do Not Attempt to use `stage.bash` on a system that does not use `/` as
-          the [name-separator character](https://docs.oracle.com/javase/8/docs/api/java/io/File.html#separatorChar)
+4. Use the provided gradle script at the repository root to build this project (e.g. `./gradlew build`)
 
 5. Now you can synth and deploy (**Note**: *You must be in the `CDK` directory to run `cdk` commands*)
 
@@ -164,9 +151,7 @@ Want More Info? [See the Poster](.misc/Poster.pdf)
 
         - This may take awhile, so please be patient
 
-    3. If you used the `stage.bash` script to build this repo, then `AdminClient` is already built for you
-
-        - Before continuing, you need to create the root member
+    3. Before continuing, you need to create the root member
 
         - The `AdminClient` has the capability to walk you through this
 
@@ -193,10 +178,10 @@ Want More Info? [See the Poster](.misc/Poster.pdf)
         4. For the **Mail type** select **TRANSACTIONAL**
 
         5. For the **Website URL** enter `https://${ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME}`
-    
+
         6. For the **Use case description** put something to the effect
            of `"For emailing account-holders of this application"`
-    
+
     - *It may take up to 24 hours for your Production Access Request to be approved, users are not able to sign-up until
       this is complete*
 

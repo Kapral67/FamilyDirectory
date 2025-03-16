@@ -68,7 +68,7 @@ class AdminClientTui {
                                              -v | --version            show this message
                                              -w | --window             prefer windowed mode
                                            COLOR:
-                                             [ BLACK, BLUE, CYAN, GREEN, MAGENTA, RED, WHITE, YELLOW ]""".formatted(Constants.VERSION_STR);
+                                             [ BLACK, BLUE, CYAN, GREEN, MAGENTA, RED, WHITE, YELLOW ]""".formatted(Constants.VERSION.toString());
     private static boolean DEBUG = false;
 
     private

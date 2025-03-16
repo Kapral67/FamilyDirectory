@@ -1,0 +1,34 @@
+rootProject.name = 'FamilyDirectory'
+
+include ':service-assets'
+project(':service-assets').projectDir = file('assets/familydirectory-service-assets')
+
+include ':post-confirmation-lambda'
+project(':post-confirmation-lambda').projectDir = file('assets/FamilyDirectoryCognitoPostConfirmationTrigger')
+
+include ':pre-sign-up-lambda'
+project(':pre-sign-up-lambda').projectDir = file('assets/FamilyDirectoryCognitoPreSignUpTrigger')
+
+include ':create-member-lambda'
+project(':create-member-lambda').projectDir = file('assets/FamilyDirectoryCreateMemberLambda')
+
+include ':update-member-lambda'
+project(':update-member-lambda').projectDir = file('assets/FamilyDirectoryUpdateMemberLambda')
+
+include ':delete-member-lambda'
+project(':delete-member-lambda').projectDir = file('assets/FamilyDirectoryDeleteMemberLambda')
+
+include ':get-member-lambda'
+project(':get-member-lambda').projectDir = file('assets/FamilyDirectoryGetMemberLambda')
+
+include ':get-pdf-lambda'
+project(':get-pdf-lambda').projectDir = file('assets/FamilyDirectoryGetPdfLambda')
+
+include ':pdf-generator-lambda'
+project(':pdf-generator-lambda').projectDir = file('assets/FamilyDirectoryPdfGeneratorLambda')
+
+include ':cdk'
+project(':cdk').projectDir = file('CDK')
+
+include ':admin-client'
+project(':admin-client').projectDir = file('AdminClient')

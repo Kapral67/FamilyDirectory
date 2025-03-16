@@ -30,7 +30,7 @@ import software.constructs.Construct;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
-import static org.familydirectory.assets.Constants.VERSION_STR;
+import static org.familydirectory.assets.Constants.VERSION;
 import static software.amazon.awscdk.Duration.seconds;
 import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.iam.Effect.ALLOW;
@@ -100,7 +100,7 @@ class LambdaFunctionConstructUtility {
     @NotNull
     private static
     Code getCodeAsset (final String lambdaName) {
-        final Path assetPath = Path.of(System.getProperty("user.dir"), "..", "assets", lambdaName, "build", "distributions", "%s-%s.zip".formatted(lambdaName, VERSION_STR));
+        final Path assetPath = Path.of(System.getProperty("user.dir"), "..", "assets", lambdaName, "build", "distributions", "%s-%s.zip".formatted(lambdaName, VERSION.toString()));
         return Code.fromAsset(assetPath.toAbsolutePath()
                                        .normalize()
                                        .toString());

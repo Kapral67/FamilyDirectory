@@ -1,0 +1,61 @@
+import com.github.spotbugs.snom.Effort
+
+plugins {
+    id 'com.github.spotbugs' version '6.1.7' apply false
+}
+
+allprojects {
+    group = 'org.familydirectory'
+    version = '0.9'
+    apply plugin: 'groovy'
+    repositories {
+        mavenCentral()
+    }
+    tasks.withType(JavaCompile).configureEach {
+        javaCompiler = javaToolchains.compilerFor {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+}
+
+subprojects {
+    if (project.name != 'service-assets') {
+        apply plugin: 'java'
+
+        dependencies {
+            implementation project(':service-assets')
+        }
+    }
+
+    if (project.name.endsWith('-lambda')) {
+        apply plugin: 'com.github.spotbugs'
+
+        spotbugs {
+            effort = Effort.MAX
+            ignoreFailures = false
+            showStackTraces = true
+        }
+
+        dependencies {
+            spotbugs 'com.github.spotbugs:spotbugs:4.8.6'
+            spotbugsPlugins 'software.amazon.lambda.snapstart:aws-lambda-snapstart-java-rules:0.2.1'
+        }
+
+        tasks.register('buildZip', Zip) {
+            from compileJava
+            from processResources
+            into('lib') {
+                from configurations.runtimeClasspath
+            }
+            archiveFileName = "${projectDir.name}-${project.version}.zip"
+        }
+
+        tasks.named('build') {
+            dependsOn 'buildZip'
+        }
+
+        project(':cdk').tasks.named('build').configure {
+            mustRunAfter tasks.named('buildZip')
+        }
+    }
+}

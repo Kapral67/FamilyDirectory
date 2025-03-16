@@ -1,16 +1,9 @@
 plugins {
-    id 'java'
     id 'application'
     id 'jvm-test-suite'
 }
 
-group = 'org.familydirectory.cdk.familydirectory-cdk'
-version = '0.9'
-
-compileJava {
-    sourceCompatibility = '21'
-    targetCompatibility = '21'
-}
+group = "${rootProject.group}.cdk.familydirectory-cdk"
 
 testing {
     suites {
@@ -30,15 +23,7 @@ testing {
     }
 }
 
-repositories {
-    mavenCentral()
-    maven {
-        url = "${project.projectDir}/../assets/familydirectory-service-assets/.mvn"
-    }
-}
-
 dependencies {
-    implementation 'org.familydirectory.assets:familydirectory-service-assets:0.9'
     implementation 'software.amazon.awssdk:regions'
     implementation 'software.amazon.awssdk:amplify'
     implementation 'software.constructs:constructs:10.3.0'
@@ -50,6 +35,22 @@ application {
     mainClass = 'org.familydirectory.cdk.FamilyDirectoryCdkApp'
 }
 
+tasks.register('checkEnvironment', CheckEnvironmentTask) {
+    requiredEnvironmentVariables.set([
+        'ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME',
+        'ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME',
+        'ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER',
+        'ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OAUTH_TOKEN',
+        'AWS_ACCOUNT_ID',
+        'AWS_REGION'
+    ])
+}
+
 tasks.named('test', Test) {
     useJUnitPlatform()
+    dependsOn tasks.named('checkEnvironment')
+}
+
+tasks.named('run') {
+    dependsOn tasks.named('checkEnvironment')
 }

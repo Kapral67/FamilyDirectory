@@ -1,45 +1,6 @@
-import com.github.spotbugs.snom.Effort
-
-plugins {
-    id 'java'
-    id 'com.github.spotbugs' version '6.1.7'
-}
-
-group = 'org.familydirectory.assets.lambda.function.trigger.familydirectorycognitopostconfirmationtrigger'
-version = '0.9'
-
-compileJava {
-    sourceCompatibility = '21'
-    targetCompatibility = '21'
-}
-
-repositories {
-    mavenCentral()
-    maven {
-        url = "${project.projectDir}/../familydirectory-service-assets/.mvn"
-    }
-}
-
-spotbugs {
-    effort = Effort.MAX
-    ignoreFailures = false
-    showStackTraces = true
-}
+group = "${rootProject.group}.assets.lambda.function.trigger.familydirectorycognitopostconfirmationtrigger"
 
 dependencies {
-    spotbugs 'com.github.spotbugs:spotbugs:4.8.6'
-    spotbugsPlugins 'software.amazon.lambda.snapstart:aws-lambda-snapstart-java-rules:0.2.1'
-    implementation 'org.familydirectory.assets:familydirectory-service-assets:0.9'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
 }
-
-task buildZip(type: Zip) {
-    from compileJava
-    from processResources
-    into('lib') {
-        from configurations.runtimeClasspath
-    }
-}
-
-build.dependsOn buildZip
