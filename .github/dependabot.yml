@@ -1,6 +1,12 @@
 version: 2
 updates:
   - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    target-branch: "dev"
+
+  - package-ecosystem: "gradle"
     directory: "/assets/familydirectory-service-assets"
     schedule:
       interval: "monthly"
