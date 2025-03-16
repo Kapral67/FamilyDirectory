@@ -22,27 +22,24 @@ dependencies {
 }
 
 tasks.register('generateBuildProperties') {
-    def version = project.version
+    def version
+    try {
+        version = Double.parseDouble(project.version)
+    } catch (final Throwable e) {
+        throw new GradleException("Invalid Project Version: ${project.version}", e)
+    }
     def srcFile = layout.buildDirectory.file(
-        "generated/sources/assets/java/main/org/familydirectory/assets/BuildProperties.java"
+        "generated/sources/assets/org/familydirectory/assets/BuildProperties.java"
     ).get().asFile
     outputs.file srcFile
     doLast {
         srcFile.text = """package org.familydirectory.assets;
-import java.util.Objects;
 enum BuildProperties {
-    VERSION(Double.valueOf("${version}"));
+    VERSION(${version});
     private final Object property;
-    BuildProperties(final Object property) {
-        this.property = Objects.requireNonNull(property);
-    }
-    @Override
-    public final String toString() {
-        return property.toString();
-    }
-    public final Object getProperty() {
-        return property;
-    }
+    BuildProperties(final Object property) { this.property = property; }
+    @Override public final String toString() { return this.property.toString(); }
+    public final Object getProperty() { return this.property; }
 }
 """
     }
