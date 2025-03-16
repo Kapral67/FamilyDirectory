@@ -12,55 +12,55 @@ updates:
       interval: "monthly"
     target-branch: "dev"
 
-  - package-ecosystem: "maven"
+  - package-ecosystem: "gradle"
     directory: "/CDK"
     schedule:
       interval: "monthly"
     target-branch: "dev"
 
-  - package-ecosystem: "maven"
+  - package-ecosystem: "gradle"
     directory: "/assets/FamilyDirectoryCreateMemberLambda"
     schedule:
       interval: "monthly"
     target-branch: "dev"
 
-  - package-ecosystem: "maven"
+  - package-ecosystem: "gradle"
     directory: "/assets/FamilyDirectoryUpdateMemberLambda"
     schedule:
       interval: "monthly"
     target-branch: "dev"
 
-  - package-ecosystem: "maven"
+  - package-ecosystem: "gradle"
     directory: "/assets/FamilyDirectoryDeleteMemberLambda"
     schedule:
       interval: "monthly"
     target-branch: "dev"
 
-  - package-ecosystem: "maven"
+  - package-ecosystem: "gradle"
     directory: "/assets/FamilyDirectoryGetMemberLambda"
     schedule:
       interval: "monthly"
     target-branch: "dev"
 
-  - package-ecosystem: "maven"
+  - package-ecosystem: "gradle"
     directory: "/assets/FamilyDirectoryGetPdfLambda"
     schedule:
       interval: "monthly"
     target-branch: "dev"
 
-  - package-ecosystem: "maven"
+  - package-ecosystem: "gradle"
     directory: "/assets/FamilyDirectoryCognitoPreSignUpTrigger"
     schedule:
       interval: "monthly"
     target-branch: "dev"
 
-  - package-ecosystem: "maven"
+  - package-ecosystem: "gradle"
     directory: "/assets/FamilyDirectoryCognitoPostConfirmationTrigger"
     schedule:
       interval: "monthly"
     target-branch: "dev"
 
-  - package-ecosystem: "maven"
+  - package-ecosystem: "gradle"
     directory: "/assets/FamilyDirectoryPdfGeneratorLambda"
     schedule:
       interval: "monthly"
