@@ -12,9 +12,7 @@ Want More Info? [See the Poster](.misc/Poster.pdf)
 
 2. [Java JDK 21 or greater](https://docs.aws.amazon.com/corretto/latest/corretto-21-ug/downloads-list.html)
 
-3. [Apache Maven](https://maven.apache.org/download.cgi)
-
-4. [AWS CDK ToolKit](https://docs.aws.amazon.com/cdk/v2/guide/cli.html)
+3. [AWS CDK ToolKit](https://docs.aws.amazon.com/cdk/v2/guide/cli.html)
 
     - *For `cdk` usage, see [CDK-GettingStarted.md](docs/CDK-GettingStarted.md)*
 

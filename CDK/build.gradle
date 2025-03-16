@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'application'
+    id 'jvm-test-suite'
 }
 
 group = 'org.familydirectory.cdk.familydirectory-cdk'
@@ -9,6 +10,24 @@ version = '0.9'
 compileJava {
     sourceCompatibility = '21'
     targetCompatibility = '21'
+}
+
+testing {
+    suites {
+        test {
+            useJUnitJupiter()
+            targets {
+                all {
+                    testTask.configure { task ->
+                        task.testLogging {
+                            events "passed", "skipped", "failed"
+                            showStandardStreams = true
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 repositories {
@@ -25,10 +44,12 @@ dependencies {
     implementation 'software.constructs:constructs:10.3.0'
     // Unstable Dependencies
     implementation 'software.amazon.awscdk:amplify-alpha:2.149.0-alpha.0'
-    // Test Dependencies
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
 }
 
 application {
     mainClass = 'org.familydirectory.cdk.FamilyDirectoryCdkApp'
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
 }

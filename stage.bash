@@ -16,14 +16,6 @@ function user_error {
   exit 2
 }
 
-function clean_maven_local {
-  local repo
-  repo="$(mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout)" \
-    || user_error "Maven (mvn) is either not installed or improperly configured"
-  rm -rf "$repo/org/familydirectory"
-  return 0
-}
-
 function verify_project_env_vars {
   function empty_env_var {
     user_error "Environment Variable: '$*' Cannot Be Empty"
@@ -80,7 +72,6 @@ echo "BUILDING SERVICE ASSETS"
 echo
 echo "PUBLISHING SERVICE ASSETS"
 ./gradlew publish || exit 3
-clean_maven_local
 
 # ADMIN CLIENT
 cd "$STAGE_DIR/AdminClient" || script_error
