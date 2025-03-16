@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.NotImplementedException;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
@@ -85,6 +84,6 @@ class FamilyDirectoryDynamoDbStackTest {
         if (attr == AttributeType.STRING) {
             return "S";
         }
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException(attr.name());
     }
 }

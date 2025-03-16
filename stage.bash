@@ -152,7 +152,7 @@ rm -rf target
 rm -rf cdk*.out
 echo
 echo "BUILDING CDK"
-mvn package || exit 3
+./gradlew clean build || exit 3
 echo
 echo "SYNTHESIZING CDK"
 cdk synth
