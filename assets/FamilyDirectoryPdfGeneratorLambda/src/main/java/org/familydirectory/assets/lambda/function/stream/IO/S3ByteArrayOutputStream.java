@@ -12,10 +12,10 @@ import static java.util.Objects.isNull;
 public final
 class S3ByteArrayOutputStream extends OutputStream {
     private static final int CHUNK_SIZE = 8192; // bytes
-    private volatile byte[] buf;
-    private volatile int count = 0;
-    private volatile boolean closed = false;
-    private volatile RequestBody requestBody = null;
+    private byte[] buf;
+    private int count = 0;
+    private boolean closed = false;
+    private RequestBody requestBody = null;
 
     public
     S3ByteArrayOutputStream () {
