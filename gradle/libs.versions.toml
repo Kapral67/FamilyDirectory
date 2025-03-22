@@ -10,12 +10,17 @@ aws-cdk-lib = { module = "software.amazon.awscdk:aws-cdk-lib", version.ref = "aw
 aws-cdk-amplify-alpha = { module = "software.amazon.awscdk:amplify-alpha", version.ref = "aws-cdk-alpha" }
 aws-lambda-java-core = { module = "com.amazonaws:aws-lambda-java-core", version = "1.2.3" }
 aws-lambda-java-events = { module = "com.amazonaws:aws-lambda-java-events", version = "3.12.0" }
+aws-lambda-snapstart-java-rules = { module = "software.amazon.lambda.snapstart:aws-lambda-snapstart-java-rules", version = "0.2.1" }
 aws-sdk-bom = { module = "software.amazon.awssdk:bom", version = "2.26.21" }
 commons-validator = { module = "commons-validator:commons-validator", version = "1.9.0" }
 constructs = { module = "software.constructs:constructs", version = "10.3.0" }
+github-spotbugs = { module = "com.github.spotbugs:spotbugs", version = "4.8.6" }
 googlecode-lanterna = { module = "com.googlecode.lanterna:lanterna", version = "3.1.2" }
 googlecode-libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version = "8.13.41" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version = "2.17.2" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version = "24.1.0" }
 leego-banana = { module = "io.leego:banana", version = "2.1.0" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop", version = "2.0.13" }
+
+[plugins]
+github-spotbugs = "com.github.spotbugs:6.1.7"

@@ -1,7 +1,7 @@
 import com.github.spotbugs.snom.Effort
 
 plugins {
-    id 'com.github.spotbugs' version '6.1.7' apply false
+    alias libs.plugins.github.spotbugs apply false
 }
 
 allprojects {
@@ -37,8 +37,8 @@ subprojects {
         }
 
         dependencies {
-            spotbugs 'com.github.spotbugs:spotbugs:4.8.6'
-            spotbugsPlugins 'software.amazon.lambda.snapstart:aws-lambda-snapstart-java-rules:0.2.1'
+            spotbugs libs.github.spotbugs
+            spotbugsPlugins libs.aws.lambda.snapstart.java.rules
         }
 
         tasks.register('buildZip', Zip) {
