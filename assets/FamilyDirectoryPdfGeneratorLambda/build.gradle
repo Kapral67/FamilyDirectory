@@ -3,5 +3,5 @@ group = "${rootProject.group}.assets.lambda.function.stream.familydirectorypdfge
 dependencies {
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:s3'
-    implementation 'org.apache.pdfbox:pdfbox:2.0.32'
+    implementation libs.apache.pdfbox
 }
