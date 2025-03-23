@@ -1,6 +1,7 @@
 [versions]
 aws-cdk = "2.149.0"
 aws-cdk-alpha = "2.149.0-alpha.0"
+jackson = "2.17.2"
 
 [libraries]
 apache-commons-text = { module = "org.apache.commons:commons-text", version = "1.12.0" }
@@ -17,7 +18,8 @@ constructs = { module = "software.constructs:constructs", version = "10.3.0" }
 github-spotbugs = { module = "com.github.spotbugs:spotbugs", version = "4.8.6" }
 googlecode-lanterna = { module = "com.googlecode.lanterna:lanterna", version = "3.1.2" }
 googlecode-libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version = "8.13.41" }
-jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version = "2.17.2" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version = "24.1.0" }
 leego-banana = { module = "io.leego:banana", version = "2.1.0" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop", version = "2.0.13" }

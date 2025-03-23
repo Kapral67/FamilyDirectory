@@ -9,6 +9,9 @@ dependencies {
     implementation libs.jetbrains.annotations
     implementation libs.leego.banana
     implementation libs.googlecode.lanterna
+    implementation libs.aws.cdk.lib
+    implementation libs.aws.lambda.java.core
+    implementation libs.slf4j.nop
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:sesv2'

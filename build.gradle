@@ -39,6 +39,10 @@ subprojects {
         dependencies {
             spotbugs libs.github.spotbugs
             spotbugsPlugins libs.aws.lambda.snapstart.java.rules
+            implementation libs.aws.lambda.java.core
+            implementation libs.aws.lambda.java.events
+            implementation libs.slf4j.nop
+            implementation 'software.amazon.awssdk:dynamodb-enhanced'
         }
 
         tasks.register('buildZip', Zip) {

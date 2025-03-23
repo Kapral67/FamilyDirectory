@@ -26,6 +26,7 @@ testing {
 dependencies {
     implementation 'software.amazon.awssdk:regions'
     implementation 'software.amazon.awssdk:amplify'
+    implementation libs.aws.cdk.lib
     implementation libs.constructs
     // Unstable Dependencies
     implementation libs.aws.cdk.amplify.alpha

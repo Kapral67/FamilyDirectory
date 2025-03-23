@@ -1,7 +1,8 @@
 group = "${rootProject.group}.assets.lambda.function.stream.familydirectorypdfgeneratorlambda"
 
 dependencies {
-    implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:s3'
     implementation libs.apache.pdfbox
+    implementation libs.jetbrains.annotations
+    implementation libs.jackson.annotations
 }

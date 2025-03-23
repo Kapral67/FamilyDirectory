@@ -2,5 +2,5 @@ group = "${rootProject.group}.assets.lambda.function.trigger.familydirectorycogn
 
 dependencies {
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
-    implementation 'software.amazon.awssdk:dynamodb-enhanced'
+    implementation libs.aws.cdk.lib
 }

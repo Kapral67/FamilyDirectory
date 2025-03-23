@@ -5,17 +5,15 @@ plugins {
 group = "${rootProject.group}.assets"
 
 dependencies {
+    api platform(libs.aws.sdk.bom)
     implementation libs.jackson.databind
-    implementation libs.jetbrains.annotations
     implementation libs.googlecode.libphonenumber
     implementation libs.commons.validator
     implementation libs.apache.commons.text
-    api libs.apache.httpcomponents.httpcore
-    api libs.slf4j.nop
-    api libs.aws.cdk.lib
-    api libs.aws.lambda.java.core
-    api libs.aws.lambda.java.events
-    api platform(libs.aws.sdk.bom)
+    implementation libs.apache.httpcomponents.httpcore
+    implementation libs.aws.cdk.lib
+    implementation libs.aws.lambda.java.core
+    implementation libs.aws.lambda.java.events
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:sesv2'
     implementation 'software.amazon.awssdk:amplify'

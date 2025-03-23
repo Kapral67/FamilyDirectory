@@ -1,5 +1,5 @@
 group = "${rootProject.group}.assets.lambda.function.trigger.familydirectorycognitopresignuptrigger"
 
 dependencies {
-    implementation 'software.amazon.awssdk:dynamodb-enhanced'
+    implementation libs.aws.cdk.lib
 }
