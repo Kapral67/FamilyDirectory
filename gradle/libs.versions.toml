@@ -5,7 +5,7 @@ jackson = "2.17.2"
 github-spotbugs = "4.9.3"
 
 [libraries]
-apache-commons-text = { module = "org.apache.commons:commons-text", version = "1.12.0" }
+apache-commons-text = { module = "org.apache.commons:commons-text", version = "1.13.0" }
 apache-httpcomponents-httpcore = { module = "org.apache.httpcomponents:httpcore", version = "4.4.16" }
 apache-pdfbox = { module = "org.apache.pdfbox:pdfbox", version = "2.0.33" }
 aws-cdk-lib = { module = "software.amazon.awscdk:aws-cdk-lib", version.ref = "aws-cdk" }
