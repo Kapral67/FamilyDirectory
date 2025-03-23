@@ -18,7 +18,7 @@ commons-validator = { module = "commons-validator:commons-validator", version = 
 constructs = { module = "software.constructs:constructs", version = "10.3.0" }
 github-spotbugs = { module = "com.github.spotbugs:spotbugs", version.ref = "github-spotbugs" }
 github-spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "github-spotbugs" }
-googlecode-lanterna = { module = "com.googlecode.lanterna:lanterna", version = "3.1.2" }
+googlecode-lanterna = { module = "com.googlecode.lanterna:lanterna", version = "3.1.3" }
 googlecode-libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version = "9.0.1" }
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
