@@ -1,4 +1,4 @@
-package org.familydirectory.cdk.test.amplify;
+package org.familydirectory.cdk.amplify;
 
 import java.util.List;
 import java.util.Map;
@@ -6,7 +6,6 @@ import java.util.regex.Pattern;
 import org.familydirectory.assets.amplify.utility.AmplifyUtils;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
-import org.familydirectory.cdk.amplify.FamilyDirectoryAmplifyStack;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.jetbrains.annotations.NotNull;

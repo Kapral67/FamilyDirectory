@@ -1,10 +1,8 @@
-package org.familydirectory.cdk.test.cognito;
+package org.familydirectory.cdk.cognito;
 
 import java.util.List;
 import java.util.Map;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
-import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
-import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoUsEastOneStack;
 import org.familydirectory.cdk.customresource.SSMParameterReader;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.junit.jupiter.api.Test;

@@ -18,11 +18,11 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cognito.AccountRecovery;
-import software.amazon.awscdk.services.cognito.AdvancedSecurityMode;
 import software.amazon.awscdk.services.cognito.AuthFlow;
 import software.amazon.awscdk.services.cognito.AutoVerifiedAttrs;
 import software.amazon.awscdk.services.cognito.ClientAttributes;
 import software.amazon.awscdk.services.cognito.CustomDomainOptions;
+import software.amazon.awscdk.services.cognito.FeaturePlan;
 import software.amazon.awscdk.services.cognito.KeepOriginalAttrs;
 import software.amazon.awscdk.services.cognito.Mfa;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
@@ -110,7 +110,7 @@ class FamilyDirectoryCognitoStack extends Stack {
 
         final UserPoolProps userPoolProps = UserPoolProps.builder()
                                                          .accountRecovery(AccountRecovery.EMAIL_ONLY)
-                                                         .advancedSecurityMode(AdvancedSecurityMode.OFF)
+                                                         .featurePlan(FeaturePlan.LITE)
                                                          .autoVerify(AutoVerifiedAttrs.builder()
                                                                                       .email(TRUE)
                                                                                       .phone(FALSE)

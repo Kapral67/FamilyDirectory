@@ -1,10 +1,9 @@
-package org.familydirectory.cdk.test.ses;
+package org.familydirectory.cdk.ses;
 
 import java.util.List;
 import java.util.Map;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
-import org.familydirectory.cdk.ses.FamilyDirectorySesStack;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;

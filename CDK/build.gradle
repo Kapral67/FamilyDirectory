@@ -11,8 +11,8 @@ testing {
             useJUnitJupiter()
             targets {
                 all {
-                    testTask.configure { task ->
-                        task.testLogging {
+                    testTask.configure {
+                        testLogging {
                             events "passed", "skipped", "failed"
                             showStandardStreams = true
                         }
@@ -48,7 +48,6 @@ tasks.register('checkEnvironment', CheckEnvironmentTask) {
 }
 
 tasks.named('test', Test) {
-    useJUnitPlatform()
     dependsOn tasks.named('checkEnvironment')
 }
 

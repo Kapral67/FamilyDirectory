@@ -1,4 +1,4 @@
-package org.familydirectory.cdk.test.cognito;
+package org.familydirectory.cdk.cognito;
 
 import java.util.HashMap;
 import java.util.List;
@@ -7,8 +7,6 @@ import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.trigger.enums.TriggerFunction;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
-import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
-import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoUsEastOneStack;
 import org.familydirectory.cdk.customresource.SSMParameterReader;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
@@ -117,7 +115,7 @@ class FamilyDirectoryCognitoStackTest {
                                 Map.of("Mutable", FamilyDirectoryCognitoStack.COGNITO_EMAIL_MUTABLE_ATTRIBUTE, "Name", "email", "Required",
                                        FamilyDirectoryCognitoStack.COGNITO_EMAIL_REQUIRE_ATTRIBUTE))),
                               entry("UserAttributeUpdateSettings", singletonMap("AttributesRequireVerificationBeforeUpdate", singletonList("email"))),
-                              entry("UserPoolAddOns", singletonMap("AdvancedSecurityMode", "OFF")), entry("UsernameAttributes", singletonList("email")),
+                              entry("UserPoolTier", "LITE"), entry("UsernameAttributes", singletonList("email")),
                               entry("UsernameConfiguration", singletonMap("CaseSensitive", FamilyDirectoryCognitoStack.COGNITO_SIGN_IN_CASE_SENSITIVE)), entry("VerificationMessageTemplate",
                                                                                                                                                                Map.of("DefaultEmailOption",
                                                                                                                                                                       "CONFIRM_WITH_LINK",

@@ -1,11 +1,10 @@
-package org.familydirectory.cdk.test.apigateway;
+package org.familydirectory.cdk.apigateway;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
-import org.familydirectory.cdk.apigateway.FamilyDirectoryApiGatewayStack;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.jetbrains.annotations.NotNull;

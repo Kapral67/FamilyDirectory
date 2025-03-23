@@ -1,4 +1,4 @@
-package org.familydirectory.cdk.test.ddb;
+package org.familydirectory.cdk.ddb;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,7 +7,6 @@ import java.util.Map;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
-import org.familydirectory.cdk.ddb.FamilyDirectoryDynamoDbStack;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;

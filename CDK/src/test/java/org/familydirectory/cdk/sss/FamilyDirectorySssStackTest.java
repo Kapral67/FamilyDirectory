@@ -1,9 +1,8 @@
-package org.familydirectory.cdk.test.sss;
+package org.familydirectory.cdk.sss;
 
 import java.util.List;
 import java.util.Map;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
-import org.familydirectory.cdk.sss.FamilyDirectorySssStack;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;

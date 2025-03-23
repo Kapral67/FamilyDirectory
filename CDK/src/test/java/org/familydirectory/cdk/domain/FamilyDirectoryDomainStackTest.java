@@ -1,8 +1,7 @@
-package org.familydirectory.cdk.test.domain;
+package org.familydirectory.cdk.domain;
 
 import java.util.Map;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
-import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;

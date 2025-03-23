@@ -1,4 +1,4 @@
-package org.familydirectory.cdk.test.lambda;
+package org.familydirectory.cdk.lambda;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +13,6 @@ import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
 import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
-import org.familydirectory.cdk.lambda.FamilyDirectoryLambdaStack;
 import org.familydirectory.cdk.lambda.construct.utility.LambdaFunctionConstructUtility;
 import org.familydirectory.cdk.sss.FamilyDirectorySssStack;
 import org.jetbrains.annotations.NotNull;
