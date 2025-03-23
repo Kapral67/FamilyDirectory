@@ -20,7 +20,7 @@ googlecode-lanterna = { module = "com.googlecode.lanterna:lanterna", version = "
 googlecode-libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version = "8.13.41" }
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
-jetbrains-annotations = { module = "org.jetbrains:annotations", version = "24.1.0" }
+jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.0.2" }
 leego-banana = { module = "io.leego:banana", version = "2.1.0" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop", version = "2.0.13" }
 
