@@ -34,6 +34,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static java.lang.System.getenv;
@@ -44,7 +45,6 @@ import static java.util.Optional.ofNullable;
 
 public final
 class PdfHelper implements LambdaFunctionHelper {
-    public static final @NotNull DynamoDbClient DDB_CLIENT = DynamoDbClient.create();
     private static final @NotNull String ROOT_MEMBER_ID = requireNonNull(getenv(LambdaUtils.EnvVar.ROOT_ID.name()));
     private static final @NotNull Comparator<Map.Entry<String, Member>> DESCENDANT_COMPARATOR = Comparator.comparing(entry -> entry.getValue()
                                                                                                                                    .getBirthday());
@@ -52,6 +52,7 @@ class PdfHelper implements LambdaFunctionHelper {
                                                                                                                                                         .member()
                                                                                                                                                         .getBirthday()
                                                                                                                                                         .getDayOfMonth());
+    private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
     private final @NotNull PDDocument familyDirectoryPdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly());
     private final @NotNull PDDocument dayPdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly());
     private final @NotNull LocalDate date = LocalDate.now();
@@ -305,10 +306,11 @@ class PdfHelper implements LambdaFunctionHelper {
         return this.logger;
     }
 
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     @Override
     public @NotNull
     DynamoDbClient getDynamoDbClient () {
-        return DDB_CLIENT;
+        return this.dynamoDbClient;
     }
 
     @Override
