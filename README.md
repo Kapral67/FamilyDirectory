@@ -161,11 +161,7 @@ Want More Info? [See the Poster](.misc/Poster.pdf)
 
     4. Now, deploy the `FamilyDirectoryApiGatewayStack`
 
-    5. Now is a good time to use `AdminClient` to call **TOOLKIT_CLEANER** as well as prefill your FamilyDirectory with members
-
-        - **TOOLKIT_CLEANER** will free up unused S3 CDK assets reducing cost of your FamilyDirectory
-
-            - It is good practice to use **TOOLKIT_CLEANER** after all CDK deployments
+    5. Now is a good time to use `AdminClient` to prefill your FamilyDirectory with members
 
     6. Finally, we need to enable Production Access to SES
 
@@ -197,12 +193,14 @@ frontend
 
 For backend updates:
 
+**Note**: *You must be in the `CDK` directory to run `cdk` commands*
+
 1. Follow steps 1, 2, & 4 from **Steps to Deploy** (We don't need to bootstrap, so step 3 is not needed)
 
-2. Deploy the `FamilyDirectoryApiGatewayStack` (e.g. `cdk deploy FamilyDirectoryApiGatewayStack`)
+2. Deploy the `FamilyDirectoryApiGatewayStack`
 
-    - **Note**: *You must be in the `CDK` directory to run `cdk` commands*
+    - `cdk deploy FamilyDirectoryApiGatewayStack`
 
-3. Remove Old Cdk Assets using `AdminClient`
+3. Remove Old Cdk Assets
 
-    - Simply use the **TOOLKIT_CLEANER** Command after invoking the `AdminClient`
+    - `cdk gc --unstable=gc --type=s3 --created-buffer-days=0 --confirm=false`
