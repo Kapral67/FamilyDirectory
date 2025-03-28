@@ -1,8 +1,17 @@
 version: 2
 updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    target-branch: "dev"
   - package-ecosystem: "gradle"
     open-pull-requests-limit: 20
     directory: "/"
     schedule:
       interval: "monthly"
     target-branch: "dev"
+    groups:
+      awscdk:
+        patterns:
+          - "software.amazon.awscdk:*"
