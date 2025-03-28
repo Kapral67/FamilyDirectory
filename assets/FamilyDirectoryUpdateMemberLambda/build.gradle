@@ -1,0 +1,7 @@
+group = "${rootProject.group}.assets.lambda.function.api.familydirectoryupdatememberlambda"
+
+dependencies {
+    implementation 'software.amazon.awssdk:amplify'
+    implementation libs.apache.httpcomponents.httpcore
+    implementation libs.aws.cdk.lib
+}

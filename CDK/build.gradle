@@ -1,0 +1,56 @@
+plugins {
+    id 'application'
+    id 'jvm-test-suite'
+}
+
+group = "${rootProject.group}.cdk.familydirectory-cdk"
+
+testing {
+    suites {
+        test {
+            useJUnitJupiter()
+            targets {
+                all {
+                    testTask.configure {
+                        testLogging {
+                            events "passed", "skipped", "failed"
+                            showStandardStreams = true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation 'software.amazon.awssdk:regions'
+    implementation 'software.amazon.awssdk:amplify'
+    implementation libs.aws.cdk.lib
+    implementation libs.constructs
+    // Unstable Dependencies
+    implementation libs.aws.cdk.amplify.alpha
+}
+
+application {
+    mainClass = 'org.familydirectory.cdk.FamilyDirectoryCdkApp'
+}
+
+tasks.register('checkEnvironment', CheckEnvironmentTask) {
+    requiredEnvironmentVariables.set([
+        'ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME',
+        'ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME',
+        'ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER',
+        'ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OAUTH_TOKEN',
+        'AWS_ACCOUNT_ID',
+        'AWS_REGION'
+    ])
+}
+
+tasks.named('test', Test) {
+    dependsOn tasks.named('checkEnvironment')
+}
+
+tasks.named('run') {
+    dependsOn tasks.named('checkEnvironment')
+}

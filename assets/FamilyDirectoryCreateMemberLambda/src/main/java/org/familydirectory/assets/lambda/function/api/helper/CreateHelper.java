@@ -19,6 +19,7 @@ import org.familydirectory.assets.lambda.function.api.models.CreateEvent;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awscdk.services.dynamodb.GlobalSecondaryIndexProps;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -70,12 +71,12 @@ class CreateHelper extends ApiHelper {
     private
     void validateMemberEmailIsUnique (final @NotNull String callerMemberId, final @Nullable String memberEmail) {
         if (nonNull(memberEmail) && !memberEmail.isBlank()) {
+            final GlobalSecondaryIndexProps emailGsiProps = requireNonNull(MemberTableParameter.EMAIL.gsiProps());
             final QueryRequest emailRequest = QueryRequest.builder()
                                                           .tableName(DdbTable.MEMBER.name())
-                                                          .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())
-                                                          .keyConditionExpression("%s = :email".formatted(MemberTableParameter.EMAIL.gsiProps()
-                                                                                                                                    .getPartitionKey()
-                                                                                                                                    .getName()))
+                                                          .indexName(emailGsiProps.getIndexName())
+                                                          .keyConditionExpression("%s = :email".formatted(emailGsiProps.getPartitionKey()
+                                                                                                                       .getName()))
                                                           .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(memberEmail)))
                                                           .limit(1)
                                                           .build();

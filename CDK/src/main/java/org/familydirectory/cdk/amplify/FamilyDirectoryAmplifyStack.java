@@ -37,7 +37,7 @@ import software.constructs.Construct;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.ofNullable;
-import static org.familydirectory.assets.Constants.VERSION_STR;
+import static org.familydirectory.assets.Constants.VERSION;
 import static software.amazon.awscdk.Fn.importValue;
 
 public
@@ -94,7 +94,7 @@ class FamilyDirectoryAmplifyStack extends Stack {
         final AppProps spaProps = AppProps.builder()
                                           .autoBranchDeletion(AMPLIFY_APP_AUTO_BRANCH_DELETE)
                                           .customRules(AMPLIFY_CUSTOM_RULES)
-                                          .environmentVariables(Map.ofEntries(Map.entry(AmplifyUtils.ReactEnvVar.BACKEND_VERSION.toString(), VERSION_STR),
+                                          .environmentVariables(Map.ofEntries(Map.entry(AmplifyUtils.ReactEnvVar.BACKEND_VERSION.toString(), VERSION.toString()),
                                                                               Map.entry(AmplifyUtils.ReactEnvVar.REDIRECT_URI.toString(), REACT_APP_REDIRECT_URI),
                                                                               Map.entry(AmplifyUtils.ReactEnvVar.API_DOMAIN.toString(), REACT_APP_API_DOMAIN),
                                                                               Map.entry(AmplifyUtils.ReactEnvVar.AUTH_DOMAIN.toString(), FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME),

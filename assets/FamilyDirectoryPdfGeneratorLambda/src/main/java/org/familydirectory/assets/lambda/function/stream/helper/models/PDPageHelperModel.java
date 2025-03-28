@@ -94,6 +94,11 @@ class PDPageHelperModel implements Closeable {
                             .getDescent()) / TEXT_SPACE_UNITS * fontSize;
     }
 
+    @SuppressWarnings("removal")
+    protected final
+    void finalize () {
+    }
+
     protected
     float getColumnFittedFontSize (final @NotNull String line, final @NotNull PDFont font, final float defaultFontSize) throws IOException {
         final float fontSize = (this.columnWidth() - STANDARD_LINE_SPACING) / getTextSpaceUnits(font, line);

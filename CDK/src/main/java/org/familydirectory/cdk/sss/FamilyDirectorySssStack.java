@@ -13,7 +13,7 @@ import software.constructs.Construct;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.singletonList;
-import static software.amazon.awscdk.RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE;
+import static software.amazon.awscdk.RemovalPolicy.DESTROY;
 import static software.amazon.awscdk.services.s3.BlockPublicAccess.BLOCK_ALL;
 import static software.amazon.awscdk.services.s3.BucketAccessControl.PRIVATE;
 import static software.amazon.awscdk.services.s3.BucketEncryption.S3_MANAGED;
@@ -48,8 +48,8 @@ class FamilyDirectorySssStack extends Stack {
                                                       .minimumTlsVersion(S3_MINIMUM_TLS_VERSION)
                                                       .objectOwnership(BUCKET_OWNER_ENFORCED)
                                                       .publicReadAccess(FALSE)
-                                                      .removalPolicy(RETAIN_ON_UPDATE_OR_DELETE)
-                                                      .versioned(TRUE)
+                                                      .removalPolicy(DESTROY)
+                                                      .versioned(FALSE)
                                                       .build();
 
         final Bucket pdfBucket = new Bucket(this, S3_PDF_BUCKET_RESOURCE_ID, pdfBucketProps);

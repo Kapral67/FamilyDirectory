@@ -1,5 +1,5 @@
 {
-  "app": "mvn -e -q compile exec:java",
+  "app": "./gradlew -q run",
   "watch": {
     "include": [
       "**"
@@ -45,6 +45,7 @@
     "@aws-cdk/aws-ec2:restrictDefaultSecurityGroup": true,
     "@aws-cdk/aws-apigateway:requestValidatorUniqueId": true,
     "@aws-cdk/aws-kms:aliasNameRef": true,
-    "@aws-cdk/core:includePrefixInUniqueNameGeneration": true
+    "@aws-cdk/core:includePrefixInUniqueNameGeneration": true,
+    "@aws-cdk/aws-route53-targets:userPoolDomainNameMethodWithoutCustomResource": true
   }
 }

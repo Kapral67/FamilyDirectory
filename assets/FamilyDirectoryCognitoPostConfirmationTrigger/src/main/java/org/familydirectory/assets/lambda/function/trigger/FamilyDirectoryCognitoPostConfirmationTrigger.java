@@ -12,6 +12,7 @@ import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import software.amazon.awscdk.services.dynamodb.GlobalSecondaryIndexProps;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDisableUserRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -76,12 +77,12 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
             }
 
             //  Find Member By Email
+            final GlobalSecondaryIndexProps emailGsiProps = requireNonNull(MemberTableParameter.EMAIL.gsiProps());
             final QueryRequest memberEmailQueryRequest = QueryRequest.builder()
                                                                      .tableName(DdbTable.MEMBER.name())
-                                                                     .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())
-                                                                     .keyConditionExpression("%s = :email".formatted(MemberTableParameter.EMAIL.gsiProps()
-                                                                                                                                               .getPartitionKey()
-                                                                                                                                               .getName()))
+                                                                     .indexName(emailGsiProps.getIndexName())
+                                                                     .keyConditionExpression("%s = :email".formatted(emailGsiProps.getPartitionKey()
+                                                                                                                                  .getName()))
                                                                      .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(email)))
                                                                      .limit(2)
                                                                      .build();

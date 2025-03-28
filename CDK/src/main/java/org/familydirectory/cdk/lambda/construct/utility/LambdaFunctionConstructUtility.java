@@ -19,6 +19,7 @@ import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.iam.IRole;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.lambda.Architecture;
+import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.EventInvokeConfigOptions;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionProps;
@@ -29,13 +30,12 @@ import software.constructs.Construct;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
-import static org.familydirectory.assets.Constants.VERSION_STR;
+import static org.familydirectory.assets.Constants.VERSION;
 import static software.amazon.awscdk.Duration.seconds;
 import static software.amazon.awscdk.Fn.importValue;
 import static software.amazon.awscdk.services.iam.Effect.ALLOW;
 import static software.amazon.awscdk.services.iam.PolicyStatement.Builder.create;
 import static software.amazon.awscdk.services.lambda.Architecture.ARM_64;
-import static software.amazon.awscdk.services.lambda.Code.fromAsset;
 import static software.amazon.awscdk.services.lambda.Runtime.JAVA_21;
 
 public final
@@ -56,7 +56,7 @@ class LambdaFunctionConstructUtility {
                      .collect(Collectors.toUnmodifiableMap(f -> f, f -> {
                          final Function function = new Function(scope, f.functionName(), FunctionProps.builder()
                                                                                                       .runtime(RUNTIME)
-                                                                                                      .code(fromAsset(getLambdaJar(f.functionName())))
+                                                                                                      .code(getCodeAsset(f.functionName()))
                                                                                                       .handler(f.handler())
                                                                                                       .timeout(seconds(f.timeoutSeconds()))
                                                                                                       .architecture(ARCHITECTURE)
@@ -99,11 +99,11 @@ class LambdaFunctionConstructUtility {
 
     @NotNull
     private static
-    String getLambdaJar (final String lambdaName) {
-        return Path.of(System.getProperty("user.dir"), "..", "assets", lambdaName, "target", "%s-%s.jar".formatted(lambdaName.toLowerCase(), VERSION_STR))
-                   .toAbsolutePath()
-                   .normalize()
-                   .toString();
+    Code getCodeAsset (final String lambdaName) {
+        final Path assetPath = Path.of(System.getProperty("user.dir"), "..", "assets", lambdaName, "build", "distributions", "%s-%s.zip".formatted(lambdaName, VERSION.toString()));
+        return Code.fromAsset(assetPath.toAbsolutePath()
+                                       .normalize()
+                                       .toString());
     }
 
     public static

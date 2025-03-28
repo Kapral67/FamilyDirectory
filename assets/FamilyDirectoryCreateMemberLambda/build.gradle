@@ -1,0 +1,6 @@
+group = "${rootProject.group}.assets.lambda.function.api.familydirectorycreatememberlambda"
+
+dependencies {
+    implementation libs.apache.httpcomponents.httpcore
+    implementation libs.aws.cdk.lib
+}

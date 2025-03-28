@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.isNull;
-import static org.familydirectory.assets.Constants.VERSION_STR;
+import static org.familydirectory.assets.Constants.VERSION;
 
 /**
  * {@link com.googlecode.lanterna.gui2.GUIBackdrop}
@@ -81,7 +81,7 @@ class FamilyDirectoryBackground extends EmptySpace {
                 final TerminalSize terminalSize = graphics.getSize();
                 final String awsId = "AWS ACCOUNT ID: " + AdminClientTui.AWS_ACCOUNT_ID;
                 final String awsRegion = "AWS REGION: " + AdminClientTui.AWS_REGION;
-                final String version = 'v' + VERSION_STR;
+                final String version = 'v' + VERSION.toString();
                 final boolean widthCheck = (awsId.length() + awsRegion.length() + 3) < terminalSize.getColumns();
                 graphics.putString(1, 0, awsId);
                 final int awsRegionColumn = widthCheck

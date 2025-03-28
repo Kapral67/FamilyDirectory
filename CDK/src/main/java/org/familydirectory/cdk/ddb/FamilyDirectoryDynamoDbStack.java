@@ -6,6 +6,7 @@ import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.dynamodb.PointInTimeRecoverySpecification;
 import software.amazon.awscdk.services.dynamodb.StreamViewType;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.dynamodb.TableProps;
@@ -28,7 +29,9 @@ class FamilyDirectoryDynamoDbStack extends Stack {
                                                                    .partitionKey(DdbTableParameter.PK)
                                                                    .billingMode(PAY_PER_REQUEST)
                                                                    .encryption(AWS_MANAGED)
-                                                                   .pointInTimeRecovery(TRUE)
+                                                                   .pointInTimeRecoverySpecification(PointInTimeRecoverySpecification.builder()
+                                                                                                                                     .pointInTimeRecoveryEnabled(TRUE)
+                                                                                                                                     .build())
                                                                    .deletionProtection(TRUE);
             if (ddbtable.hasStream()) {
                 tablePropsBuilder.stream(StreamViewType.KEYS_ONLY);

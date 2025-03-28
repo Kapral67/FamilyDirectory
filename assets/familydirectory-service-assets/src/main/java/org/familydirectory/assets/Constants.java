@@ -1,12 +1,9 @@
 package org.familydirectory.assets;
 
-public final
-class Constants {
-    public static final double VERSION = 0.9;
-    public static final String VERSION_STR = String.valueOf(VERSION);
+public final class Constants {
+    public static final Double VERSION = Double.valueOf(BuildProperties.VERSION);
 
-    private
-    Constants () {
+    private Constants() {
         super();
     }
 }

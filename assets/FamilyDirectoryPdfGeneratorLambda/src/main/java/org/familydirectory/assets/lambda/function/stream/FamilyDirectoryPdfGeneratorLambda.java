@@ -1,18 +1,22 @@
 package org.familydirectory.assets.lambda.function.stream;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import org.familydirectory.assets.lambda.function.stream.IO.IgnoredCloseOutputStream;
+import org.familydirectory.assets.lambda.function.stream.IO.S3ByteArrayOutputStream;
 import org.familydirectory.assets.lambda.function.stream.helper.PdfHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
 import static java.lang.System.getenv;
 import static java.util.Objects.requireNonNull;
@@ -23,50 +27,69 @@ class FamilyDirectoryPdfGeneratorLambda implements RequestHandler<DynamodbEvent,
     @Override
     public
     Void handleRequest (final DynamodbEvent dynamodbEvent, final @NotNull Context context) {
+        final LambdaLogger logger = context.getLogger();
         try {
+            logger.log(Objects.toString(dynamodbEvent), DEBUG);
             final String pdfKey;
             final RequestBody pdfRequestBody;
-            try (final PdfHelper pdfHelper = new PdfHelper(context.getLogger())) {
+            try (final PdfHelper pdfHelper = new PdfHelper(logger)) {
                 final String rootMemberSurname = pdfHelper.getRootMemberSurname();
                 pdfKey = pdfHelper.getPdfS3Key(rootMemberSurname);
                 pdfRequestBody = zipPdfBundle(pdfHelper, rootMemberSurname);
-            } catch (final IOException e) {
-                throw new RuntimeException(e);
+                logger.log("Zipped PDFs Checkpoint", DEBUG);
             }
 
+            pdfRequestBody.optionalContentLength()
+                          .ifPresent(len -> logger.log("PdfRequestBody Content Length: %d".formatted(len), DEBUG));
             final PutObjectRequest pdfPutRequest = PutObjectRequest.builder()
                                                                    .bucket(getenv(LambdaUtils.EnvVar.S3_PDF_BUCKET_NAME.name()))
                                                                    .key(pdfKey)
                                                                    .contentType("application/zip")
                                                                    .build();
             try (final S3Client s3Client = S3Client.create()) {
+                logger.log("Begin S3 Upload", DEBUG);
                 s3Client.putObject(pdfPutRequest, pdfRequestBody);
+                logger.log("Finished S3 Upload", DEBUG);
             }
 
             return null;
 
         } catch (final Throwable e) {
-            LambdaUtils.logTrace(context.getLogger(), e, FATAL);
-            throw e;
+            LambdaUtils.logTrace(logger, e, FATAL);
+            throw new RuntimeException(e);
         }
     }
 
     private static @NotNull
     RequestBody zipPdfBundle (final @NotNull PdfHelper pdfHelper, final @NotNull String rootMemberSurname) throws IOException {
-        final PdfHelper.PdfBundle pdfBundle = requireNonNull(pdfHelper).getPdfBundle();
-        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream(); final ZipOutputStream zos = new ZipOutputStream(bos)) {
-            final ZipEntry familyDirectoryZip = new ZipEntry("%sFamilyDirectory.pdf".formatted(requireNonNull(rootMemberSurname)));
+        pdfHelper.getLogger()
+                 .log("Entered zipPdfBundle", DEBUG);
+
+        final var bos = new S3ByteArrayOutputStream();
+        try (final var zos = new ZipOutputStream(bos)) {
+            final var ios = new IgnoredCloseOutputStream(zos);
+
+            pdfHelper.getLogger()
+                     .log("Created zip output streams", DEBUG);
+
+            final String directoryPdfFileName = "%sFamilyDirectory.pdf".formatted(requireNonNull(rootMemberSurname));
+            final ZipEntry familyDirectoryZip = new ZipEntry(directoryPdfFileName);
             zos.putNextEntry(familyDirectoryZip);
-            zos.write(pdfBundle.familyDirectoryPdf());
+            pdfHelper.saveDirectoryPdf(ios);
             zos.closeEntry();
+            pdfHelper.getLogger()
+                     .log("Closed Entry %s".formatted(directoryPdfFileName), DEBUG);
 
-            final ZipEntry birthdayZip = new ZipEntry("%sFamilyBirthdays.pdf".formatted(rootMemberSurname));
+            final String birthdayPdfFileName = "%sFamilyBirthdays.pdf".formatted(rootMemberSurname);
+            final ZipEntry birthdayZip = new ZipEntry(birthdayPdfFileName);
             zos.putNextEntry(birthdayZip);
-            zos.write(pdfBundle.birthdayPdf());
+            pdfHelper.saveBirthdayPdf(ios);
             zos.closeEntry();
-
-            zos.close();
-            return RequestBody.fromBytes(bos.toByteArray());
+            pdfHelper.getLogger()
+                     .log("Closed Entry %s".formatted(birthdayPdfFileName), DEBUG);
         }
+        // S3ByteArrayOutputStream::requestBody implicitly calls OutputStream::close
+        // We want to let ZipOutputStream close out before closing the underlying OutputStream
+        return bos.requestBody();
     }
 }

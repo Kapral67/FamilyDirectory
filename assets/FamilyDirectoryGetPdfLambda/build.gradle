@@ -1,0 +1,7 @@
+group = "${rootProject.group}.assets.lambda.function.api.familydirectorygetpdflambda"
+
+dependencies {
+    implementation 'software.amazon.awssdk:s3'
+    implementation libs.apache.httpcomponents.httpcore
+    implementation libs.jetbrains.annotations
+}

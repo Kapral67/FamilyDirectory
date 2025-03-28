@@ -17,6 +17,7 @@ import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.lambda.function.api.models.DeleteEvent;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awscdk.services.dynamodb.GlobalSecondaryIndexProps;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
@@ -204,13 +205,13 @@ class DeleteHelper extends ApiHelper {
 
     public
     void deleteCognitoAccountAndNotify (final @NotNull String ddbMemberId) {
+        final GlobalSecondaryIndexProps cognitoGsiProps = requireNonNull(CognitoTableParameter.MEMBER.gsiProps());
         final QueryRequest cognitoMemberQueryRequest = QueryRequest.builder()
                                                                    .tableName(DdbTable.COGNITO.name())
-                                                                   .indexName(requireNonNull(CognitoTableParameter.MEMBER.gsiProps()).getIndexName())
+                                                                   .indexName(cognitoGsiProps.getIndexName())
                                                                    .keyConditionExpression("#memberId = :memberId")
-                                                                   .expressionAttributeNames(singletonMap("#memberId", CognitoTableParameter.MEMBER.gsiProps()
-                                                                                                                                                   .getPartitionKey()
-                                                                                                                                                   .getName()))
+                                                                   .expressionAttributeNames(singletonMap("#memberId", cognitoGsiProps.getPartitionKey()
+                                                                                                                                      .getName()))
                                                                    .expressionAttributeValues(singletonMap(":memberId", AttributeValue.fromS(ddbMemberId)))
                                                                    .limit(1)
                                                                    .build();

@@ -10,6 +10,7 @@ import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awscdk.services.dynamodb.GlobalSecondaryIndexProps;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -40,12 +41,12 @@ class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUs
             logger.log("PROCESS: PreSignUp Event for <EMAIL,`%s`>".formatted(email), INFO);
 
             //  Find Member By Email
+            final GlobalSecondaryIndexProps emailGsiProps = requireNonNull(MemberTableParameter.EMAIL.gsiProps());
             final QueryRequest memberEmailQueryRequest = QueryRequest.builder()
                                                                      .tableName(DdbTable.MEMBER.name())
-                                                                     .indexName(requireNonNull(MemberTableParameter.EMAIL.gsiProps()).getIndexName())
-                                                                     .keyConditionExpression("%s = :email".formatted(MemberTableParameter.EMAIL.gsiProps()
-                                                                                                                                               .getPartitionKey()
-                                                                                                                                               .getName()))
+                                                                     .indexName(emailGsiProps.getIndexName())
+                                                                     .keyConditionExpression("%s = :email".formatted(emailGsiProps.getPartitionKey()
+                                                                                                                                  .getName()))
                                                                      .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(email)))
                                                                      .limit(2)
                                                                      .build();
@@ -70,13 +71,13 @@ class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUs
             logger.log("PROCESS: Found <MEMBER,`%s`> for <EMAIL,`%s`>".formatted(memberId, email), INFO);
 
             //  Check If Member Signed Up Previously
+            final GlobalSecondaryIndexProps cognitoGsiProps = requireNonNull(CognitoTableParameter.MEMBER.gsiProps());
             final QueryRequest cognitoMemberQueryRequest = QueryRequest.builder()
                                                                        .tableName(DdbTable.COGNITO.name())
-                                                                       .indexName(requireNonNull(CognitoTableParameter.MEMBER.gsiProps()).getIndexName())
+                                                                       .indexName(cognitoGsiProps.getIndexName())
                                                                        .keyConditionExpression("#member = :member")
-                                                                       .expressionAttributeNames(singletonMap("#member", CognitoTableParameter.MEMBER.gsiProps()
-                                                                                                                                                     .getPartitionKey()
-                                                                                                                                                     .getName()))
+                                                                       .expressionAttributeNames(singletonMap("#member", cognitoGsiProps.getPartitionKey()
+                                                                                                                                        .getName()))
                                                                        .expressionAttributeValues(singletonMap(":member", AttributeValue.fromS(memberId)))
                                                                        .limit(1)
                                                                        .build();

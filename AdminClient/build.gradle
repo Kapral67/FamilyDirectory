@@ -1,31 +1,17 @@
 plugins {
-    id 'java'
     id 'application'
 }
 
-group = 'org.familydirectory.sdk.adminclient'
-version = '0.9'
-
-compileJava {
-    sourceCompatibility = '21'
-    targetCompatibility = '21'
-}
-
-repositories {
-    mavenCentral()
-    maven {
-        url "${project.projectDir}/../assets/familydirectory-service-assets/.mvn"
-    }
-}
+group = "${rootProject.group}.sdk.adminclient"
 
 dependencies {
-    implementation 'org.familydirectory.assets:familydirectory-service-assets:0.9'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
-    implementation 'org.jetbrains:annotations:24.1.0'
-    implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
-    implementation 'org.slf4j:slf4j-nop:2.0.13'
-    implementation 'software.amazon.awscdk:aws-cdk-lib:2.149.0'
-    implementation platform('software.amazon.awssdk:bom:2.26.21')
+    implementation libs.jackson.databind
+    implementation libs.jetbrains.annotations
+    implementation libs.leego.banana
+    implementation libs.googlecode.lanterna
+    implementation libs.aws.cdk.lib
+    implementation libs.aws.lambda.java.core
+    implementation libs.slf4j.nop
     implementation 'software.amazon.awssdk:dynamodb-enhanced'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:sesv2'
@@ -33,14 +19,21 @@ dependencies {
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:cloudformation'
     implementation 'software.amazon.awssdk:amplify'
-    implementation 'io.leego:banana:2.1.0'
-    implementation 'com.googlecode.lanterna:lanterna:3.1.2'
 }
 
 application {
     mainClass = 'org.familydirectory.sdk.adminclient.AdminClientTui'
 }
 
-run {
+tasks.register('checkEnvironment', CheckEnvironmentTask) {
+    requiredEnvironmentVariables.set([
+        'ORG_FAMILYDIRECTORY_HOSTED_ZONE_NAME',
+        'AWS_ACCOUNT_ID',
+        'AWS_REGION'
+    ])
+}
+
+tasks.named('run') {
     standardInput = System.in
+    dependsOn tasks.named('checkEnvironment')
 }

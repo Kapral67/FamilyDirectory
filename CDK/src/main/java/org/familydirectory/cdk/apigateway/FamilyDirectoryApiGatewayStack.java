@@ -30,7 +30,9 @@ import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.lambda.CfnPermission;
 import software.amazon.awscdk.services.lambda.CfnPermissionProps;
 import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
+import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
 import software.amazon.awscdk.services.route53.IPublicHostedZone;
@@ -132,7 +134,10 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                                                      httpUserPoolAuthorizerProps);
 
         for (final ApiFunction func : ApiFunction.values()) {
-            final IFunction function = Function.fromFunctionArn(this, func.functionName(), importValue(func.arnExportName()));
+            final IFunction function = Function.fromFunctionAttributes(this, func.functionName(), FunctionAttributes.builder()
+                                                                                                                          .functionArn(importValue(func.arnExportName()))
+                                                                                                                          .sameEnvironment(true)
+                                                                                                                          .build());
             final HttpLambdaIntegration httpLambdaIntegration = new HttpLambdaIntegration(func.httpIntegrationId(), function);
 //      Add Lambda as HttpIntegration to HttpApi
             httpApi.addRoutes(AddRoutesOptions.builder()
@@ -142,14 +147,6 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                               .methods(func.methods())
                                               .integration(httpLambdaIntegration)
                                               .build());
-//      Allow ApiGateway to invoke its respective Lambda Function
-            new CfnPermission(this, "Allow%sInvoke%s".formatted(HTTP_API_RESOURCE_ID, func.name()), CfnPermissionProps.builder()
-                                                                                                                      .action(LAMBDA_INVOKE_PERMISSION_ACTION)
-                                                                                                                      .functionName(function.getFunctionArn())
-                                                                                                                      .principal(API_GATEWAY_PERMISSION_PRINCIPAL)
-                                                                                                                      .sourceArn(httpApi.arnForExecuteApi(FamilyDirectoryCdkApp.GLOBAL_RESOURCE,
-                                                                                                                                                          func.endpoint()))
-                                                                                                                      .build());
         }
 
         httpApi.addStage(HTTP_API_PUBLIC_STAGE_ID, HttpStageOptions.builder()

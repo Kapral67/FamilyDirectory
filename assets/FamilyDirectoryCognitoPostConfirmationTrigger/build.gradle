@@ -1,0 +1,6 @@
+group = "${rootProject.group}.assets.lambda.function.trigger.familydirectorycognitopostconfirmationtrigger"
+
+dependencies {
+    implementation 'software.amazon.awssdk:cognitoidentityprovider'
+    implementation libs.aws.cdk.lib
+}

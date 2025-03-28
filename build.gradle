@@ -1,0 +1,68 @@
+import com.github.spotbugs.snom.Effort
+
+plugins {
+    alias libs.plugins.github.spotbugs apply false
+}
+
+allprojects {
+    group = 'org.familydirectory'
+    version = '0.91'
+    apply plugin: 'groovy'
+    repositories {
+        mavenCentral()
+    }
+    tasks.withType(JavaCompile).configureEach {
+        javaCompiler = javaToolchains.compilerFor {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+}
+
+subprojects {
+    if (project.name != 'service-assets') {
+        apply plugin: 'java'
+
+        dependencies {
+            implementation project(':service-assets')
+        }
+    }
+
+    if (project.name.endsWith('-lambda')) {
+        apply plugin: 'com.github.spotbugs'
+
+        spotbugs {
+            effort = Effort.MAX
+            ignoreFailures = false
+            showStackTraces = true
+            showProgress = true
+            extraArgs = ['-longBugCodes']
+        }
+
+        dependencies {
+            spotbugs libs.github.spotbugs
+            spotbugsPlugins libs.aws.lambda.snapstart.java.rules
+            compileOnly libs.github.spotbugs.annotations
+            implementation libs.aws.lambda.java.core
+            implementation libs.aws.lambda.java.events
+            implementation libs.slf4j.nop
+            implementation 'software.amazon.awssdk:dynamodb-enhanced'
+        }
+
+        tasks.register('buildZip', Zip) {
+            from compileJava
+            from processResources
+            into('lib') {
+                from configurations.runtimeClasspath
+            }
+            archiveFileName = "${projectDir.name}-${project.version}.zip"
+        }
+
+        tasks.named('build') {
+            dependsOn 'buildZip'
+        }
+
+        project(':cdk').tasks.named('build').configure {
+            mustRunAfter tasks.named('buildZip')
+        }
+    }
+}

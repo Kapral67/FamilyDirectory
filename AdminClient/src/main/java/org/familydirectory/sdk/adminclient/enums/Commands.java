@@ -2,7 +2,6 @@ package org.familydirectory.sdk.adminclient.enums;
 
 import org.familydirectory.sdk.adminclient.enums.cognito.CognitoManagementOptions;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
-import org.familydirectory.sdk.adminclient.enums.flags.Flags;
 import org.jetbrains.annotations.Nullable;
 
 public
@@ -12,9 +11,7 @@ enum Commands {
     DELETE(null),
     TOGGLE_PDF_GENERATOR(null),
     COGNITO_MANAGEMENT(CognitoManagementOptions.values()),
-    TOOLKIT_CLEANER(null),
     AMPLIFY_DEPLOYMENT(null),
-    FLAGS(Flags.values()),
     EXIT(null);
 
     @Nullable

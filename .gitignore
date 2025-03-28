@@ -8,6 +8,8 @@ target
 .cdk.staging
 cdk*.out
 
+cdk.context.json
+
 # Gradle files
 .gradle/
 build/

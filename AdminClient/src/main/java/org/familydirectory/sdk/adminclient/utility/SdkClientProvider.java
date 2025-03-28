@@ -3,6 +3,8 @@ package org.familydirectory.sdk.adminclient.utility;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.annotations.ThreadSafe;
 import software.amazon.awssdk.core.SdkClient;
@@ -17,6 +19,7 @@ class SdkClientProvider implements SdkAutoCloseable {
     private static final AtomicReference<SdkClientProvider> INSTANCE = new AtomicReference<>(null);
     @NotNull
     private final ConcurrentHashMap<Class<? extends SdkClient>, SdkClient> clientMap;
+    private final ReadWriteLock clientReadWriteLock = new ReentrantReadWriteLock();
 
     private
     SdkClientProvider () {
@@ -24,39 +27,44 @@ class SdkClientProvider implements SdkAutoCloseable {
         this.clientMap = new ConcurrentHashMap<>();
     }
 
-    public static synchronized
+    public static
     SdkClientProvider getSdkClientProvider () {
-        if (isNull(INSTANCE.get())) {
-            INSTANCE.set(new SdkClientProvider());
-        }
-        return INSTANCE.get();
+        return INSTANCE.updateAndGet(provider -> {
+            if (isNull(provider)) {
+                return new SdkClientProvider();
+            }
+            return provider;
+        });
     }
 
     @NotNull
     public
     <T extends SdkClient> T getSdkClient (final @NotNull Class<T> clazz) {
-        T client;
+        this.clientReadWriteLock.readLock().lock();
         try {
-            client = clazz.cast(this.clientMap.get(clazz));
-            if (isNull(client)) {
-                client = clazz.cast(clazz.getMethod("create")
-                                         .invoke(null));
-                this.clientMap.put(clazz, client);
-            }
-        } catch (final NoSuchMethodException e) {
-            throw new RuntimeException("%s Has No Method: create".formatted(clazz.getName()), e);
-        } catch (final InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException("SdkClientProvider Failed", e);
+            return requireNonNull(clazz.cast(this.clientMap.computeIfAbsent(clazz, key -> {
+                try {
+                    return key.cast(key.getMethod("create").invoke(null));
+                } catch (final NoSuchMethodException e) {
+                    throw new RuntimeException("%s Has No Method: create".formatted(clazz.getName()), e);
+                } catch (final InvocationTargetException | IllegalAccessException e) {
+                    throw new RuntimeException("SdkClientProvider Failed", e);
+                }
+            })));
+        } finally {
+            this.clientReadWriteLock.readLock().unlock();
         }
-        return requireNonNull(client);
     }
 
     @Override
     public
     void close () {
-        for (final SdkClient client : this.clientMap.values()) {
-            client.close();
+        this.clientReadWriteLock.writeLock().lock();
+        try {
+            this.clientMap.forEachValue(1, client -> client.close());
+            this.clientMap.clear();
+        } finally {
+            this.clientReadWriteLock.writeLock().unlock();
         }
-        this.clientMap.clear();
     }
 }
