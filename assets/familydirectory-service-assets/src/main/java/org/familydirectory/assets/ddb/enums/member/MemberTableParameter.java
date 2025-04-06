@@ -28,7 +28,9 @@ enum MemberTableParameter implements DdbTableParameter {
                                                          .build()),
     PHONES(DdbType.MAP, "phones", null),
     ADDRESS(DdbType.LIST, "address", null),
-    FAMILY_ID(DdbType.STR, "familyId", null);
+    FAMILY_ID(DdbType.STR, "familyId", null),
+    VCARD(DdbType.STR, "vcard", null),
+    ETAG(DdbType.STR, "etag", null);
 
     @NotNull
     private final DdbType ddbType;

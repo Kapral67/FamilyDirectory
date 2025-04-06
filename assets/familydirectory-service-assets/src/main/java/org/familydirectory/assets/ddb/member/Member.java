@@ -107,6 +107,8 @@ class Member extends MemberModel {
                 case ADDRESS -> ofNullable(member.getAddressDdb()).ifPresent(l -> map.put(field.jsonFieldName(), AttributeValue.fromL(l)));
                 case FAMILY_ID -> map.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.familyId()
                                                                                                   .toString()));
+                case VCARD -> map.put(field.jsonFieldName(), AttributeValue.fromS(new Vcard(memberRecord).toString()));
+                case ETAG -> map.put(field.jsonFieldName(), AttributeValue.fromS(member.getEtag()));
                 default -> throw new IllegalStateException("Unhandled Member Parameter: `%s`".formatted(field.jsonFieldName()));
             }
         }

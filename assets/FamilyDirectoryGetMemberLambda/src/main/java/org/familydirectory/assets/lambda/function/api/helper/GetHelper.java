@@ -98,6 +98,7 @@ class GetHelper extends ApiHelper {
         final Member member = Member.convertDdbMap(memberMap);
         for (final MemberTableParameter param : MemberTableParameter.values()) {
             switch (param) {
+                case VCARD, ETAG -> {}
                 case ID, FAMILY_ID -> responseObject.put(param.jsonFieldName(), memberMap.get(param.jsonFieldName())
                                                                                          .s());
                 case FIRST_NAME -> responseObject.put(param.jsonFieldName(), member.getFirstName());

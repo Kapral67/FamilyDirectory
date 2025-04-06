@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 
 public
 enum Commands {
+    BACKFILL(null),
     CREATE(CreateOptions.values()),
     UPDATE(null),
     DELETE(null),

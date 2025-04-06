@@ -23,6 +23,7 @@ import org.familydirectory.sdk.adminclient.enums.Commands;
 import org.familydirectory.sdk.adminclient.enums.cognito.CognitoManagementOptions;
 import org.familydirectory.sdk.adminclient.enums.create.CreateOptions;
 import org.familydirectory.sdk.adminclient.events.amplify.AmplifyDeploymentEvent;
+import org.familydirectory.sdk.adminclient.events.backfill.BackfillEvent;
 import org.familydirectory.sdk.adminclient.events.cognito.CognitoManagementEvent;
 import org.familydirectory.sdk.adminclient.events.create.CreateEvent;
 import org.familydirectory.sdk.adminclient.events.delete.DeleteEvent;
@@ -118,6 +119,7 @@ class AdminClientTui {
                         }
 
                         try (final EventHelper runner = switch (cmd) {
+                            case BACKFILL -> new BackfillEvent(gui, memberPicker);
                             case CREATE -> new CreateEvent(gui, (CreateOptions) requireNonNull(option), memberPicker, spousePicker);
                             case UPDATE -> new UpdateEvent(gui, memberPicker, cognitoPicker, spousePicker);
                             case DELETE -> new DeleteEvent(gui, memberPicker, cognitoPicker, spousePicker);

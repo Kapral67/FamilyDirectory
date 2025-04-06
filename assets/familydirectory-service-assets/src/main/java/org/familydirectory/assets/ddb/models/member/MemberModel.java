@@ -1,10 +1,12 @@
 package org.familydirectory.assets.ddb.models.member;
 
+import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
@@ -117,7 +119,7 @@ class MemberModel {
 
         for (final MemberTableParameter field : MemberTableParameter.values()) {
             switch (field) {
-                case ID, FAMILY_ID -> {
+                case ID, FAMILY_ID, VCARD, ETAG -> {
                     continue;
                 }
                 default -> stringBuilder.append("%s: ".formatted(field.jsonFieldName()));
@@ -193,6 +195,10 @@ class MemberModel {
 
         return stringBuilder.append('}')
                             .toString();
+    }
+
+    public String getEtag() {
+        return DigestUtils.sha256Hex(this.toString());
     }
 
     public abstract @Nullable @UnmodifiableView

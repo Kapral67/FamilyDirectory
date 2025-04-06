@@ -8,6 +8,7 @@ dependencies {
     api platform(libs.aws.sdk.bom)
     implementation libs.jackson.databind
     implementation libs.googlecode.libphonenumber
+    implementation libs.commons.codec
     implementation libs.commons.validator
     implementation libs.apache.commons.text
     implementation libs.apache.httpcomponents.httpcore
