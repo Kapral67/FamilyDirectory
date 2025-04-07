@@ -35,9 +35,5 @@ class FamilyDirectoryDomainStackTest {
                                        .isBlank());
 
         template.hasResourceProperties("AWS::Route53::HostedZone", objectLike(singletonMap("Name", FULL_HOSTED_ZONE_NAME)));
-
-        template.hasResourceProperties("AWS::Route53::RecordSet", objectLike(
-                Map.of(FamilyDirectoryDomainStack.HOSTED_ZONE_ID_PARAMETER_NAME, singletonMap("Ref", hostedZoneIdCapture.asString()), "Name", FULL_HOSTED_ZONE_NAME, "ResourceRecords",
-                       singletonList("0 issue \"amazon.com\""), "TTL", "1800", "Type", "CAA")));
     }
 }

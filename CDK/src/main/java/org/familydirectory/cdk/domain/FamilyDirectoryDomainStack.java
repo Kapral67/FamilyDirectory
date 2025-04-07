@@ -8,7 +8,6 @@ import software.amazon.awscdk.services.ssm.ParameterTier;
 import software.amazon.awscdk.services.ssm.StringParameter;
 import software.amazon.awscdk.services.ssm.StringParameterProps;
 import software.constructs.Construct;
-import static java.lang.Boolean.TRUE;
 import static java.lang.System.getenv;
 
 public
@@ -24,7 +23,7 @@ class FamilyDirectoryDomainStack extends Stack {
 //  The HostedZone is the domain/subdomain for which the dns is controlled by Route53
         final PublicHostedZoneProps hostedZoneProps = PublicHostedZoneProps.builder()
                                                                            .zoneName(HOSTED_ZONE_NAME)
-                                                                           .caaAmazon(TRUE)
+                                                                           .caaAmazon(false)
                                                                            .build();
         final PublicHostedZone hostedZone = new PublicHostedZone(this, HOSTED_ZONE_RESOURCE_ID, hostedZoneProps);
         new StringParameter(this, HOSTED_ZONE_ID_PARAMETER_NAME, StringParameterProps.builder()
