@@ -30,6 +30,7 @@ import software.amazon.awscdk.services.amplify.alpha.CustomRule;
 import software.amazon.awscdk.services.amplify.alpha.Domain;
 import software.amazon.awscdk.services.amplify.alpha.GitHubSourceCodeProvider;
 import software.amazon.awscdk.services.amplify.alpha.Platform;
+import software.amazon.awscdk.services.amplify.alpha.RedirectStatus;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awssdk.services.amplify.model.JobType;
@@ -50,13 +51,16 @@ class FamilyDirectoryAmplifyStack extends Stack {
     public static final boolean AMPLIFY_APP_AUTO_BRANCH_DELETE = false;
     public static final String REACT_APP_REDIRECT_URI = "%s%s".formatted(FamilyDirectoryCdkApp.HTTPS_PREFIX, FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
     public static final String REACT_APP_API_DOMAIN = "%s%s".formatted(FamilyDirectoryCdkApp.HTTPS_PREFIX, FamilyDirectoryApiGatewayStack.API_DOMAIN_NAME);
+    public static final String CARDDAV = "carddav";
+    public static final String CARDDAV_WELL_KNOWN = "/.well-known/%s".formatted(CARDDAV);
+    public static final String CARDDAV_DOMAIN_NAME = "%s.%s".formatted(CARDDAV, FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
+    public static final String CARDDAV_REDIRECT_URI = FamilyDirectoryCdkApp.HTTPS_PREFIX + CARDDAV_DOMAIN_NAME;
     public static final String AMPLIFY_ROOT_BRANCH_NAME = ofNullable(getenv("ORG_FAMILYDIRECTORY_AMPLIFY_BRANCH_NAME")).orElse("main");
     public static final boolean AMPLIFY_ROOT_BRANCH_PULL_REQUEST_PREVIEW = false;
     public static final String AMPLIFY_REPOSITORY_OWNER = getenv("ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OWNER");
     public static final String AMPLIFY_REPOSITORY_NAME = getenv("ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_NAME");
     public static final String AMPLIFY_REPOSITORY_OAUTH_TOKEN = getenv("ORG_FAMILYDIRECTORY_AMPLIFY_REPOSITORY_OAUTH_TOKEN");
     public static final Platform AMPLIFY_PLATFORM = Platform.WEB;
-    public static final List<CustomRule> AMPLIFY_CUSTOM_RULES = singletonList(CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT);
     public static final String AMPLIFY_SURNAME_FIELD = "Item.%s.S".formatted(MemberTableParameter.LAST_NAME.jsonFieldName());
     public static final String AMPLIFY_APP_DEPLOYMENT_RESOURCE_ID = "AppDeployment";
     public static final List<String> AMPLIFY_APP_DEPLOYMENT_RESOURCE_POLICY_STATEMENT_ACTIONS = singletonList("amplify:StartJob");
@@ -91,9 +95,17 @@ class FamilyDirectoryAmplifyStack extends Stack {
 
         final String rootMemberSurname = rootMemberSurnameResource.getResponseField(AMPLIFY_SURNAME_FIELD);
 
+        final List<CustomRule> customRules = List.of(
+            CustomRule.Builder.create()
+                              .status(RedirectStatus.PERMANENT_REDIRECT)
+                              .source(CARDDAV_WELL_KNOWN)
+                              .target(CARDDAV_REDIRECT_URI)
+                              .build(),
+            CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT
+        );
         final AppProps spaProps = AppProps.builder()
                                           .autoBranchDeletion(AMPLIFY_APP_AUTO_BRANCH_DELETE)
-                                          .customRules(AMPLIFY_CUSTOM_RULES)
+                                          .customRules(customRules)
                                           .environmentVariables(Map.ofEntries(Map.entry(AmplifyUtils.ReactEnvVar.BACKEND_VERSION.toString(), VERSION.toString()),
                                                                               Map.entry(AmplifyUtils.ReactEnvVar.REDIRECT_URI.toString(), REACT_APP_REDIRECT_URI),
                                                                               Map.entry(AmplifyUtils.ReactEnvVar.API_DOMAIN.toString(), REACT_APP_API_DOMAIN),
