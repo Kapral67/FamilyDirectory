@@ -80,11 +80,15 @@ class FamilyDirectoryAmplifyStackTest {
                                                                                .next()
                                                                                .getKey();
 
-        final Capture customRulesCapture = new Capture();
+        assertEquals(1, FamilyDirectoryAmplifyStack.AMPLIFY_CUSTOM_RULES.size());
+        final CustomRule amplifyCustomRule = FamilyDirectoryAmplifyStack.AMPLIFY_CUSTOM_RULES.getFirst();
         final Capture spaEnvironmentVariablesCapture = new Capture();
         final Map<String, Map<String, Object>> spaMap = template.findResources("AWS::Amplify::App", objectLike(singletonMap("Properties",
                                                                                                                             Map.of("BasicAuthConfig", singletonMap("EnableBasicAuth", false),
-                                                                                                                                   "CustomRules", customRulesCapture, "EnableBranchAutoDeletion",
+                                                                                                                                   "CustomRules", singletonList(
+                                                                                                                                            Map.of("Source", amplifyCustomRule.getSource(), "Status",
+                                                                                                                                                   "200", "Target", amplifyCustomRule.getTarget())),
+                                                                                                                                   "EnableBranchAutoDeletion",
                                                                                                                                    FamilyDirectoryAmplifyStack.AMPLIFY_APP_AUTO_BRANCH_DELETE,
                                                                                                                                    "EnvironmentVariables", spaEnvironmentVariablesCapture, "Name",
                                                                                                                                    FamilyDirectoryAmplifyStack.AMPLIFY_APP_RESOURCE_ID, "OauthToken",
@@ -94,12 +98,6 @@ class FamilyDirectoryAmplifyStackTest {
                                                                                                                                             FamilyDirectoryAmplifyStack.AMPLIFY_REPOSITORY_OWNER,
                                                                                                                                             FamilyDirectoryAmplifyStack.AMPLIFY_REPOSITORY_NAME)))));
         assertEquals(1, spaMap.size());
-        final List<Object> expectedCustomRulesList = List.of(
-            Map.of("Source", FamilyDirectoryAmplifyStack.CARDDAV_WELL_KNOWN, "Status", "301", "Target", FamilyDirectoryAmplifyStack.CARDDAV_REDIRECT_URI),
-            Map.of("Source", CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT.getSource(), "Status", "200", "Target", CustomRule.SINGLE_PAGE_APPLICATION_REDIRECT.getTarget()));
-        final List<Object> customRulesList = customRulesCapture.asArray();
-        assertEquals(expectedCustomRulesList.size(), customRulesList.size());
-        assertTrue(customRulesList.containsAll(expectedCustomRulesList));
         final List<Object> expectedEnvironmentVariableList = List.of(Map.of("Name", AmplifyUtils.ReactEnvVar.BACKEND_VERSION.toString(), "Value", VERSION.toString()),
                                                                      Map.of("Name", AmplifyUtils.ReactEnvVar.CLIENT_ID.toString(), "Value",
                                                                             singletonMap("Fn::ImportValue", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME)),
