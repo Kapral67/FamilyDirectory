@@ -1,0 +1,6 @@
+group = "${rootProject.group}.assets.lambda.function.api.familydirectorycarddavlambda"
+
+dependencies {
+    implementation libs.jetbrains.annotations
+    implementation libs.milton.api
+}

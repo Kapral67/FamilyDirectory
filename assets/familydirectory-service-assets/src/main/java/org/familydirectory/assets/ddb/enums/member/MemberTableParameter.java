@@ -29,7 +29,7 @@ enum MemberTableParameter implements DdbTableParameter {
     PHONES(DdbType.MAP, "phones", null),
     ADDRESS(DdbType.LIST, "address", null),
     FAMILY_ID(DdbType.STR, "familyId", null),
-    VCARD(DdbType.STR, "vcard", null),
+    VCARD(DdbType.BIN, "vcard", null),
     ETAG(DdbType.STR, "etag", null);
 
     @NotNull

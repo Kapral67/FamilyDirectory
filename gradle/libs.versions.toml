@@ -25,6 +25,7 @@ jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.0.2" }
 leego-banana = { module = "io.leego:banana", version = "2.1.0" }
+milton-api = { module = "io.milton:milton-api", version = "4.0.5.2400" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop", version = "2.0.17" }
 
 [plugins]

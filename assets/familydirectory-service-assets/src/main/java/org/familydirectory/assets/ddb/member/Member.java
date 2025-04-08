@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
+import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
 import static java.time.LocalDate.now;
@@ -105,7 +106,7 @@ class Member extends MemberModel {
                 case PHONES -> ofNullable(member.getPhonesDdbMap()).ifPresent(m -> map.put(field.jsonFieldName(), AttributeValue.fromM(m)));
                 case ADDRESS -> ofNullable(member.getAddressDdb()).ifPresent(l -> map.put(field.jsonFieldName(), AttributeValue.fromL(l)));
                 case FAMILY_ID -> map.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.familyId().toString()));
-                case VCARD -> map.put(field.jsonFieldName(), AttributeValue.fromS(new Vcard(memberRecord).toString()));
+                case VCARD -> map.put(field.jsonFieldName(), AttributeValue.fromB(SdkBytes.fromUtf8String(new Vcard(memberRecord).toString())));
                 case ETAG -> map.put(field.jsonFieldName(), AttributeValue.fromS(member.getEtag()));
                 default -> throw new IllegalStateException("Unhandled Member Parameter: `%s`".formatted(field.jsonFieldName()));
             }

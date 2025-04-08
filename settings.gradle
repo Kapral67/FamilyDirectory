@@ -27,6 +27,9 @@ project(':get-pdf-lambda').projectDir = file('assets/FamilyDirectoryGetPdfLambda
 include ':pdf-generator-lambda'
 project(':pdf-generator-lambda').projectDir = file('assets/FamilyDirectoryPdfGeneratorLambda')
 
+include ':carddav-lambda'
+project(':carddav-lambda').projectDir = file('assets/FamilyDirectoryCarddavLambda')
+
 include ':cdk'
 project(':cdk').projectDir = file('CDK')
 
