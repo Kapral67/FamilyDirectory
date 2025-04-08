@@ -94,8 +94,7 @@ class Member extends MemberModel {
 
         for (final MemberTableParameter field : MemberTableParameter.values()) {
             switch (field) {
-                case ID -> map.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.id()
-                                                                                           .toString()));
+                case ID -> map.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.id().toString()));
                 case FIRST_NAME -> map.put(field.jsonFieldName(), AttributeValue.fromS(member.getFirstName()));
                 case MIDDLE_NAME -> ofNullable(member.getMiddleName()).ifPresent(s -> map.put(field.jsonFieldName(), AttributeValue.fromS(s)));
                 case LAST_NAME -> map.put(field.jsonFieldName(), AttributeValue.fromS(member.getLastName()));
@@ -105,8 +104,7 @@ class Member extends MemberModel {
                 case EMAIL -> ofNullable(member.getEmail()).ifPresent(s -> map.put(field.jsonFieldName(), AttributeValue.fromS(s)));
                 case PHONES -> ofNullable(member.getPhonesDdbMap()).ifPresent(m -> map.put(field.jsonFieldName(), AttributeValue.fromM(m)));
                 case ADDRESS -> ofNullable(member.getAddressDdb()).ifPresent(l -> map.put(field.jsonFieldName(), AttributeValue.fromL(l)));
-                case FAMILY_ID -> map.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.familyId()
-                                                                                                  .toString()));
+                case FAMILY_ID -> map.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.familyId().toString()));
                 case VCARD -> map.put(field.jsonFieldName(), AttributeValue.fromS(new Vcard(memberRecord).toString()));
                 case ETAG -> map.put(field.jsonFieldName(), AttributeValue.fromS(member.getEtag()));
                 default -> throw new IllegalStateException("Unhandled Member Parameter: `%s`".formatted(field.jsonFieldName()));

@@ -45,9 +45,7 @@ class FamilyDirectoryUpdateMemberLambda implements RequestHandler<APIGatewayProx
 
             {
                 try (final AmplifyClient amplifyClient = AmplifyClient.create()) {
-                    AmplifyUtils.appDeployment(amplifyClient, "<MEMBER,`%s`> update ROOT".formatted(caller.memberId()), updateEvent.updateEvent()
-                                                                                                                                   .member()
-                                                                                                                                   .getLastName(),
+                    AmplifyUtils.appDeployment(amplifyClient, "<MEMBER,`%s`> update ROOT".formatted(caller.caller().id()), updateEvent.updateEvent().member().getLastName(),
                                                requireNonNull(getenv(LambdaUtils.EnvVar.AMPLIFY_APP_ID.name())), requireNonNull(getenv(LambdaUtils.EnvVar.AMPLIFY_BRANCH_NAME.name())));
                 }
             }

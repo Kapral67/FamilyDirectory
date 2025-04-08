@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
-import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
@@ -21,7 +21,6 @@ import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
-import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 
 public abstract
@@ -41,8 +40,7 @@ class ApiHelper implements LambdaFunctionHelper {
     @NotNull
     public final
     Caller getCaller () {
-        final Map<String, AttributeValue> caller;
-        final String callerMemberId, callerFamilyId;
+        final MemberRecord caller;
         final boolean isCallerAdmin;
         try {
             // https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html#http-api-develop-integrations-lambda.proxy-format
@@ -60,25 +58,23 @@ class ApiHelper implements LambdaFunctionHelper {
                 .log("<COGNITO_SUB,`%s`> Invoked".formatted(callerSub), INFO);
 
             final Map<String, AttributeValue> callerCognito = requireNonNull(this.getDdbItem(callerSub, DdbTable.COGNITO));
-            isCallerAdmin = ofNullable(callerCognito.get(CognitoTableParameter.IS_ADMIN.jsonFieldName())).map(AttributeValue::bool)
-                                                                                                         .orElse(false);
+            isCallerAdmin = Optional.ofNullable(callerCognito.get(CognitoTableParameter.IS_ADMIN.jsonFieldName()))
+                                    .map(AttributeValue::bool)
+                                    .orElse(false);
 
-            callerMemberId = ofNullable(callerCognito.get(CognitoTableParameter.MEMBER.jsonFieldName())).map(AttributeValue::s)
-                                                                                                        .filter(Predicate.not(String::isBlank))
-                                                                                                        .orElseThrow(NullPointerException::new);
-            caller = requireNonNull(this.getDdbItem(callerMemberId, DdbTable.MEMBER));
-            callerFamilyId = ofNullable(caller.get(MemberTableParameter.FAMILY_ID.jsonFieldName())).map(AttributeValue::s)
-                                                                                                   .filter(Predicate.not(String::isBlank))
-                                                                                                   .orElseThrow(NullPointerException::new);
+            final String callerMemberId = Optional.ofNullable(callerCognito.get(CognitoTableParameter.MEMBER.jsonFieldName()))
+                                     .map(AttributeValue::s)
+                                     .orElseThrow(NullPointerException::new);
+            caller = MemberRecord.convertDdbMap(requireNonNull(this.getDdbItem(callerMemberId, DdbTable.MEMBER)));
 
-        } catch (final NullPointerException | ClassCastException e) {
+        } catch (final RuntimeException e) {
             LambdaUtils.logTrace(this.getLogger(), e, ERROR);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_UNAUTHORIZED));
         }
 
         this.getLogger()
-            .log("<MEMBER,`%s`> Authenticated".formatted(callerMemberId), INFO);
-        return new Caller(callerMemberId, caller, callerFamilyId, isCallerAdmin);
+            .log("<MEMBER,`%s`> Authenticated".formatted(caller.id()), INFO);
+        return new Caller(caller, isCallerAdmin);
     }
 
     public final @NotNull
@@ -120,14 +116,19 @@ class ApiHelper implements LambdaFunctionHelper {
         final List<Map<String, AttributeValue>> items = this.getDynamoDbClient()
                                                             .query(queryRequest)
                                                             .items();
-        return !items.isEmpty() && ofNullable(requireNonNull(this.getDdbItem(items.getFirst()
-                                                                                  .get(CognitoTableParameter.ID.jsonFieldName())
-                                                                                  .s(), DdbTable.COGNITO)).get(CognitoTableParameter.IS_ADMIN.jsonFieldName())).map(AttributeValue::bool)
-                                                                                                                                                               .orElse(false);
+        return !items.isEmpty() && Optional.ofNullable(this.getDdbItem(items.getFirst()
+                                                                            .get(CognitoTableParameter.ID.jsonFieldName())
+                                                                            .s(), DdbTable.COGNITO))
+                                           .map(map -> map.get(CognitoTableParameter.IS_ADMIN.jsonFieldName()))
+                                           .map(AttributeValue::bool)
+                                           .orElse(false);
     }
 
     public
-    record Caller(@NotNull String memberId, @NotNull Map<String, AttributeValue> attributeMap, @NotNull String familyId, boolean isAdmin) {
+    record Caller(@NotNull MemberRecord caller, boolean isAdmin) {
+        public Caller {
+            requireNonNull(caller);
+        }
     }
 
     public static final

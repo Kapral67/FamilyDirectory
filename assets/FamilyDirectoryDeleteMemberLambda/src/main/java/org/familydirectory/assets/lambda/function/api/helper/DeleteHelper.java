@@ -62,7 +62,7 @@ class DeleteHelper extends ApiHelper {
         try {
             deleteEvent = this.objectMapper.readValue(this.requestEvent.getBody(), DeleteEvent.class);
         } catch (final JsonProcessingException | IllegalArgumentException e) {
-            this.logger.log("<MEMBER,`%s`> submitted invalid Delete request".formatted(caller.memberId()), WARN);
+            this.logger.log("<MEMBER,`%s`> submitted invalid Delete request".formatted(caller.caller().id()), WARN);
             LambdaUtils.logTrace(this.logger, e, WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
         }
@@ -70,7 +70,7 @@ class DeleteHelper extends ApiHelper {
         final Map<String, AttributeValue> ddbMemberMap = this.getDdbItem(deleteEvent.id(), DdbTable.MEMBER);
 
         if (isNull(ddbMemberMap)) {
-            this.logger.log("<MEMBER,`%s`> Requested Delete to Non-Existent Member <ID,`%s`>".formatted(caller.memberId(), deleteEvent.id()), WARN);
+            this.logger.log("<MEMBER,`%s`> Requested Delete to Non-Existent Member <ID,`%s`>".formatted(caller.caller().id(), deleteEvent.id()), WARN);
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_NOT_FOUND));
         }
 
@@ -87,7 +87,7 @@ class DeleteHelper extends ApiHelper {
             if (eventWrapper.ddbMemberId()
                             .equals(requireNonNull(getenv(LambdaUtils.EnvVar.ROOT_ID.name()))))
             {
-                this.logger.log("ADMIN <MEMBER,`%s`> attempted to delete ROOT MEMBER".formatted(caller.memberId()), WARN);
+                this.logger.log("ADMIN <MEMBER,`%s`> attempted to delete ROOT MEMBER".formatted(caller.caller().id()), WARN);
                 throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
             }
             if (eventWrapper.ddbMemberId()
@@ -99,7 +99,7 @@ class DeleteHelper extends ApiHelper {
                                                                                       .filter(Predicate.not(String::isBlank))
                                                                                       .ifPresent(spouse -> {
                                                                                           this.logger.log("ADMIN <MEMBER,`%s`> attempted to delete <MEMBER,`%s`> BUT <SPOUSE,`%s`> EXISTED".formatted(
-                                                                                                  caller.memberId(), eventWrapper.ddbMemberId(), spouse), WARN);
+                                                                                                  caller.caller().id(), eventWrapper.ddbMemberId(), spouse), WARN);
                                                                                           throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
                                                                                                                                                         .withBody("Member Cannot Be Deleted Because" +
                                                                                                                                                                   " " +
@@ -110,7 +110,7 @@ class DeleteHelper extends ApiHelper {
                                                                                            .ifPresent(descendants -> {
                                                                                                this.logger.log(
                                                                                                        "ADMIN <MEMBER,`%s`> attempted to delete <MEMBER,`%s`> BUT <DESCENDANTS,`%s`> EXISTED".formatted(
-                                                                                                               caller.memberId(), eventWrapper.ddbMemberId(), Arrays.toString(descendants.toArray())),
+                                                                                                               caller.caller().id(), eventWrapper.ddbMemberId(), Arrays.toString(descendants.toArray())),
                                                                                                        WARN);
                                                                                                throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
                                                                                                                                                              .withBody("Member Cannot Be Deleted " +
@@ -170,30 +170,29 @@ class DeleteHelper extends ApiHelper {
                                                                                        .build());
             }
         } else {
-            final Map<String, AttributeValue> callerFamily = requireNonNull(this.getDdbItem(caller.familyId(), DdbTable.FAMILY));
-            if (caller.memberId()
-                      .equals(caller.familyId()) && ofNullable(callerFamily.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
+            final Map<String, AttributeValue> callerFamily = requireNonNull(this.getDdbItem(caller.caller().familyId().toString(), DdbTable.FAMILY));
+            if (caller.caller().id().equals(caller.caller().familyId()) && ofNullable(callerFamily.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
                                                                                                                              .filter(s -> s.equals(eventWrapper.ddbMemberId()))
                                                                                                                              .isPresent())
             {
                 final Update callerFamilyUpdateSpouse = Update.builder()
                                                               .tableName(DdbTable.FAMILY.name())
-                                                              .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(caller.familyId())))
+                                                              .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(caller.caller().familyId().toString())))
                                                               .updateExpression("REMOVE %s".formatted(FamilyTableParameter.SPOUSE.jsonFieldName()))
                                                               .build();
-                this.logger.log("<MEMBER,`%s`> remove <SPOUSE,`%s`> from <FAMILY,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId(), caller.familyId()), INFO);
+                this.logger.log("<MEMBER,`%s`> remove <SPOUSE,`%s`> from <FAMILY,`%s`>".formatted(caller.caller().id(), eventWrapper.ddbMemberId(), caller.caller().familyId().toString()), INFO);
                 final Delete ddbMemberDelete = Delete.builder()
                                                      .tableName(DdbTable.MEMBER.name())
                                                      .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbMemberId())))
                                                      .build();
-                this.logger.log("<MEMBER,`%s`> delete <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), INFO);
+                this.logger.log("<MEMBER,`%s`> delete <MEMBER,`%s`>".formatted(caller.caller().id(), eventWrapper.ddbMemberId()), INFO);
                 transactionItems = List.of(TransactWriteItem.builder()
                                                             .update(callerFamilyUpdateSpouse)
                                                             .build(), TransactWriteItem.builder()
                                                                                        .delete(ddbMemberDelete)
                                                                                        .build());
             } else {
-                this.logger.log("<MEMBER,`%s`> attempted to delete <MEMBER,`%s`>".formatted(caller.memberId(), eventWrapper.ddbMemberId()), WARN);
+                this.logger.log("<MEMBER,`%s`> attempted to delete <MEMBER,`%s`>".formatted(caller.caller().id(), eventWrapper.ddbMemberId()), WARN);
                 throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
             }
         }
