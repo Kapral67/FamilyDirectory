@@ -14,7 +14,7 @@ import static java.lang.System.getenv;
 
 public final
 class GetPdfHelper extends ApiHelper {
-    private static final long SIGNATURE_DURATION_MINUTES = 10;
+    private static final long SIGNATURE_DURATION_MINUTES = 5;
     private final @NotNull S3Presigner s3Presigner = S3Presigner.create();
 
     public
@@ -23,7 +23,7 @@ class GetPdfHelper extends ApiHelper {
     }
 
     public @NotNull
-    URL getPresignedPdfUrl () {
+    URL getPresignedPdfUrl () throws ResponseException {
         final Caller caller = this.getCaller();
         this.logger.log("<MEMBER,`%s`> GET PDF".formatted(caller.caller().id().toString()), INFO);
         final GetObjectRequest pdfRequest = GetObjectRequest.builder()

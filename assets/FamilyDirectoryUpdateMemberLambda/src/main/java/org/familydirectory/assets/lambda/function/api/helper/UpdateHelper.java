@@ -47,7 +47,7 @@ class UpdateHelper extends ApiHelper {
     }
 
     public @NotNull
-    EventWrapper getUpdateEvent (final @NotNull Caller caller) {
+    EventWrapper getUpdateEvent (final @NotNull Caller caller) throws ResponseException {
         final UpdateEvent updateEvent;
         try {
             updateEvent = this.objectMapper.readValue(this.requestEvent.getBody(), UpdateEvent.class);
@@ -111,7 +111,7 @@ class UpdateHelper extends ApiHelper {
     }
 
     public @NotNull
-    PutItemRequest getPutRequest (final @NotNull Caller caller, final @NotNull EventWrapper eventWrapper) {
+    PutItemRequest getPutRequest (final @NotNull Caller caller, final @NotNull EventWrapper eventWrapper) throws ResponseException {
         if (caller.isAdmin()) {
             this.logger.log("ADMIN <MEMBER,`%s`> update <MEMBER,`%s`>".formatted(caller.caller().id().toString(), eventWrapper.updateEvent().id()), INFO);
         } else if (caller.caller().id().toString().equals(eventWrapper.updateEvent().id())) {

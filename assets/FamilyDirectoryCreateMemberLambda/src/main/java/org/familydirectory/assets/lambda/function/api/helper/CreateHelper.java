@@ -50,7 +50,7 @@ class CreateHelper extends ApiHelper {
     }
 
     public @NotNull
-    CreateEvent getCreateEvent (final @NotNull ApiHelper.Caller caller) {
+    CreateEvent getCreateEvent (final @NotNull ApiHelper.Caller caller) throws ResponseException {
         final CreateEvent createEvent;
         try {
             createEvent = this.objectMapper.readValue(this.requestEvent.getBody(), CreateEvent.class);
@@ -68,7 +68,7 @@ class CreateHelper extends ApiHelper {
     }
 
     private
-    void validateMemberEmailIsUnique (final @NotNull String callerMemberId, final @Nullable String memberEmail) {
+    void validateMemberEmailIsUnique (final @NotNull String callerMemberId, final @Nullable String memberEmail) throws ResponseException {
         if (nonNull(memberEmail) && !memberEmail.isBlank()) {
             final GlobalSecondaryIndexProps emailGsiProps = requireNonNull(MemberTableParameter.EMAIL.gsiProps());
             final QueryRequest emailRequest = QueryRequest.builder()
@@ -95,7 +95,7 @@ class CreateHelper extends ApiHelper {
     }
 
     public @NotNull
-    TransactWriteItemsRequest buildCreateTransaction (final @NotNull Caller caller, final @NotNull CreateEvent createEvent) {
+    TransactWriteItemsRequest buildCreateTransaction (final @NotNull Caller caller, final @NotNull CreateEvent createEvent) throws ResponseException {
         final List<TransactWriteItem> transactionItems = new ArrayList<>();
         final String inputFamilyId;
         if (caller.isAdmin() && nonNull(createEvent.ancestor())) {

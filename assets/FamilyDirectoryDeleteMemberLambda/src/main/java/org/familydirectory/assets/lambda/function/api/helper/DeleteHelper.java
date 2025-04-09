@@ -39,7 +39,6 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
-import static java.util.Optional.ofNullable;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_CONFLICT;
 import static org.apache.http.HttpStatus.SC_FORBIDDEN;
@@ -57,7 +56,7 @@ class DeleteHelper extends ApiHelper {
     }
 
     public @NotNull
-    EventWrapper getDeleteEvent (final @NotNull Caller caller) {
+    EventWrapper getDeleteEvent (final @NotNull Caller caller) throws ResponseException {
         final DeleteEvent deleteEvent;
         try {
             deleteEvent = this.objectMapper.readValue(this.requestEvent.getBody(), DeleteEvent.class);
@@ -80,43 +79,34 @@ class DeleteHelper extends ApiHelper {
     }
 
     public @NotNull
-    TransactWriteItemsRequest buildDeleteTransaction (final @NotNull Caller caller, final @NotNull EventWrapper eventWrapper) {
+    TransactWriteItemsRequest buildDeleteTransaction (final @NotNull Caller caller, final @NotNull EventWrapper eventWrapper) throws ResponseException {
         final List<TransactWriteItem> transactionItems;
 
         if (caller.isAdmin()) {
-            if (eventWrapper.ddbMemberId()
-                            .equals(requireNonNull(getenv(LambdaUtils.EnvVar.ROOT_ID.name()))))
+            if (eventWrapper.ddbMemberId().equals(requireNonNull(getenv(LambdaUtils.EnvVar.ROOT_ID.name()))))
             {
                 this.logger.log("ADMIN <MEMBER,`%s`> attempted to delete ROOT MEMBER".formatted(caller.caller().id()), WARN);
                 throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
             }
-            if (eventWrapper.ddbMemberId()
-                            .equals(eventWrapper.ddbFamilyId()))
+            if (eventWrapper.ddbMemberId().equals(eventWrapper.ddbFamilyId()))
             {
                 // NATIVE
                 final Map<String, AttributeValue> familyMap = requireNonNull(this.getDdbItem(eventWrapper.ddbFamilyId(), DdbTable.FAMILY));
-                ofNullable(familyMap.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
-                                                                                      .filter(Predicate.not(String::isBlank))
-                                                                                      .ifPresent(spouse -> {
-                                                                                          this.logger.log("ADMIN <MEMBER,`%s`> attempted to delete <MEMBER,`%s`> BUT <SPOUSE,`%s`> EXISTED".formatted(
-                                                                                                  caller.caller().id(), eventWrapper.ddbMemberId(), spouse), WARN);
-                                                                                          throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
-                                                                                                                                                        .withBody("Member Cannot Be Deleted Because" +
-                                                                                                                                                                  " " +
-                                                                                                                                                                  "Member's Family has a SPOUSE"));
-                                                                                      });
-                ofNullable(familyMap.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
-                                                                                           .filter(Predicate.not(List::isEmpty))
-                                                                                           .ifPresent(descendants -> {
-                                                                                               this.logger.log(
-                                                                                                       "ADMIN <MEMBER,`%s`> attempted to delete <MEMBER,`%s`> BUT <DESCENDANTS,`%s`> EXISTED".formatted(
-                                                                                                               caller.caller().id(), eventWrapper.ddbMemberId(), Arrays.toString(descendants.toArray())),
-                                                                                                       WARN);
-                                                                                               throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
-                                                                                                                                                             .withBody("Member Cannot Be Deleted " +
-                                                                                                                                                                       "Because Member's Family " +
-                                                                                                                                                                       "has " + "DESCENDANTS"));
-                                                                                           });
+                final Optional<String> spouse = Optional.ofNullable(familyMap.get(FamilyTableParameter.SPOUSE.jsonFieldName()))
+                                                        .map(AttributeValue::s)
+                                                        .filter(Predicate.not(String::isBlank));
+                if (spouse.isPresent()) {
+                    this.logger.log("ADMIN <MEMBER,`%s`> attempted to delete <MEMBER,`%s`> BUT <SPOUSE,`%s`> EXISTED".formatted(caller.caller().id(), eventWrapper.ddbMemberId(), spouse), WARN);
+                    throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT).withBody("Member Cannot Be Deleted Because Member's Family has a SPOUSE"));
+                }
+                final Optional<List<String>> descendants = Optional.ofNullable(familyMap.get(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
+                                                                   .map(AttributeValue::ss)
+                                                                   .filter(Predicate.not(List::isEmpty));
+                if (descendants.isPresent()) {
+                    this.logger.log("ADMIN <MEMBER,`%s`> attempted to delete <MEMBER,`%s`> BUT <DESCENDANTS,`%s`> EXISTED".formatted(
+                            caller.caller().id(), eventWrapper.ddbMemberId(), Arrays.toString(descendants.get().toArray())), WARN);
+                    throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT).withBody("Member Cannot Be Deleted Because Member's Family has DESCENDANTS"));
+                }
                 final Delete deleteFamily = Delete.builder()
                                                   .tableName(DdbTable.FAMILY.name())
                                                   .key(singletonMap(FamilyTableParameter.ID.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbFamilyId())))
@@ -126,14 +116,16 @@ class DeleteHelper extends ApiHelper {
                                                   .key(singletonMap(MemberTableParameter.ID.jsonFieldName(), AttributeValue.fromS(eventWrapper.ddbMemberId())))
                                                   .build();
 
-                final String ancestorId = ofNullable(familyMap.get(FamilyTableParameter.ANCESTOR.jsonFieldName())).map(AttributeValue::s)
-                                                                                                                  .filter(Predicate.not(String::isBlank))
-                                                                                                                  .orElseThrow();
-                final List<String> ancestorFamilyDescendantsList = ofNullable(this.getDdbItem(ancestorId, DdbTable.FAMILY)).map(m -> m.get(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
-                                                                                                                           .map(AttributeValue::ss)
-                                                                                                                           .filter(Predicate.not(List::isEmpty))
-                                                                                                                           .filter(l -> l.contains(eventWrapper.ddbMemberId()))
-                                                                                                                           .orElseThrow();
+                final String ancestorId = Optional.ofNullable(familyMap.get(FamilyTableParameter.ANCESTOR.jsonFieldName()))
+                                                  .map(AttributeValue::s)
+                                                  .filter(Predicate.not(String::isBlank))
+                                                  .orElseThrow();
+                final List<String> ancestorFamilyDescendantsList = Optional.ofNullable(this.getDdbItem(ancestorId, DdbTable.FAMILY))
+                                                                           .map(m -> m.get(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
+                                                                           .map(AttributeValue::ss)
+                                                                           .filter(Predicate.not(List::isEmpty))
+                                                                           .filter(l -> l.contains(eventWrapper.ddbMemberId()))
+                                                                           .orElseThrow();
 
                 final Update.Builder updateAncestorFamilyBuilder = Update.builder()
                                                                          .tableName(DdbTable.FAMILY.name())
@@ -171,9 +163,10 @@ class DeleteHelper extends ApiHelper {
             }
         } else {
             final Map<String, AttributeValue> callerFamily = requireNonNull(this.getDdbItem(caller.caller().familyId().toString(), DdbTable.FAMILY));
-            if (caller.caller().id().equals(caller.caller().familyId()) && ofNullable(callerFamily.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
-                                                                                                                             .filter(s -> s.equals(eventWrapper.ddbMemberId()))
-                                                                                                                             .isPresent())
+            if (caller.caller().id().equals(caller.caller().familyId()) && Optional.ofNullable(callerFamily.get(FamilyTableParameter.SPOUSE.jsonFieldName()))
+                                                                                   .map(AttributeValue::s)
+                                                                                   .filter(s -> s.equals(eventWrapper.ddbMemberId()))
+                                                                                   .isPresent())
             {
                 final Update callerFamilyUpdateSpouse = Update.builder()
                                                               .tableName(DdbTable.FAMILY.name())
@@ -218,11 +211,10 @@ class DeleteHelper extends ApiHelper {
         if (!cognitoMemberQueryResponse.items()
                                        .isEmpty())
         {
-            final String ddbMemberCognitoSub = ofNullable(cognitoMemberQueryResponse.items()
-                                                                                    .getFirst()
-                                                                                    .get(CognitoTableParameter.ID.jsonFieldName())).map(AttributeValue::s)
-                                                                                                                                   .filter(Predicate.not(String::isBlank))
-                                                                                                                                   .orElseThrow();
+            final String ddbMemberCognitoSub = Optional.ofNullable(cognitoMemberQueryResponse.items().getFirst().get(CognitoTableParameter.ID.jsonFieldName()))
+                                                       .map(AttributeValue::s)
+                                                       .filter(Predicate.not(String::isBlank))
+                                                       .orElseThrow();
 
             this.dynamoDbClient.deleteItem(DeleteItemRequest.builder()
                                                             .tableName(DdbTable.COGNITO.name())
@@ -235,10 +227,11 @@ class DeleteHelper extends ApiHelper {
                                                                       .limit(1)
                                                                       .userPoolId(USER_POOL_ID)
                                                                       .build();
-            final UserType ddbMemberCognitoUser = ofNullable(this.cognitoClient.listUsers(listUsersRequest)).filter(ListUsersResponse::hasUsers)
-                                                                                                            .map(ListUsersResponse::users)
-                                                                                                            .map(List::getFirst)
-                                                                                                            .orElseThrow();
+            final UserType ddbMemberCognitoUser = Optional.ofNullable(this.cognitoClient.listUsers(listUsersRequest))
+                                                          .filter(ListUsersResponse::hasUsers)
+                                                          .map(ListUsersResponse::users)
+                                                          .map(List::getFirst)
+                                                          .orElseThrow();
             final String ddbMemberCognitoUsername = Optional.of(ddbMemberCognitoUser)
                                                             .map(UserType::username)
                                                             .filter(Predicate.not(String::isBlank))
@@ -254,8 +247,7 @@ class DeleteHelper extends ApiHelper {
                                                          .map(UserType::attributes)
                                                          .orElseThrow()
                                                          .stream()
-                                                         .filter(attr -> attr.name()
-                                                                             .equalsIgnoreCase("email"))
+                                                         .filter(attr -> attr.name().equalsIgnoreCase("email"))
                                                          .findFirst()
                                                          .map(AttributeType::value)
                                                          .filter(s -> s.contains("@"))

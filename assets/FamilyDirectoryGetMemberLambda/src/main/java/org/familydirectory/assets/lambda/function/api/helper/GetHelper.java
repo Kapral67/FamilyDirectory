@@ -39,7 +39,7 @@ class GetHelper extends ApiHelper {
 
     @NotNull
     public
-    String getResponseBody (final @NotNull Caller caller) throws JsonProcessingException {
+    String getResponseBody (final @NotNull Caller caller) throws JsonProcessingException, ResponseException {
         final Map<String, Object> responseBodyMap = new HashMap<>();
         final String queryStringId = Optional.ofNullable(this.requestEvent.getQueryStringParameters())
                                              .map(m -> m.get(DdbTableParameter.PK.getName()))

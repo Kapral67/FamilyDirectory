@@ -39,7 +39,7 @@ class ApiHelper implements LambdaFunctionHelper {
 
     @NotNull
     public final
-    Caller getCaller () {
+    Caller getCaller () throws ResponseException {
         final MemberRecord caller;
         final boolean isCallerAdmin;
         try {
@@ -132,7 +132,7 @@ class ApiHelper implements LambdaFunctionHelper {
     }
 
     public static final
-    class ResponseException extends RuntimeException {
+    class ResponseException extends Exception {
         private final @NotNull APIGatewayProxyResponseEvent responseEvent;
 
         public
