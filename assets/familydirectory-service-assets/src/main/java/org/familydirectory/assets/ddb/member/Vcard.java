@@ -1,6 +1,10 @@
 package org.familydirectory.assets.ddb.member;
 
+import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -14,28 +18,33 @@ import org.jetbrains.annotations.UnmodifiableView;
 import static java.util.Objects.requireNonNull;
 
 public final class Vcard {
-    public static final String VERSION = "3.0";
+    private static final DateTimeFormatter VCARD_DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
+    private static final String CRLF = "\r\n";
 
-    private static final String HEADER = "BEGIN:VCARD\nVERSION:%s\n".formatted(VERSION);
-    private static final String FOOTER = "END:VCARD\n";
+    private static final String BEGIN = "BEGIN:VCARD" + CRLF;
+    private static final String VERSION = "VERSION:3.0" + CRLF;
+    private static final String END = "END:VCARD" + CRLF;
+
+    private static final String UID_FORMAT = "UID:%s" + CRLF;
 
     private static final String ITEM_FORMAT = "item%d.";
-    private static final String X_ABLABEL_FORMAT = ITEM_FORMAT + "X-ABLabel:%s\n";
+    private static final String X_ABLABEL_FORMAT = ITEM_FORMAT + "X-ABLabel:%s" + CRLF;
 
-    private static final String ADR_FORMAT = ITEM_FORMAT + "ADR:;;%s;;;;\n";
+    private static final String ADR_FORMAT = ITEM_FORMAT + "ADR:;;%s;;;;" + CRLF;
     private static final String ADR_LABEL = "address";
+    private static final String ADR_FOLD_FORMAT = "%s\\n" + CRLF + " %s";
 
-    private static final String N_FORMAT = "N:%s;%s;%s;;%s\n";
+    private static final String N_FORMAT = "N:%s;%s;%s;;%s" + CRLF;
 
-    private static final String EMAIL_FORMAT = ITEM_FORMAT + "EMAIL;type=INTERNET:%s\n";
+    private static final String EMAIL_FORMAT = ITEM_FORMAT + "EMAIL;type=INTERNET:%s" + CRLF;
     private static final String EMAIL_LABEL = "email";
 
-    private static final String LANDLINE_FORMAT = ITEM_FORMAT + "TEL:%s\n";
-    private static final String MOBILE_FORMAT = ITEM_FORMAT + "TEL;type=CELL:%s\n";
+    private static final String LANDLINE_FORMAT = ITEM_FORMAT + "TEL:%s" + CRLF;
+    private static final String MOBILE_FORMAT = ITEM_FORMAT + "TEL;type=CELL:%s" + CRLF;
 
-    private static final String BDAY_FORMAT = "BDAY:%s\n";
+    private static final String BDAY_FORMAT = "BDAY:%s" + CRLF;
 
-    private static final String DDAY_FORMAT = ITEM_FORMAT + "X-ABDATE:%s\n";
+    private static final String DDAY_FORMAT = ITEM_FORMAT + "X-ABDATE:%s" + CRLF;
     private static final String DDAY_LABEL = "deathday";
 
     @NotNull
@@ -63,7 +72,7 @@ public final class Vcard {
     @NotNull
     private
     String fn () {
-        return "FN:" + this.member.member().getFullName() + '\n';
+        return "FN:" + this.member.member().getFullName() + CRLF;
     }
 
     @NotNull
@@ -88,7 +97,7 @@ public final class Vcard {
         Optional.ofNullable(this.member.member()
                                        .getAddress())
                 .map(List::stream)
-                .flatMap(stream -> stream.reduce("%s\\n%s"::formatted))
+                .flatMap(stream -> stream.reduce(ADR_FOLD_FORMAT::formatted))
                 .map(address -> ADR_FORMAT.formatted(item, address))
                 .ifPresent(address -> {
                     adr.add(address);
@@ -120,7 +129,8 @@ public final class Vcard {
     private
     List<String> deathday(final int item) {
         final List<String> deathday = new ArrayList<>(2);
-        Optional.ofNullable(this.member.member().getDeathdayString())
+        Optional.ofNullable(this.member.member().getDeathday())
+                .map(VCARD_DATE_FORMATTER::format)
                 .map(dday -> DDAY_FORMAT.formatted(item, dday))
                 .ifPresent(dday -> {
                     deathday.add(dday);
@@ -144,15 +154,19 @@ public final class Vcard {
     public
     String toString () {
         final int[] item = {1};
-        final StringBuilder vcard = new StringBuilder(HEADER);
+        final StringBuilder vcard = new StringBuilder();
+        vcard.append(BEGIN);
+        vcard.append(VERSION);
+        vcard.append(UID_FORMAT.formatted(this.member.id().toString()));
         vcard.append(n());
         vcard.append(fn());
         appendItem(item, vcard, this::email);
         appendItem(item, vcard, i -> this.tel(i, PhoneType.LANDLINE));
         appendItem(item, vcard, i -> this.tel(i, PhoneType.MOBILE));
         appendItem(item, vcard, this::adr);
-        vcard.append(BDAY_FORMAT.formatted(this.member.member().getBirthdayString()));
+        vcard.append(BDAY_FORMAT.formatted(this.member.member().getBirthday().format(VCARD_DATE_FORMATTER)));
         appendItem(item, vcard, this::deathday);
-        return vcard.append(FOOTER).toString();
+        vcard.append(END);
+        return vcard.toString();
     }
 }

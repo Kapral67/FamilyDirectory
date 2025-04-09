@@ -1,16 +1,15 @@
 package org.familydirectory.sdk.adminclient.events.backfill;
 
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Stack;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
@@ -59,7 +58,7 @@ class BackfillEvent implements MemberEventHelper {
                                                          .getSdkClient(DynamoDbClient.class);
 
         final List<MemberRecord> entries = this.memberPicker.getEntries();
-        final Stack<List<WriteRequest>> pending = new Stack<>();
+        final Deque<List<WriteRequest>> pending = new ArrayDeque<>();
         List<WriteRequest> writeRequests = new ArrayList<>();
         for (int i = 0; i < entries.size(); ++i) {
             if (i > 0 && i % 25 == 0) {
