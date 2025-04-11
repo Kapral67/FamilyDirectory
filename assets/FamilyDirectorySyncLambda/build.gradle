@@ -1,0 +1,6 @@
+group = "${rootProject.group}.assets.lambda.function.stream.familydirectorysynclambda"
+
+dependencies {
+    implementation libs.jetbrains.annotations
+    implementation libs.jug
+}
