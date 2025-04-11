@@ -3,6 +3,7 @@ package org.familydirectory.assets.lambda.function.stream.helper;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayDeque;
@@ -55,7 +56,7 @@ class PdfHelper implements LambdaFunctionHelper {
     private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
     private final @NotNull PDDocument familyDirectoryPdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly());
     private final @NotNull PDDocument dayPdf = new PDDocument(MemoryUsageSetting.setupMainMemoryOnly());
-    private final @NotNull LocalDate date = LocalDate.now();
+    private final @NotNull LocalDate date = LocalDate.now(Clock.systemUTC());
     private final @NotNull LambdaLogger logger;
     private final @NotNull Set<MemberRecord> members;
     private final @NotNull Map<String, Map<String, AttributeValue>> families;

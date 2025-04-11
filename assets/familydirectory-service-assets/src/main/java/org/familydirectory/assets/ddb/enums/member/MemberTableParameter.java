@@ -12,6 +12,7 @@ import static software.amazon.awscdk.services.dynamodb.ProjectionType.KEYS_ONLY;
 public
 enum MemberTableParameter implements DdbTableParameter {
     ID(DdbType.STR, DdbTableParameter.PK.getName(), null),
+    LAST_MODIFIED(DdbType.STR, "lastModified", null),
     FIRST_NAME(DdbType.STR, "firstName", null),
     MIDDLE_NAME(DdbType.STR, "middleName", null),
     LAST_NAME(DdbType.STR, "lastName", null),

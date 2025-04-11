@@ -199,6 +199,8 @@ class CreateHelper extends ApiHelper {
             }
         }
 
+        createEvent.member().setLastModifiedNow();
+
         final Map<String, AttributeValue> item = Member.retrieveDdbMap(new MemberRecord(this.inputMemberId, createEvent.member(), UUID.fromString(inputFamilyId)));
 
         this.logger.log(Member.convertDdbMap(item)

@@ -1,6 +1,6 @@
 package org.familydirectory.assets.ddb.models.member;
 
-import java.security.MessageDigest;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -101,6 +101,11 @@ class MemberModel {
     public abstract @Nullable
     SuffixType getSuffix ();
 
+    public abstract void setLastModifiedNow ();
+
+    public abstract @NotNull
+    Instant getLastModified ();
+
     public @NotNull
     String getDisplayName () {
         final StringBuilder displayName = new StringBuilder();
@@ -119,7 +124,7 @@ class MemberModel {
 
         for (final MemberTableParameter field : MemberTableParameter.values()) {
             switch (field) {
-                case ID, FAMILY_ID, VCARD, ETAG -> {
+                case LAST_MODIFIED, ID, FAMILY_ID, VCARD, ETAG -> {
                     continue;
                 }
                 default -> stringBuilder.append("%s: ".formatted(field.jsonFieldName()));

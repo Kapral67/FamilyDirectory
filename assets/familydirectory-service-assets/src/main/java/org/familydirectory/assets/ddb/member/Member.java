@@ -3,6 +3,7 @@ package org.familydirectory.assets.ddb.member;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberModel;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
+import org.familydirectory.assets.ddb.utils.InstantDeserializer;
 import org.familydirectory.assets.ddb.utils.LocalDateDeserializer;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -25,7 +27,10 @@ import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING;
-import static java.time.LocalDate.now;
+import static java.time.Clock.systemUTC;
+import static java.time.Instant.now;
+import static java.time.LocalDate.ofInstant;
+import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -69,10 +74,16 @@ class Member extends MemberModel {
     @JsonProperty("suffix")
     @Nullable
     private final SuffixType suffix;
+    @JsonProperty("lastModified")
+    @JsonFormat(shape = STRING, pattern = DdbUtils.DATE_TIME_FORMAT_STRING, timezone = "UTC")
+    @JsonDeserialize(using = InstantDeserializer.class)
+    @NotNull
+    private Instant lastModified;
 
     private
     Member (final @NotNull String firstName, final @Nullable String middleName, final @NotNull String lastName, final @NotNull LocalDate birthday, final @Nullable String email,
-            final @Nullable LocalDate deathday, final @Nullable Map<PhoneType, String> phones, final @Nullable List<String> address, final @Nullable SuffixType suffix)
+            final @Nullable LocalDate deathday, final @Nullable Map<PhoneType, String> phones, final @Nullable List<String> address, final @Nullable SuffixType suffix,
+            final @NotNull Instant lastModified)
     {
         super();
         this.firstName = requireNonNull(firstName);
@@ -84,6 +95,7 @@ class Member extends MemberModel {
         this.phones = phones;
         this.address = address;
         this.suffix = suffix;
+        this.lastModified = requireNonNull(lastModified);
     }
 
     @UnmodifiableView
@@ -96,6 +108,7 @@ class Member extends MemberModel {
         for (final MemberTableParameter field : MemberTableParameter.values()) {
             switch (field) {
                 case ID -> map.put(field.jsonFieldName(), AttributeValue.fromS(memberRecord.id().toString()));
+                case LAST_MODIFIED -> map.put(field.jsonFieldName(), AttributeValue.fromS(member.getLastModified().toString()));
                 case FIRST_NAME -> map.put(field.jsonFieldName(), AttributeValue.fromS(member.getFirstName()));
                 case MIDDLE_NAME -> ofNullable(member.getMiddleName()).ifPresent(s -> map.put(field.jsonFieldName(), AttributeValue.fromS(s)));
                 case LAST_NAME -> map.put(field.jsonFieldName(), AttributeValue.fromS(member.getLastName()));
@@ -122,6 +135,7 @@ class Member extends MemberModel {
         for (final MemberTableParameter param : MemberTableParameter.values()) {
             ofNullable(memberMap.get(param.jsonFieldName())).ifPresent(av -> {
                 switch (param) {
+                    case LAST_MODIFIED -> memberBuilder.lastModified(Instant.parse(av.s()));
                     case FIRST_NAME -> memberBuilder.firstName(av.s());
                     case MIDDLE_NAME -> memberBuilder.middleName(av.s());
                     case LAST_NAME -> memberBuilder.lastName(av.s());
@@ -201,6 +215,16 @@ class Member extends MemberModel {
     }
 
     @Override
+    public void setLastModifiedNow() {
+        this.lastModified = now(systemUTC());
+    }
+
+    @Override
+    @NotNull
+    public
+    Instant getLastModified () { return this.lastModified; }
+
+    @Override
     @Nullable
     @UnmodifiableView
     public
@@ -244,12 +268,15 @@ class Member extends MemberModel {
         private boolean isAddressSet = false;
         private SuffixType suffix = null;
         private boolean isSuffixSet = false;
+        private Instant lastModified;
+        private boolean isLastModifiedSet = false;
         private boolean isBuilt = false;
 
         public
         Builder () {
             super();
-            this.builderBegan = now();
+            this.lastModified = now(systemUTC());
+            this.builderBegan = ofInstant(this.lastModified, UTC);
         }
 
         @JsonProperty("firstName")
@@ -442,6 +469,24 @@ class Member extends MemberModel {
             return this;
         }
 
+        @JsonProperty("lastModified")
+        public
+        Builder lastModified (final @Nullable Instant lastModified) {
+            this.checkBuildStatus();
+            if (this.isLastModifiedSet) {
+                throw new IllegalStateException("LastModified already set");
+            }
+            this.isLastModifiedSet = true;
+            if (lastModified == null) {
+                return this;
+            }
+            if (lastModified.isAfter(this.lastModified)) {
+                throw new IllegalArgumentException("LastModified cannot be future");
+            }
+            this.lastModified = lastModified;
+            return this;
+        }
+
         @Contract(" -> new")
         @NotNull
         public
@@ -449,9 +494,9 @@ class Member extends MemberModel {
             this.checkBuildStatus();
             this.isBuilt = true;
             if (isNull(this.deathday)) {
-                return new Member(this.firstName, this.middleName, this.lastName, this.birthday, this.email, null, this.phones, this.address, this.suffix);
+                return new Member(this.firstName, this.middleName, this.lastName, this.birthday, this.email, null, this.phones, this.address, this.suffix, this.lastModified);
             } else {
-                return new Member(this.firstName, this.middleName, this.lastName, this.birthday, null, this.deathday, null, null, this.suffix);
+                return new Member(this.firstName, this.middleName, this.lastName, this.birthday, null, this.deathday, null, null, this.suffix, this.lastModified);
             }
         }
     }

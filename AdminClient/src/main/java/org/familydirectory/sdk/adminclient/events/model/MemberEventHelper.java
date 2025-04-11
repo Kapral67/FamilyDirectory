@@ -5,6 +5,8 @@ import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.gui2.dialogs.TextInputDialogResultValidator;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -376,6 +378,7 @@ interface MemberEventHelper extends EventHelper {
                 }
             }
         }
+        memberBuilder.lastModified(Instant.now(Clock.systemUTC()));
         return new MemberRecord(memberId, memberBuilder.build(), familyId);
     }
 

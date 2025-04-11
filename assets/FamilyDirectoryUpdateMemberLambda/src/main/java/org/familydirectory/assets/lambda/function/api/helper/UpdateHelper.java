@@ -5,7 +5,6 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,6 +35,7 @@ import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_CONFLICT;
 import static org.apache.http.HttpStatus.SC_FORBIDDEN;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_OK;
 
 public final
 class UpdateHelper extends ApiHelper {
@@ -66,15 +66,11 @@ class UpdateHelper extends ApiHelper {
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_NOT_FOUND));
         }
 
-        final String ddbFamilyId = ddbMemberMap.get(MemberTableParameter.FAMILY_ID.jsonFieldName())
-                                               .s();
-        final String ddbMemberEmail = Optional.ofNullable(ddbMemberMap.get(MemberTableParameter.EMAIL.jsonFieldName()))
-                                              .map(AttributeValue::s)
-                                              .orElse(null);
+        final MemberRecord ddbMemberRecord = MemberRecord.convertDdbMap(ddbMemberMap);
+
         final String updateMemberEmail = updateEvent.member()
                                                     .getEmail();
-
-        if (nonNull(updateMemberEmail) && !updateMemberEmail.equals(ddbMemberEmail)) {
+        if (nonNull(updateMemberEmail) && !updateMemberEmail.equals(ddbMemberRecord.member().getEmail())) {
             final GlobalSecondaryIndexProps emailGsiProps = requireNonNull(MemberTableParameter.EMAIL.gsiProps());
             final QueryRequest emailRequest = QueryRequest.builder()
                                                           .tableName(DdbTable.MEMBER.name())
@@ -99,15 +95,8 @@ class UpdateHelper extends ApiHelper {
             }
         }
 
-        final LocalDate ddbMemberBirthday = LocalDate.parse(ddbMemberMap.get(MemberTableParameter.BIRTHDAY.jsonFieldName())
-                                                                        .s(), DdbUtils.DATE_FORMATTER);
-        final LocalDate ddbMemberDeathday = Optional.ofNullable(ddbMemberMap.get(MemberTableParameter.DEATHDAY.jsonFieldName()))
-                                                    .map(AttributeValue::s)
-                                                    .filter(Predicate.not(String::isBlank))
-                                                    .map(s -> LocalDate.parse(s, DdbUtils.DATE_FORMATTER))
-                                                    .orElse(null);
-        final boolean ddbMemberIsSuperAdult = DdbUtils.getPersonAge(ddbMemberBirthday, ddbMemberDeathday) >= DdbUtils.AGE_OF_SUPER_MAJORITY;
-        return new EventWrapper(updateEvent, ddbFamilyId, ddbMemberIsSuperAdult);
+        final boolean ddbMemberIsSuperAdult = ddbMemberRecord.member().getAge() >= DdbUtils.AGE_OF_SUPER_MAJORITY;
+        return new EventWrapper(updateEvent, ddbMemberRecord, ddbMemberIsSuperAdult);
     }
 
     public @NotNull
@@ -116,7 +105,7 @@ class UpdateHelper extends ApiHelper {
             this.logger.log("ADMIN <MEMBER,`%s`> update <MEMBER,`%s`>".formatted(caller.caller().id().toString(), eventWrapper.updateEvent().id()), INFO);
         } else if (caller.caller().id().toString().equals(eventWrapper.updateEvent().id())) {
             this.logger.log("<MEMBER,`%s`> update SELF".formatted(caller.caller().id().toString()), INFO);
-        } else if (caller.caller().id().toString().equals(eventWrapper.ddbFamilyId()) || caller.caller().familyId().toString().equals(eventWrapper.updateEvent().id())) {
+        } else if (caller.caller().id().toString().equals(eventWrapper.ddbMemberRecord().familyId().toString()) || caller.caller().familyId().toString().equals(eventWrapper.updateEvent().id())) {
             this.logger.log("<MEMBER,`%s`> update <SPOUSE,`%s`>".formatted(caller.caller().id().toString(), eventWrapper.updateEvent().id()), INFO);
         } else if (!eventWrapper.ddbMemberIsSuperAdult() && Optional.ofNullable(this.getDdbItem(caller.caller().familyId().toString(), DdbTable.FAMILY))
                                                                     .map(map -> map.get(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
@@ -131,10 +120,17 @@ class UpdateHelper extends ApiHelper {
             throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_FORBIDDEN));
         }
 
+        if (eventWrapper.ddbMemberRecord().member().getEtag().equals(eventWrapper.updateEvent().member().getEtag())) {
+            this.logger.log("<MEMBER,`%s`> update <MEMBER,`%s`> without modifications".formatted(caller.caller().id().toString(), eventWrapper.updateEvent().id()), WARN);
+            throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_OK));
+        }
+
+        eventWrapper.updateEvent().member().setLastModifiedNow();
+
         final Map<String, AttributeValue> item = Member.retrieveDdbMap(new MemberRecord(
             UUID.fromString(eventWrapper.updateEvent().id()),
             eventWrapper.updateEvent().member(),
-            UUID.fromString(eventWrapper.ddbFamilyId())
+            eventWrapper.ddbMemberRecord().familyId()
         ));
 
         this.logger.log(Member.convertDdbMap(item)
@@ -147,6 +143,6 @@ class UpdateHelper extends ApiHelper {
     }
 
     public
-    record EventWrapper(@NotNull UpdateEvent updateEvent, @NotNull String ddbFamilyId, boolean ddbMemberIsSuperAdult) {
+    record EventWrapper(@NotNull UpdateEvent updateEvent, @NotNull MemberRecord ddbMemberRecord, boolean ddbMemberIsSuperAdult) {
     }
 }

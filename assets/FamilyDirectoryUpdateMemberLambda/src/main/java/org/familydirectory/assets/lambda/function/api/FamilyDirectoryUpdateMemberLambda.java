@@ -15,8 +15,8 @@ import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
 import static java.lang.System.getenv;
 import static java.util.Objects.requireNonNull;
-import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
+import static org.apache.http.HttpStatus.SC_OK;
 
 public
 class FamilyDirectoryUpdateMemberLambda implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -50,7 +50,7 @@ class FamilyDirectoryUpdateMemberLambda implements RequestHandler<APIGatewayProx
                 }
             }
 
-            return new APIGatewayProxyResponseEvent().withStatusCode(SC_ACCEPTED);
+            return new APIGatewayProxyResponseEvent().withStatusCode(SC_OK);
 
         } catch (final ApiHelper.ResponseException e) {
             return e.getResponseEvent();

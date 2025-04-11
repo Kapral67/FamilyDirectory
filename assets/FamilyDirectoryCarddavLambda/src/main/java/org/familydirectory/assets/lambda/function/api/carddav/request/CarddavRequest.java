@@ -1,20 +1,24 @@
 package org.familydirectory.assets.lambda.function.api.carddav.request;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.milton.http.Auth;
 import io.milton.http.Cookie;
 import io.milton.http.FileItem;
 import io.milton.http.Request;
 import io.milton.http.RequestParseException;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.SequencedMap;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
 
 public
@@ -22,35 +26,49 @@ class CarddavRequest implements Request {
 
     private static final String CRLF = "\r\n";
 
-    private final Map<String, String> headers;
+    private final SequencedMap<String, String> headers;
+    private final Method method;
+    private final String requestUri;
     private final InputStream body;
 
-    public CarddavRequest(final String rawRequest) {
+    public CarddavRequest(final @NotNull String rawRequest) {
+        Objects.requireNonNull(rawRequest);
         final String[] request = rawRequest.split(CRLF + CRLF, 2);
-
         final String[] headers = request[0].split(CRLF);
-        final Map<String, String> headersMap = new LinkedHashMap<>();
-        for (int i = 1; i < headers.length; ++i) {
-            final String[] header = headers[i].split(": ", 2);
-            String key = header[0].trim();
-            try {
-                key = Header.valueOf(key.toUpperCase(Locale.ROOT)).code;
-            } catch (final IllegalArgumentException ignored) {}
-            if (Header.AUTHORIZATION.code.equals(key)) {
-                continue;
-            }
-            headersMap.put(key, header[1].trim());
-        }
-        this.headers = Collections.unmodifiableMap(headersMap);
 
-        final String requestLine = headers[0];
+        this.headers = getHeadersMap(Arrays.copyOfRange(headers, 1, headers.length));
+
+        final String[] requestAttributes = headers[0].split(" ");
+        this.method = Method.valueOf(requestAttributes[0].toUpperCase(Locale.ROOT));
+        this.requestUri = requestAttributes[1];
+        // version is assumed to be HTTP/1.1
 
         final String body = request.length > 1 ? request[1] : "";
         this.body = new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8));
     }
 
+    @UnmodifiableView
+    @NotNull
+    private static SequencedMap<String, String> getHeadersMap(final String @NotNull [] headers) {
+        final SequencedMap<String, String> headersMap = new LinkedHashMap<>();
+        for (final String header : headers) {
+            final String[] headerPair = header.split(": ", 2);
+            String key = headerPair[0].trim();
+            try {
+                key = Header.valueOf(key.toUpperCase(Locale.ROOT)).code;
+            } catch (final IllegalArgumentException ignored) {
+            }
+            if (Header.AUTHORIZATION.code.equals(key)) {
+                continue;
+            }
+            headersMap.put(key, headerPair[1].trim());
+        }
+        return Collections.unmodifiableSequencedMap(headersMap);
+    }
+
     @Override
     @UnmodifiableView
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public
     Map<String, String> getHeaders () {
         return this.headers;
@@ -65,7 +83,7 @@ class CarddavRequest implements Request {
     @Override
     public
     String getLockTokenHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.LOCK_TOKEN.code);
     }
 
     @Override
@@ -77,20 +95,18 @@ class CarddavRequest implements Request {
     @Override
     public
     Method getMethod () {
-        throw new UnsupportedOperationException();
+        return this.method;
     }
 
     @Override
     public
     Auth getAuthorization () {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public
-    void setAuthorization (Auth auth) {
-        throw new UnsupportedOperationException();
-    }
+    void setAuthorization (Auth auth) {}
 
     @Override
     public

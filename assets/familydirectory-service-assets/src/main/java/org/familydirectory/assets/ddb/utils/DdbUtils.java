@@ -9,6 +9,7 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import static com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat.INTERNATIONAL;
+import static java.time.Clock.systemUTC;
 import static java.time.LocalDate.now;
 import static java.time.Period.between;
 import static java.time.format.DateTimeFormatter.ofPattern;
@@ -17,6 +18,8 @@ import static java.util.Optional.ofNullable;
 public
 enum DdbUtils {
     ;
+    public static final String DATE_TIME_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = ofPattern(DATE_TIME_FORMAT_STRING);
     public static final String DATE_FORMAT_STRING = "yyyy-MM-dd";
     public static final DateTimeFormatter DATE_FORMATTER = ofPattern(DATE_FORMAT_STRING);
     public static final PhoneNumberUtil PHONE_NUMBER_UTIL = PhoneNumberUtil.getInstance();
@@ -53,7 +56,7 @@ enum DdbUtils {
 
     public static
     int getPersonAge (final @NotNull LocalDate birthday, final @Nullable LocalDate deathday) {
-        final LocalDate endDate = ofNullable(deathday).orElse(now());
+        final LocalDate endDate = ofNullable(deathday).orElse(now(systemUTC()));
         return between(birthday, endDate).getYears();
     }
 }

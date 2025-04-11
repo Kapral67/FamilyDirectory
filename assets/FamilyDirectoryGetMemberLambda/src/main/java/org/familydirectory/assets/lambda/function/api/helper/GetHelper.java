@@ -99,7 +99,7 @@ class GetHelper extends ApiHelper {
         final Map<String, Object> responseObject = new HashMap<>();
         for (final MemberTableParameter param : MemberTableParameter.values()) {
             switch (param) {
-                case VCARD, ETAG -> {}
+                case VCARD, ETAG, LAST_MODIFIED -> {}
                 case ID -> responseObject.put(param.jsonFieldName(), memberRecord.id().toString());
                 case FAMILY_ID -> responseObject.put(param.jsonFieldName(), memberRecord.familyId().toString());
                 case FIRST_NAME -> responseObject.put(param.jsonFieldName(), memberRecord.member().getFirstName());

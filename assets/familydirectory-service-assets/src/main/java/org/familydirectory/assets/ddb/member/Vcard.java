@@ -1,10 +1,7 @@
 package org.familydirectory.assets.ddb.member;
 
-import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -26,6 +23,7 @@ public final class Vcard {
     private static final String END = "END:VCARD" + CRLF;
 
     private static final String UID_FORMAT = "UID:%s" + CRLF;
+    private static final String REV_FORMAT = "REV:%s" + CRLF;
 
     private static final String ITEM_FORMAT = "item%d.";
     private static final String X_ABLABEL_FORMAT = ITEM_FORMAT + "X-ABLabel:%s" + CRLF;
@@ -158,6 +156,7 @@ public final class Vcard {
         vcard.append(BEGIN);
         vcard.append(VERSION);
         vcard.append(UID_FORMAT.formatted(this.member.id().toString()));
+        vcard.append(REV_FORMAT.formatted(this.member.member().getLastModified().toString()));
         vcard.append(n());
         vcard.append(fn());
         appendItem(item, vcard, this::email);
