@@ -46,7 +46,7 @@ import static software.amazon.awscdk.services.lambda.StartingPosition.LATEST;
 
 public
 class FamilyDirectoryLambdaStack extends Stack {
-    public static final Number DDB_STREAM_BATCH_SIZE = 1;
+    public static final Number DDB_STREAM_BATCH_SIZE = 1000;
     public static final boolean DDB_STREAM_BISECT_BATCH_ON_ERROR = false;
     public static final boolean DDB_STREAM_REPORT_BATCH_ITEM_FAILURES = false;
     public static final Number DDB_STREAM_PARALLELIZATION_FACTOR = 1;

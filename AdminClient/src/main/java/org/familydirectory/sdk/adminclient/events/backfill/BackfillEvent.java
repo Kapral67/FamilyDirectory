@@ -65,15 +65,14 @@ class BackfillEvent implements MemberEventHelper {
                 pending.push(Collections.unmodifiableList(writeRequests));
                 writeRequests = new ArrayList<>();
             }
+            entries.get(i).member().setLastModifiedNow();
             writeRequests.add(WriteRequest.builder()
                                           .putRequest(PutRequest.builder()
                                                                 .item(Member.retrieveDdbMap(entries.get(i)))
                                                                 .build())
                                           .build());
         }
-        if (!writeRequests.isEmpty()) {
-            pending.push(Collections.unmodifiableList(writeRequests));
-        }
+        pending.push(Collections.unmodifiableList(writeRequests));
 
         while(!pending.isEmpty()) {
             dbClient.batchWriteItem(BatchWriteItemRequest.builder()
