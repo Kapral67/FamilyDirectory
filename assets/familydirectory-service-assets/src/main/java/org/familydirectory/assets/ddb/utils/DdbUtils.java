@@ -19,7 +19,6 @@ public
 enum DdbUtils {
     ;
     public static final String DATE_TIME_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    public static final DateTimeFormatter DATE_TIME_FORMATTER = ofPattern(DATE_TIME_FORMAT_STRING);
     public static final String DATE_FORMAT_STRING = "yyyy-MM-dd";
     public static final DateTimeFormatter DATE_FORMATTER = ofPattern(DATE_FORMAT_STRING);
     public static final PhoneNumberUtil PHONE_NUMBER_UTIL = PhoneNumberUtil.getInstance();

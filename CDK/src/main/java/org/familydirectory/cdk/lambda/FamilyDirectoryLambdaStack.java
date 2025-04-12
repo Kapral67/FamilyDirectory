@@ -47,6 +47,7 @@ import static software.amazon.awscdk.services.lambda.StartingPosition.LATEST;
 public
 class FamilyDirectoryLambdaStack extends Stack {
     public static final Number DDB_STREAM_BATCH_SIZE = 1000;
+    public static final Number DDB_STREAM_BATCH_WINDOW_SECONDS = 10;
     public static final boolean DDB_STREAM_BISECT_BATCH_ON_ERROR = false;
     public static final boolean DDB_STREAM_REPORT_BATCH_ITEM_FAILURES = false;
     public static final Number DDB_STREAM_PARALLELIZATION_FACTOR = 1;
@@ -102,6 +103,8 @@ class FamilyDirectoryLambdaStack extends Stack {
                                                                                                                               .tableStreamArn(streamArn)
                                                                                                                               .build()), DynamoEventSourceProps.builder()
                                                                                                                                                                .batchSize(DDB_STREAM_BATCH_SIZE)
+                                                                                                                                                               .maxBatchingWindow(
+                                                                                                                                                                       seconds(DDB_STREAM_BATCH_WINDOW_SECONDS))
                                                                                                                                                                .bisectBatchOnError(
                                                                                                                                                                        DDB_STREAM_BISECT_BATCH_ON_ERROR)
                                                                                                                                                                .reportBatchItemFailures(

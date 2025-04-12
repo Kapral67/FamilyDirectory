@@ -168,6 +168,7 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                            entry("EventSourceArn", singletonMap("Fn::ImportValue", eventTable.streamArnExportName())),
                                                                                                            entry("FunctionName", singletonMap("Ref", functionIdCapture.asString())),
                                                                                                            entry("FunctionResponseTypes", absent()),
+                                                                                                           entry("MaximumBatchingWindowInSeconds", FamilyDirectoryLambdaStack.DDB_STREAM_BATCH_WINDOW_SECONDS),
                                                                                                            entry("MaximumRecordAgeInSeconds", DdbUtils.DDB_STREAM_MAX_RECORD_AGE_SECONDS),
                                                                                                            entry("MaximumRetryAttempts", FamilyDirectoryLambdaStack.DDB_STREAM_RETRY_ATTEMPTS),
                                                                                                            entry("ParallelizationFactor", FamilyDirectoryLambdaStack.DDB_STREAM_PARALLELIZATION_FACTOR),
