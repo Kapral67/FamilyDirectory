@@ -1,6 +1,6 @@
 [versions]
-aws-cdk = "2.188.0"
-aws-cdk-alpha = "2.188.0-alpha.0"
+aws-cdk = "2.189.0"
+aws-cdk-alpha = "2.189.0-alpha.0"
 github-spotbugs = "4.9.3"
 jackson = "2.18.3"
 
