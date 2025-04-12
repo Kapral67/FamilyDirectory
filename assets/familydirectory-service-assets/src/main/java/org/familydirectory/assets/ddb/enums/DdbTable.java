@@ -4,6 +4,7 @@ import java.util.List;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
+import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
 import org.familydirectory.assets.ddb.models.DdbTableParameter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -12,7 +13,8 @@ public
 enum DdbTable {
     COGNITO("CognitoTable", List.of(CognitoTableParameter.values()), false),
     FAMILY("FamilyTable", List.of(FamilyTableParameter.values()), false),
-    MEMBER("MemberTable", List.of(MemberTableParameter.values()), true);
+    MEMBER("MemberTable", List.of(MemberTableParameter.values()), true),
+    SYNC("SyncTable", List.of(SyncTableParameter.values()), false);
 
     @NotNull
     private final String arnExportName;

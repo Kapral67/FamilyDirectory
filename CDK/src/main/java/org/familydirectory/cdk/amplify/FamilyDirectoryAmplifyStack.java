@@ -71,7 +71,8 @@ class FamilyDirectoryAmplifyStack extends Stack {
                                                                       .service("dynamodb")
                                                                       .action("GetItem")
                                                                       .parameters(Map.of("TableName", AMPLIFY_ROOT_MEMBER_SURNAME_RESOURCE_POLICY_STATEMENT_RESOURCE.name(), "Key",
-                                                                                         Map.of(DdbTableParameter.PK.getName(), Map.of("S", DdbUtils.ROOT_MEMBER_ID))))
+                                                                                         Map.of(DdbTableParameter.PK.getName(), Map.of("S", DdbUtils.ROOT_MEMBER_ID)), "ProjectionExpression",
+                                                                                         MemberTableParameter.LAST_NAME.jsonFieldName()))
                                                                       .physicalResourceId(PhysicalResourceId.of(String.valueOf(Instant.now()
                                                                                                                                       .getEpochSecond())))
                                                                       .region(FamilyDirectoryCdkApp.DEFAULT_REGION)

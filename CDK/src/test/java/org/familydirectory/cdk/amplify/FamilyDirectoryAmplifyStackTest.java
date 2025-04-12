@@ -29,13 +29,12 @@ class FamilyDirectoryAmplifyStackTest {
 
     private static final String TABLE = "\"TableName\":\"MEMBER\"";
     private static final String KEY = "\"Key\":\\{\"id\":\\{\"S\":\"%s\"\\}\\}".formatted(DdbUtils.ROOT_MEMBER_ID);
+    private static final String PROJECTION = "\"ProjectionExpression\":\"lastName\"";
 
     private static final Pattern GET_ROOT_MEMBER_REGEX = Pattern.compile(
-            "\\{\"action\":\"GetItem\",\"service\":\"dynamodb\",\"parameters\":\\{(?=.*%s)(?=.*%s)(%s,?|%s,?){2}\\},\"physicalResourceId\":\\{\"id\":\"\\d+\"\\},\"region\":\"%s\"\\}".formatted(TABLE,
-                                                                                                                                                                                                 KEY,
-                                                                                                                                                                                                 KEY,
-                                                                                                                                                                                                 TABLE,
-                                                                                                                                                                                                 FamilyDirectoryCdkApp.DEFAULT_REGION));
+        "\\{\"action\":\"GetItem\",\"service\":\"dynamodb\",\"parameters\":\\{(?=.*%s)(?=.*%s)(?=.*%s)(%s,?|%s,?|%s,?){3}\\},\"physicalResourceId\":\\{\"id\":\"\\d+\"\\},\"region\":\"%s\"\\}"
+            .formatted(TABLE, KEY, PROJECTION, PROJECTION, KEY, TABLE, FamilyDirectoryCdkApp.DEFAULT_REGION)
+    );
 
     @Test
     public
