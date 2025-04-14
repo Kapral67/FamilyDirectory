@@ -103,7 +103,7 @@ class FamilyDirectorySyncLambda implements RequestHandler<DynamodbEvent, Void> {
                                                        .key(singletonMap(SyncTableParameter.ID.jsonFieldName(), AttributeValue.fromS(SyncHelper.LATEST)))
                                                        .updateExpression("SET #ptr = :nextKey")
                                                        .expressionAttributeNames(singletonMap("#ptr", SyncTableParameter.NEXT.jsonFieldName()))
-                                                       .expressionAttributeValues(singletonMap(":ptrKey", AttributeValue.fromS(thisToken.toString())))
+                                                       .expressionAttributeValues(singletonMap(":nextKey", AttributeValue.fromS(thisToken.toString())))
                                                        .build();
                 transactionItems.add(TransactWriteItem.builder().update(latestTokenUpdate).build());
             }

@@ -65,7 +65,7 @@ class TogglePdfGeneratorEvent implements EventHelper {
         if (switchPromptDialog.showDialog(this.gui)
                               .equals(MessageDialogButton.Yes))
         {
-            final long sleepSec = DdbUtils.DDB_STREAM_MAX_RECORD_AGE_SECONDS.longValue();
+            final long sleepSec = DdbUtils.DDB_STREAM_BATCH_WINDOW_SECONDS.longValue();
 
             if (!isPdfGeneratorEnabled && sleepSec > 0L) {
                 new EnhancedWaitingDialog(Commands.TOGGLE_PDF_GENERATOR.name(), sleepSec).showDialog(this.gui);

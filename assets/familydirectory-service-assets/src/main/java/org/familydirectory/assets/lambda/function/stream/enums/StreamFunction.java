@@ -61,7 +61,7 @@ enum StreamFunction implements LambdaFunctionModel {
     @Override
     public @NotNull
     Number timeoutSeconds () {
-        return DdbUtils.DDB_STREAM_MAX_RECORD_AGE_SECONDS;
+        return DdbUtils.DDB_STREAM_BATCH_WINDOW_SECONDS;
     }
 
     public @NotNull

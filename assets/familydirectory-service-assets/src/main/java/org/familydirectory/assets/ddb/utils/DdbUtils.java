@@ -31,7 +31,7 @@ enum DdbUtils {
     public static final String NAME_VALIDATOR_REGEX = "[^A-Za-z\\-'_]+";
     public static final String NAME_SPECIAL_CHAR_REGEX = "['\\-]+";
     public static final String ROOT_MEMBER_ID = "00000000-0000-0000-0000-000000000000";
-    public static final Number DDB_STREAM_MAX_RECORD_AGE_SECONDS = 60;
+    public static final Number DDB_STREAM_BATCH_WINDOW_SECONDS = 60;
     public static final TemporalAmount SYNC_TOKEN_TTL = Duration.ofDays(180);
 
     public static @NotNull
