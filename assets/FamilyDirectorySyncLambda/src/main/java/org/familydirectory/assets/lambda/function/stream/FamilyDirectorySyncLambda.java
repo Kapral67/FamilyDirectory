@@ -6,7 +6,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.transformers.v2.dynamodb.DynamodbRecordTransformer;
 import com.fasterxml.uuid.Generators;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +30,7 @@ import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import software.amazon.awssdk.services.dynamodb.model.Update;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
+import static java.time.Clock.systemUTC;
 import static java.util.Collections.singletonMap;
 
 public
@@ -92,7 +92,7 @@ class FamilyDirectorySyncLambda implements RequestHandler<DynamodbEvent, Void> {
                                                          ))
                                                          .expressionAttributeValues(Map.of(
                                                             ":nextKey", AttributeValue.fromS(thisToken.toString()),
-                                                            ":ttlKey", AttributeValue.fromN(String.valueOf(Instant.now(Clock.systemUTC()).plus(SyncHelper.SYNC_TOKEN_TTL).getEpochSecond()))
+                                                            ":ttlKey", AttributeValue.fromN(String.valueOf(Instant.now(systemUTC()).plus(SyncHelper.SYNC_TOKEN_TTL).getEpochSecond()))
                                                          ))
                                                          .build();
                 transactionItems.add(TransactWriteItem.builder().update(previousTokenUpdate).build());

@@ -8,13 +8,14 @@ import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import static java.lang.Long.parseLong;
 import static java.lang.System.getenv;
 import static java.time.Duration.ofDays;
 import static java.util.Objects.requireNonNull;
 
 public final
 class SyncHelper implements LambdaFunctionHelper {
-    public static final TemporalAmount SYNC_TOKEN_TTL = ofDays(Long.parseLong(requireNonNull(getenv(LambdaUtils.EnvVar.SYNC_TOKEN_DURATION_DAYS.name()))));
+    public static final TemporalAmount SYNC_TOKEN_TTL = ofDays(parseLong(requireNonNull(getenv(LambdaUtils.EnvVar.SYNC_TOKEN_DURATION_DAYS.name()))));
     public static final String LATEST = UUIDUtil.nilUUID().toString();
 
     private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();

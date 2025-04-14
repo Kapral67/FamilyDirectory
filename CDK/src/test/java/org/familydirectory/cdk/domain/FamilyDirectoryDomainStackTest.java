@@ -7,7 +7,6 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.assertions.Capture;
 import software.amazon.awscdk.assertions.Template;
-import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static software.amazon.awscdk.assertions.Match.objectLike;
