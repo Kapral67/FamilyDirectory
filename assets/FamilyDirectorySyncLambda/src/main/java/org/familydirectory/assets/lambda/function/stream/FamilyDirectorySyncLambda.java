@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
-import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.stream.helper.SyncHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
@@ -93,7 +92,7 @@ class FamilyDirectorySyncLambda implements RequestHandler<DynamodbEvent, Void> {
                                                          ))
                                                          .expressionAttributeValues(Map.of(
                                                             ":nextKey", AttributeValue.fromS(thisToken.toString()),
-                                                            ":ttlKey", AttributeValue.fromN(String.valueOf(Instant.now(Clock.systemUTC()).plus(DdbUtils.SYNC_TOKEN_TTL).getEpochSecond()))
+                                                            ":ttlKey", AttributeValue.fromN(String.valueOf(Instant.now(Clock.systemUTC()).plus(SyncHelper.SYNC_TOKEN_TTL).getEpochSecond()))
                                                          ))
                                                          .build();
                 transactionItems.add(TransactWriteItem.builder().update(previousTokenUpdate).build());

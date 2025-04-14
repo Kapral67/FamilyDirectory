@@ -32,7 +32,7 @@ enum DdbUtils {
     public static final String NAME_SPECIAL_CHAR_REGEX = "['\\-]+";
     public static final String ROOT_MEMBER_ID = "00000000-0000-0000-0000-000000000000";
     public static final Number DDB_STREAM_BATCH_WINDOW_SECONDS = 60;
-    public static final TemporalAmount SYNC_TOKEN_TTL = Duration.ofDays(180);
+    public static final long SYNC_TOKEN_DURATION_DAYS = 7;
 
     public static @NotNull
     String normalizePhoneNumber (final @NotNull String uncheckedPhoneNumber) {

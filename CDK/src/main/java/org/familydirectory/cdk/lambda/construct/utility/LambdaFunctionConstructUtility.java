@@ -81,8 +81,8 @@ class LambdaFunctionConstructUtility {
                                        case AMPLIFY_APP_ID -> ofNullable(spaApp).map(IApp::getAppId)
                                                                                 .ifPresent(id -> function.addEnvironment(env.name(), id));
                                        case AMPLIFY_BRANCH_NAME -> function.addEnvironment(env.name(), FamilyDirectoryAmplifyStack.AMPLIFY_ROOT_BRANCH_NAME);
-                                       default -> {
-                                       }
+                                       case SYNC_TOKEN_DURATION_DAYS -> function.addEnvironment(env.name(), String.valueOf(DdbUtils.SYNC_TOKEN_DURATION_DAYS));
+                                       default -> throw new IllegalStateException("Unexpected value: " + env);
                                    }
                                });
 

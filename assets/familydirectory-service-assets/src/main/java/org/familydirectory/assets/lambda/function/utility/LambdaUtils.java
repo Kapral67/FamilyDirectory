@@ -67,6 +67,7 @@ enum LambdaUtils {
         ROOT_ID,
         S3_PDF_BUCKET_NAME,
         AMPLIFY_APP_ID,
-        AMPLIFY_BRANCH_NAME
+        AMPLIFY_BRANCH_NAME,
+        SYNC_TOKEN_DURATION_DAYS
     }
 }
