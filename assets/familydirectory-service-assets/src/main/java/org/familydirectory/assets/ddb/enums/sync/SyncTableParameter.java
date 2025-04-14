@@ -9,9 +9,9 @@ import software.amazon.awscdk.services.dynamodb.GlobalSecondaryIndexProps;
 public
 enum SyncTableParameter implements DdbTableParameter {
     ID(DdbType.STR, DdbTableParameter.PK.getName()),
-    PREV(DdbType.STR, "prev"),
     NEXT(DdbType.STR, "next"),
-    MEMBERS(DdbType.STR_SET, "members");
+    MEMBERS(DdbType.STR_SET, "members"),
+    TTL(DdbType.NUM, "ttl");
 
     @NotNull private final DdbType ddbType;
     @NotNull
@@ -23,19 +23,19 @@ enum SyncTableParameter implements DdbTableParameter {
     }
 
     @Override
-    public @NotNull
+    public final @NotNull
     DdbType ddbType () {
         return this.ddbType;
     }
 
     @Override
-    public @NotNull
+    public final @NotNull
     String jsonFieldName () {
         return this.jsonFieldName;
     }
 
     @Override
-    public @Nullable
+    public final @Nullable
     GlobalSecondaryIndexProps gsiProps () {
         return null;
     }

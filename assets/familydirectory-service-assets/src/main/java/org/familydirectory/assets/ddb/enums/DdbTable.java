@@ -11,22 +11,24 @@ import org.jetbrains.annotations.Nullable;
 
 public
 enum DdbTable {
-    COGNITO("CognitoTable", List.of(CognitoTableParameter.values()), false),
-    FAMILY("FamilyTable", List.of(FamilyTableParameter.values()), false),
-    MEMBER("MemberTable", List.of(MemberTableParameter.values()), true),
-    SYNC("SyncTable", List.of(SyncTableParameter.values()), false);
+    COGNITO("CognitoTable", List.of(CognitoTableParameter.values()), false, null),
+    FAMILY("FamilyTable", List.of(FamilyTableParameter.values()), false, null),
+    MEMBER("MemberTable", List.of(MemberTableParameter.values()), true, null),
+    SYNC("SyncTable", List.of(SyncTableParameter.values()), false, SyncTableParameter.TTL.jsonFieldName());
 
     @NotNull
     private final String arnExportName;
     @NotNull
     private final List<? extends DdbTableParameter> parameters;
-
     private final boolean hasStream;
+    @Nullable
+    private final String ttlAttributeName;
 
-    DdbTable (final @NotNull String arnExportName, final @NotNull List<? extends DdbTableParameter> parameters, final boolean hasStream) {
+    DdbTable (final @NotNull String arnExportName, final @NotNull List<? extends DdbTableParameter> parameters, final boolean hasStream, final @Nullable String ttlAttributeName) {
         this.arnExportName = arnExportName;
         this.parameters = parameters;
         this.hasStream = hasStream;
+        this.ttlAttributeName = ttlAttributeName;
     }
 
     @NotNull
@@ -44,6 +46,12 @@ enum DdbTable {
     public final
     boolean hasStream () {
         return this.hasStream;
+    }
+
+    @Nullable
+    public final
+    String ttlAttributeName () {
+        return this.ttlAttributeName;
     }
 
     @Nullable

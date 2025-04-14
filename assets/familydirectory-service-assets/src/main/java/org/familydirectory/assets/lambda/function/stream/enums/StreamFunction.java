@@ -13,7 +13,8 @@ import static java.util.Objects.requireNonNull;
 public
 enum StreamFunction implements LambdaFunctionModel {
     PDF_GENERATOR("PdfGenerator", singletonList(DdbTable.MEMBER), Map.of(DdbTable.MEMBER, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem")),
-                  singletonList("s3:PutObject"));
+                  singletonList("s3:PutObject")),
+    SYNC("Sync", singletonList(DdbTable.MEMBER), Map.of(DdbTable.SYNC, List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem")), null);
 
     @NotNull
     private final String functionName;

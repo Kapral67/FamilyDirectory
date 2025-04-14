@@ -3,8 +3,10 @@ package org.familydirectory.assets.ddb.utils;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAmount;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,6 +20,7 @@ import static java.util.Optional.ofNullable;
 public
 enum DdbUtils {
     ;
+    public static final String PK = "id";
     public static final String DATE_TIME_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     public static final String DATE_FORMAT_STRING = "yyyy-MM-dd";
     public static final DateTimeFormatter DATE_FORMATTER = ofPattern(DATE_FORMAT_STRING);
@@ -29,6 +32,7 @@ enum DdbUtils {
     public static final String NAME_SPECIAL_CHAR_REGEX = "['\\-]+";
     public static final String ROOT_MEMBER_ID = "00000000-0000-0000-0000-000000000000";
     public static final Number DDB_STREAM_MAX_RECORD_AGE_SECONDS = 60;
+    public static final TemporalAmount SYNC_TOKEN_TTL = Duration.ofDays(180);
 
     public static @NotNull
     String normalizePhoneNumber (final @NotNull String uncheckedPhoneNumber) {

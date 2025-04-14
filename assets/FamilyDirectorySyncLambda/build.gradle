@@ -1,6 +1,7 @@
 group = "${rootProject.group}.assets.lambda.function.stream.familydirectorysynclambda"
 
 dependencies {
+    implementation libs.aws.lambda.java.events.transformer
     implementation libs.jetbrains.annotations
     implementation libs.jug
 }

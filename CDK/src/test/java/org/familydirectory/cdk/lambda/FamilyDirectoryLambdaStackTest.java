@@ -175,16 +175,13 @@ class FamilyDirectoryLambdaStackTest {
                                                                                                            entry("StartingPosition", "LATEST"))));
             }
 
-            if (function.equals(StreamFunction.PDF_GENERATOR)) {
-                final Map<String, Map<String, Object>> pdfGeneratorVersionMap = template.findResources("AWS::Lambda::Version", objectLike(
-                        singletonMap("Properties", singletonMap("FunctionName", singletonMap("Ref", functionIdCapture.asString())))));
-                assertEquals(1, pdfGeneratorVersionMap.size());
-                template.hasResourceProperties("Custom::Trigger", objectLike(Map.of("HandlerArn", singletonMap("Ref", pdfGeneratorVersionMap.keySet()
-                                                                                                                                            .iterator()
-                                                                                                                                            .next()), "InvocationType", "Event", "Timeout",
-                                                                                    "%d".formatted(function.timeoutSeconds()
-                                                                                                           .intValue() * 1000))));
-            }
+            final Map<String, Map<String, Object>> streamFunctionVersionMap = template.findResources("AWS::Lambda::Version", objectLike(singletonMap("Properties", singletonMap("FunctionName", singletonMap("Ref", functionIdCapture.asString())))));
+            assertEquals(1, streamFunctionVersionMap.size());
+            template.hasResourceProperties("Custom::Trigger", objectLike(Map.of(
+                "HandlerArn", singletonMap("Ref", streamFunctionVersionMap.keySet().iterator().next()),
+                "InvocationType", "Event",
+                "Timeout", "%d".formatted(function.timeoutSeconds().intValue() * 1000)
+            )));
         }
     }
 

@@ -90,43 +90,39 @@ class FamilyDirectoryLambdaStack extends Stack {
 
         for (final Map.Entry<StreamFunction, Function> entry : streamFunctionMap.entrySet()) {
             final StreamFunction streamFunction = entry.getKey();
+            final Function lambda = entry.getValue();
             for (final DdbTable eventTable : streamFunction.streamEventSources()) {
                 final String streamArn = importValue(requireNonNull(eventTable.streamArnExportName()));
-                final Function lambda = entry.getValue();
                 lambda.addToRolePolicy(PolicyStatement.Builder.create()
                                                               .effect(ALLOW)
                                                               .actions(DDB_STREAM_POLICY_ACTIONS)
                                                               .resources(singletonList(streamArn))
                                                               .build());
-                lambda.addEventSource(new DynamoEventSource(Table.fromTableAttributes(this, eventTable.name(), TableAttributes.builder()
-                                                                                                                              .tableArn(importValue(eventTable.arnExportName()))
-                                                                                                                              .tableStreamArn(streamArn)
-                                                                                                                              .build()), DynamoEventSourceProps.builder()
-                                                                                                                                                               .batchSize(DDB_STREAM_BATCH_SIZE)
-                                                                                                                                                               .maxBatchingWindow(
-                                                                                                                                                                       seconds(DDB_STREAM_BATCH_WINDOW_SECONDS))
-                                                                                                                                                               .bisectBatchOnError(
-                                                                                                                                                                       DDB_STREAM_BISECT_BATCH_ON_ERROR)
-                                                                                                                                                               .reportBatchItemFailures(
-                                                                                                                                                                       DDB_STREAM_REPORT_BATCH_ITEM_FAILURES)
-                                                                                                                                                               .maxRecordAge(
-                                                                                                                                                                       seconds(DdbUtils.DDB_STREAM_MAX_RECORD_AGE_SECONDS))
-                                                                                                                                                               .parallelizationFactor(
-                                                                                                                                                                       DDB_STREAM_PARALLELIZATION_FACTOR)
-                                                                                                                                                               .retryAttempts(DDB_STREAM_RETRY_ATTEMPTS)
-                                                                                                                                                               .startingPosition(LATEST)
-                                                                                                                                                               .enabled(DDB_STREAM_ENABLED)
-                                                                                                                                                               .build()));
+                lambda.addEventSource(new DynamoEventSource(
+                    Table.fromTableAttributes(
+                        this,
+                        "%s:%s".formatted(streamFunction.functionName(), eventTable.name()),
+                        TableAttributes.builder()
+                                       .tableArn(importValue(eventTable.arnExportName()))
+                                       .tableStreamArn(streamArn)
+                                       .build()
+                    ),
+                    DynamoEventSourceProps.builder()
+                                          .batchSize(DDB_STREAM_BATCH_SIZE)
+                                          .maxBatchingWindow(seconds(DDB_STREAM_BATCH_WINDOW_SECONDS))
+                                          .bisectBatchOnError(DDB_STREAM_BISECT_BATCH_ON_ERROR)
+                                          .reportBatchItemFailures(DDB_STREAM_REPORT_BATCH_ITEM_FAILURES)
+                                          .maxRecordAge(seconds(DdbUtils.DDB_STREAM_MAX_RECORD_AGE_SECONDS))
+                                          .parallelizationFactor(DDB_STREAM_PARALLELIZATION_FACTOR)
+                                          .retryAttempts(DDB_STREAM_RETRY_ATTEMPTS)
+                                          .startingPosition(LATEST)
+                                          .enabled(DDB_STREAM_ENABLED)
+                                          .build()
+                ));
             }
+            new Trigger(this, streamFunction.functionName() + "Trigger", TriggerProps.builder().handler(lambda).invocationType(InvocationType.EVENT).timeout(lambda.getTimeout()).build());
         }
 
         LambdaFunctionConstructUtility.constructFunctionPermissions(streamFunctionMap, null, pdfBucket);
-
-        new Trigger(this, PDF_GENERATOR_TRIGGER_RESOURCE_ID, TriggerProps.builder()
-                                                                         .handler(streamFunctionMap.get(StreamFunction.PDF_GENERATOR))
-                                                                         .invocationType(InvocationType.EVENT)
-                                                                         .timeout(streamFunctionMap.get(StreamFunction.PDF_GENERATOR)
-                                                                                                   .getTimeout())
-                                                                         .build());
     }
 }

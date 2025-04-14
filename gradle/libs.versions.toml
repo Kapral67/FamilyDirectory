@@ -12,6 +12,7 @@ aws-cdk-lib = { module = "software.amazon.awscdk:aws-cdk-lib", version.ref = "aw
 aws-cdk-amplify-alpha = { module = "software.amazon.awscdk:amplify-alpha", version.ref = "aws-cdk-alpha" }
 aws-lambda-java-core = { module = "com.amazonaws:aws-lambda-java-core", version = "1.2.3" }
 aws-lambda-java-events = { module = "com.amazonaws:aws-lambda-java-events", version = "3.15.0" }
+aws-lambda-java-events-transformer = { module = "com.amazonaws:aws-lambda-java-events-sdk-transformer", version = "3.1.0" }
 aws-lambda-snapstart-java-rules = { module = "software.amazon.lambda.snapstart:aws-lambda-snapstart-java-rules", version = "0.2.1" }
 aws-sdk-bom = { module = "software.amazon.awssdk:bom", version = "2.31.21" }
 commons-codec = { module = "commons-codec:commons-codec", version = "1.18.0" }
@@ -26,6 +27,7 @@ jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", ver
 jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.0.2" }
 jug = { module = "com.fasterxml.uuid:java-uuid-generator", version = "5.1.0" }
 leego-banana = { module = "io.leego:banana", version = "2.1.0" }
+lombok = { module = "org.projectlombok:lombok", version = "1.18.38" }
 milton-api = { module = "io.milton:milton-api", version = "4.0.5.2400" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop", version = "2.0.17" }
 

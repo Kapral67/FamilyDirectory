@@ -32,6 +32,7 @@ class FamilyDirectoryDynamoDbStack extends Stack {
                                                                    .pointInTimeRecoverySpecification(PointInTimeRecoverySpecification.builder()
                                                                                                                                      .pointInTimeRecoveryEnabled(TRUE)
                                                                                                                                      .build())
+                                                                   .timeToLiveAttribute(ddbtable.ttlAttributeName())
                                                                    .deletionProtection(TRUE);
             if (ddbtable.hasStream()) {
                 tablePropsBuilder.stream(StreamViewType.KEYS_ONLY);
