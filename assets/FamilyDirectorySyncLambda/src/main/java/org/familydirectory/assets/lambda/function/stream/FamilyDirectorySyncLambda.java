@@ -4,16 +4,18 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
-import com.amazonaws.services.lambda.runtime.events.transformers.v2.DynamodbEventTransformer;
+import com.amazonaws.services.lambda.runtime.events.transformers.v2.dynamodb.DynamodbRecordTransformer;
 import com.fasterxml.uuid.Generators;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
@@ -41,16 +43,24 @@ class FamilyDirectorySyncLambda implements RequestHandler<DynamodbEvent, Void> {
         final LambdaLogger logger = context.getLogger();
         try (final SyncHelper syncHelper = new SyncHelper(logger)) {
 
-            final UUID thisToken = Generators.timeBasedEpochRandomGenerator().generate();
+            final Set<UUID> updatedMembers = Optional.ofNullable(dynamodbEvent)
+                                                     .map(DynamodbEvent::getRecords)
+                                                     .filter(Predicate.not(List::isEmpty))
+                                                     .orElse(Collections.emptyList())
+                                                     .stream()
+                                                     .map(DynamodbRecordTransformer::toRecordV2)
+                                                     .map(Record::dynamodb)
+                                                     .map(StreamRecord::keys)
+                                                     .map(keys -> keys.get(MemberTableParameter.ID.jsonFieldName()))
+                                                     .map(AttributeValue::s)
+                                                     .map(UUID::fromString)
+                                                     .collect(Collectors.toUnmodifiableSet());
 
-            final Set<UUID> updatedMembers = DynamodbEventTransformer.toRecordsV2(dynamodbEvent)
-                                                                     .stream()
-                                                                     .map(Record::dynamodb)
-                                                                     .map(StreamRecord::keys)
-                                                                     .map(keys -> keys.get(MemberTableParameter.ID.jsonFieldName()))
-                                                                     .map(AttributeValue::s)
-                                                                     .map(UUID::fromString)
-                                                                     .collect(Collectors.toUnmodifiableSet());
+            if (updatedMembers.isEmpty()) {
+                return null;
+            }
+
+            final UUID thisToken = Generators.timeBasedEpochRandomGenerator().generate();
 
             final UUID previousToken = Optional.ofNullable(syncHelper.getDdbItem(SyncHelper.LATEST, DdbTable.SYNC))
                                                .map(map -> map.get(SyncTableParameter.NEXT.jsonFieldName()))
@@ -76,10 +86,14 @@ class FamilyDirectorySyncLambda implements RequestHandler<DynamodbEvent, Void> {
                 final Update previousTokenUpdate = Update.builder()
                                                          .tableName(DdbTable.SYNC.name())
                                                          .key(singletonMap(SyncTableParameter.ID.jsonFieldName(), AttributeValue.fromS(previousToken.toString())))
-                                                         .updateExpression("SET %s = :nextKey, %s = :ttlKey".formatted(SyncTableParameter.NEXT.jsonFieldName(), SyncTableParameter.TTL.jsonFieldName()))
+                                                         .updateExpression("SET #ptr = :nextKey, #exp = :ttlKey")
+                                                         .expressionAttributeNames(Map.of(
+                                                            "#ptr", SyncTableParameter.NEXT.jsonFieldName(),
+                                                            "#exp", SyncTableParameter.TTL.jsonFieldName()
+                                                         ))
                                                          .expressionAttributeValues(Map.of(
-                                                             ":nextKey", AttributeValue.fromS(thisToken.toString()),
-                                                             ":ttlKey", AttributeValue.fromN(String.valueOf(Instant.now(Clock.systemUTC()).plus(DdbUtils.SYNC_TOKEN_TTL).getEpochSecond()))
+                                                            ":nextKey", AttributeValue.fromS(thisToken.toString()),
+                                                            ":ttlKey", AttributeValue.fromN(String.valueOf(Instant.now(Clock.systemUTC()).plus(DdbUtils.SYNC_TOKEN_TTL).getEpochSecond()))
                                                          ))
                                                          .build();
                 transactionItems.add(TransactWriteItem.builder().update(previousTokenUpdate).build());
@@ -87,8 +101,9 @@ class FamilyDirectorySyncLambda implements RequestHandler<DynamodbEvent, Void> {
                 final Update latestTokenUpdate = Update.builder()
                                                        .tableName(DdbTable.SYNC.name())
                                                        .key(singletonMap(SyncTableParameter.ID.jsonFieldName(), AttributeValue.fromS(SyncHelper.LATEST)))
-                                                       .updateExpression("SET %s = :nextKey".formatted(SyncTableParameter.NEXT.jsonFieldName()))
-                                                       .expressionAttributeValues(singletonMap(":nextKey", AttributeValue.fromS(thisToken.toString())))
+                                                       .updateExpression("SET #ptr = :nextKey")
+                                                       .expressionAttributeNames(singletonMap("#ptr", SyncTableParameter.NEXT.jsonFieldName()))
+                                                       .expressionAttributeValues(singletonMap(":ptrKey", AttributeValue.fromS(thisToken.toString())))
                                                        .build();
                 transactionItems.add(TransactWriteItem.builder().update(latestTokenUpdate).build());
             }

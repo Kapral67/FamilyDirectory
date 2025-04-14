@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.models.LambdaFunctionModel;
+import org.familydirectory.assets.lambda.function.stream.enums.StreamFunction;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.amplify.FamilyDirectoryAmplifyStack;
@@ -61,6 +62,7 @@ class LambdaFunctionConstructUtility {
                                                                                                       .timeout(seconds(f.timeoutSeconds()))
                                                                                                       .architecture(ARCHITECTURE)
                                                                                                       .memorySize(f.memorySize())
+                                                                                                      .reservedConcurrentExecutions(f instanceof StreamFunction ? 1 : null)
                                                                                                       .build());
                          function.configureAsyncInvoke(EventInvokeConfigOptions.builder()
                                                                                .retryAttempts(0)

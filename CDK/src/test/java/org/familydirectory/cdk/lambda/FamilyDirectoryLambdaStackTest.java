@@ -130,19 +130,21 @@ class FamilyDirectoryLambdaStackTest {
                                              .isBlank());
 
             final Capture policyResourcesCapture = new Capture();
-            final Map<String, Map<String, Object>> functionMap = template.findResources("AWS::Lambda::Function", objectLike(Map.of("Properties", Map.of("Architectures", singletonList(
-                                                                                                                                                                LambdaFunctionConstructUtility.ARCHITECTURE.toString()), "Environment", singletonMap("Variables", Map.of(LambdaUtils.EnvVar.ROOT_ID.name(), DdbUtils.ROOT_MEMBER_ID,
-                                                                                                                                                                                                                                                                         LambdaUtils.EnvVar.S3_PDF_BUCKET_NAME.name(),
-                                                                                                                                                                                                                                                                         singletonMap("Fn::ImportValue",
-                                                                                                                                                                                                                                                                                      FamilyDirectorySssStack.S3_PDF_BUCKET_NAME_EXPORT_NAME))),
-                                                                                                                                                        "Handler", function.handler(), "MemorySize",
-                                                                                                                                                        function.memorySize(), "Role",
-                                                                                                                                                        singletonMap("Fn::GetAtt",
-                                                                                                                                                                     List.of(functionRoleIdCapture.asString(),
-                                                                                                                                                                             "Arn")), "Runtime",
-                                                                                                                                                        LambdaFunctionConstructUtility.RUNTIME.toString(),
-                                                                                                                                                        "Timeout", function.timeoutSeconds()),
-                                                                                                                                   "DependsOn", policyResourcesCapture)));
+            final Map<String, Map<String, Object>> functionMap = template.findResources("AWS::Lambda::Function", objectLike(Map.of(
+                "Properties", Map.of(
+                    "Architectures", singletonList(LambdaFunctionConstructUtility.ARCHITECTURE.toString()),
+                    "Environment", singletonMap("Variables", Map.of(
+                            LambdaUtils.EnvVar.ROOT_ID.name(), DdbUtils.ROOT_MEMBER_ID,
+                            LambdaUtils.EnvVar.S3_PDF_BUCKET_NAME.name(), singletonMap("Fn::ImportValue", FamilyDirectorySssStack.S3_PDF_BUCKET_NAME_EXPORT_NAME)
+                        )),
+                    "Handler", function.handler(),
+                    "MemorySize", function.memorySize(),
+                    "ReservedConcurrentExecutions", 1,
+                    "Role", singletonMap("Fn::GetAtt", List.of(functionRoleIdCapture.asString(), "Arn")),
+                    "Runtime", LambdaFunctionConstructUtility.RUNTIME.toString(),
+                    "Timeout", function.timeoutSeconds()),
+                "DependsOn", policyResourcesCapture
+            )));
             assertEquals(1, functionMap.size());
             assertTrue(functionMap.containsKey(functionIdCapture.asString()));
 

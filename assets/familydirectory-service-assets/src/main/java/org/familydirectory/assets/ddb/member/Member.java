@@ -480,9 +480,6 @@ class Member extends MemberModel {
             if (lastModified == null) {
                 return this;
             }
-            if (lastModified.isAfter(this.lastModified)) {
-                throw new IllegalArgumentException("LastModified cannot be future");
-            }
             this.lastModified = lastModified;
             return this;
         }
