@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.uuid.UUIDType;
 import com.fasterxml.uuid.impl.UUIDUtil;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.Value;
@@ -20,6 +19,10 @@ import org.apache.commons.codec.binary.Base64;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.jetbrains.annotations.NotNull;
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.codec.binary.Base64.decodeBase64;
+import static org.apache.commons.codec.binary.Base64.encodeBase64URLSafeString;
+import static org.apache.commons.codec.binary.StringUtils.getBytesUtf8;
+import static org.apache.commons.codec.binary.StringUtils.newStringUtf8;
 
 @Value
 @Accessors(fluent = true)
@@ -47,7 +50,7 @@ class SyncToken {
     public static
     SyncToken of (@NotNull String base64orJson, @NotNull ObjectMapper mapper) throws IOException {
         if (Base64.isBase64(base64orJson)) {
-            base64orJson = new String(Base64.decodeBase64(base64orJson), StandardCharsets.UTF_8);
+            base64orJson = newStringUtf8(decodeBase64(base64orJson));
         }
         return mapper.readValue(base64orJson, SyncToken.class);
     }
@@ -63,8 +66,7 @@ class SyncToken {
     @NotNull
     public
     String toBase64 () {
-        return Base64.encodeBase64URLSafeString(this.toString()
-                                                    .getBytes(StandardCharsets.UTF_8));
+        return encodeBase64URLSafeString(getBytesUtf8(this.toString()));
     }
 
     @NotNull

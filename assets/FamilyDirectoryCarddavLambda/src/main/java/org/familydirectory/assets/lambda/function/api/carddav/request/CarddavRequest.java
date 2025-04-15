@@ -3,6 +3,7 @@ package org.familydirectory.assets.lambda.function.api.carddav.request;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.milton.http.Auth;
 import io.milton.http.Cookie;
+import io.milton.http.DateUtils;
 import io.milton.http.FileItem;
 import io.milton.http.Request;
 import io.milton.http.RequestParseException;
@@ -12,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -20,11 +22,12 @@ import java.util.Objects;
 import java.util.SequencedMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.CRLF;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.INFINITY;
 
 public
 class CarddavRequest implements Request {
-
-    private static final String CRLF = "\r\n";
+    private final Map<String, Object> attributes = new HashMap<>(0);
 
     private final SequencedMap<String, String> headers;
     private final Method method;
@@ -89,7 +92,7 @@ class CarddavRequest implements Request {
     @Override
     public
     String getRequestHeader (Header header) {
-        throw new UnsupportedOperationException();
+        return this.headers.get(header.code);
     }
 
     @Override
@@ -111,49 +114,63 @@ class CarddavRequest implements Request {
     @Override
     public
     String getRefererHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.REFERER.code);
     }
 
     @Override
     public
     String getTimeoutHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.TIMEOUT.code);
     }
 
     @Override
     public
     String getIfHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.IF.code);
     }
 
     @Override
     public
     String getIfRangeHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.IF_RANGE.code);
     }
 
     @Override
     public
     String getIfMatchHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.IF_MATCH.code);
     }
 
     @Override
     public
     String getIfNoneMatchHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.IF_NONE_MATCH.code);
     }
 
     @Override
     public
     Date getIfModifiedHeader () {
-        throw new UnsupportedOperationException();
+        final String ifModifiedHeader = this.headers.get(Header.IF_MODIFIED.code);
+
+        if (ifModifiedHeader == null || ifModifiedHeader.isBlank()) {
+            return null;
+        }
+
+        try {
+            return DateUtils.parseDate(ifModifiedHeader);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     @Override
     public
     int getDepthHeader () {
-        throw new UnsupportedOperationException();
+        int depth = INFINITY.intValue();
+        try {
+            depth = Integer.parseInt(this.headers.get(Header.DEPTH.code));
+        } catch (NumberFormatException ignored) {}
+        return Math.min(depth, INFINITY.intValue());
     }
 
     @Override
@@ -165,25 +182,26 @@ class CarddavRequest implements Request {
     @Override
     public
     String getAbsolutePath () {
-        throw new UnsupportedOperationException();
+        final int queryIndex = this.requestUri.indexOf('?');
+        return queryIndex > 0 ? this.requestUri.substring(0, queryIndex) : this.requestUri;
     }
 
     @Override
     public
     String getHostHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.HOST.code);
     }
 
     @Override
     public
     String getDestinationHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.DESTINATION.code);
     }
 
     @Override
     public
     String getExpectHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.EXPECT.code);
     }
 
     @Override
@@ -201,102 +219,104 @@ class CarddavRequest implements Request {
     @Override
     public
     String getContentTypeHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.CONTENT_TYPE.code);
     }
 
     @Override
     public
     Long getContentLengthHeader () {
-        throw new UnsupportedOperationException();
+        return Long.parseLong(this.headers.get(Header.CONTENT_LENGTH.code));
     }
 
     @Override
     public
     String getAcceptHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.ACCEPT.code);
     }
 
     @Override
     public
     String getAcceptEncodingHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.ACCEPT_ENCODING.code);
     }
 
     @Override
     public
     String getAcceptLanguage () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.ACCEPT_LANGUAGE.code);
     }
 
     @Override
     public
     String getRangeHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.RANGE.code);
     }
 
     @Override
     public
     String getContentRangeHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.CONTENT_RANGE.code);
     }
 
     @Override
     public
     Boolean getOverwriteHeader () {
-        throw new UnsupportedOperationException();
+        return Boolean.parseBoolean(this.headers.get(Header.OVERWRITE.code));
     }
 
     @Override
     public
     String getOriginHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.ORIGIN.code);
     }
 
     @Override
     public
     String getUserAgentHeader () {
-        throw new UnsupportedOperationException();
+        return this.headers.get(Header.ORIGIN.code);
     }
 
     @Override
     public
     Map<String, Object> getAttributes () {
-        throw new UnsupportedOperationException();
+        return this.attributes;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public
     Map<String, String> getParams () {
-        throw new UnsupportedOperationException();
+        return (Map<String, String>) attributes.get("_params");
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public
     Map<String, FileItem> getFiles () {
-        throw new UnsupportedOperationException();
+        return (Map<String, FileItem>) attributes.get("_files");
     }
 
     @Override
     public
     Cookie getCookie (String s) {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public
     List<Cookie> getCookies () {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public
     String getRemoteAddr () {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public
     Locale getLocale () {
-        throw new UnsupportedOperationException();
+        return Locale.ENGLISH;
     }
 }
