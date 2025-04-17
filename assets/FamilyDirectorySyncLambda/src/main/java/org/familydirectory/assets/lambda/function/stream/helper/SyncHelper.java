@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.fasterxml.uuid.impl.UUIDUtil;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.temporal.TemporalAmount;
+import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.helper.LambdaFunctionHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
@@ -16,7 +17,7 @@ import static java.util.Objects.requireNonNull;
 public final
 class SyncHelper implements LambdaFunctionHelper {
     public static final TemporalAmount SYNC_TOKEN_TTL = ofDays(parseLong(requireNonNull(getenv(LambdaUtils.EnvVar.SYNC_TOKEN_DURATION_DAYS.name()))));
-    public static final String LATEST = UUIDUtil.nilUUID().toString();
+    public static final String LATEST = DdbUtils.SYNC_TOKEN_LATEST.toString();
 
     private final @NotNull DynamoDbClient dynamoDbClient = DynamoDbClient.create();
     private final @NotNull LambdaLogger logger;

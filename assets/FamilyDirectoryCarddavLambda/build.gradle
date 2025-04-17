@@ -2,5 +2,6 @@ group = "${rootProject.group}.assets.lambda.function.api.familydirectorycarddavl
 
 dependencies {
     implementation libs.jetbrains.annotations
+    implementation libs.jug
     implementation libs.milton.api
 }

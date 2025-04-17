@@ -1,10 +1,12 @@
 package org.familydirectory.assets.ddb.utils;
 
+import com.fasterxml.uuid.impl.UUIDUtil;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,6 +33,7 @@ enum DdbUtils {
     public static final String ROOT_MEMBER_ID = "00000000-0000-0000-0000-000000000000";
     public static final Number DDB_STREAM_BATCH_WINDOW_SECONDS = 60;
     public static final long SYNC_TOKEN_DURATION_DAYS = 7;
+    public static final UUID SYNC_TOKEN_LATEST = UUIDUtil.nilUUID();
 
     public static @NotNull
     String normalizePhoneNumber (final @NotNull String uncheckedPhoneNumber) {

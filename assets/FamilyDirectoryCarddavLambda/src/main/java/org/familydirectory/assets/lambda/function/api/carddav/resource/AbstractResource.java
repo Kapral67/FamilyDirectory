@@ -14,9 +14,9 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
-import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SUPPORTED_METHODS;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SUPPORTED_PRIVILEGES;
 
 public abstract
 class AbstractResource implements GetableResource, ReportableResource, PropFindableResource, AccessControlledResource {
@@ -28,13 +28,12 @@ class AbstractResource implements GetableResource, ReportableResource, PropFinda
         this.carddavLambdaHelper = requireNonNull(carddavLambdaHelper);
     }
 
-    @Contract(value = "_ -> new", pure = true)
     @Override
     @Unmodifiable
     @NotNull
     public final
     List<Priviledge> getPriviledges (Auth auth) {
-        return singletonList(Priviledge.READ);
+        return SUPPORTED_PRIVILEGES;
     }
 
     @Contract(pure = true)
@@ -46,15 +45,18 @@ class AbstractResource implements GetableResource, ReportableResource, PropFinda
     }
 
     @Override
+    @Deprecated
     public final
-    void setAccessControlList (Map<Principal, List<Priviledge>> privs) {}
+    void setAccessControlList (Map<Principal, List<Priviledge>> privs) {
+        throw new UnsupportedOperationException();
+    }
 
     @Contract(pure = true)
     @Override
-    @Nullable
+    @NotNull
     public final
     Object authenticate (String user, String password) {
-        return null;
+        return true;
     }
 
     @Override
