@@ -1,7 +1,9 @@
 package org.familydirectory.assets.lambda.function.helper;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
@@ -13,6 +15,8 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.utils.SdkAutoCloseable;
 import static java.lang.System.getenv;
 import static java.util.Collections.singletonMap;
@@ -52,6 +56,22 @@ interface LambdaFunctionHelper extends SdkAutoCloseable {
                         .isEmpty())
                 ? null
                 : response.item();
+    }
+
+    @Nullable
+    default
+    List<Map<String, AttributeValue>> queryGsi (final @NotNull Map.Entry<String, String> attribute, final @NotNull String indexName, final @NotNull DdbTable ddbTable) {
+        final QueryRequest request = QueryRequest.builder()
+                                                 .tableName(ddbTable.name())
+                                                 .indexName(indexName)
+                                                 .keyConditionExpression("#key = :val")
+                                                 .expressionAttributeNames(singletonMap("#key", attribute.getKey()))
+                                                 .expressionAttributeValues(singletonMap(":val", AttributeValue.fromS(attribute.getValue())))
+                                                 .build();
+        return Optional.ofNullable(this.getDynamoDbClient().query(request))
+                       .map(QueryResponse::items)
+                       .filter(Predicate.not(List::isEmpty))
+                       .orElse(null);
     }
 
     @NotNull

@@ -121,7 +121,6 @@ class MemberModel {
     public
     String toString () {
         final StringBuilder stringBuilder = new StringBuilder("{");
-
         for (final MemberTableParameter field : MemberTableParameter.values()) {
             switch (field) {
                 case LAST_MODIFIED, ID, FAMILY_ID, VCARD, ETAG -> {
@@ -133,29 +132,21 @@ class MemberModel {
                 case FIRST_NAME -> stringBuilder.append("\"%s\"".formatted(this.getFirstName()));
                 case MIDDLE_NAME -> {
                     final String middleName = this.getMiddleName();
-                    stringBuilder.append(isNull(middleName)
-                                                 ? "null"
-                                                 : "\"%s\"".formatted(middleName));
+                    stringBuilder.append(isNull(middleName) ? "null" : "\"%s\"".formatted(middleName));
                 }
                 case LAST_NAME -> stringBuilder.append("\"%s\"".formatted(this.getLastName()));
                 case SUFFIX -> {
                     final SuffixType suffix = this.getSuffix();
-                    stringBuilder.append(isNull(suffix)
-                                                 ? "null"
-                                                 : "\"%s\"".formatted(suffix.value()));
+                    stringBuilder.append(isNull(suffix) ? "null" : "\"%s\"".formatted(suffix.value()));
                 }
                 case BIRTHDAY -> stringBuilder.append("\"%s\"".formatted(this.getBirthdayString()));
                 case DEATHDAY -> {
                     final String deathdate = this.getDeathdayString();
-                    stringBuilder.append(isNull(deathdate)
-                                                 ? "null"
-                                                 : "\"%s\"".formatted(deathdate));
+                    stringBuilder.append(isNull(deathdate) ? "null" : "\"%s\"".formatted(deathdate));
                 }
                 case EMAIL -> {
                     final String email = this.getEmail();
-                    stringBuilder.append(isNull(email)
-                                                 ? "null"
-                                                 : "\"%s\"".formatted(email));
+                    stringBuilder.append(isNull(email) ? "null" : "\"%s\"".formatted(email));
                 }
                 case PHONES -> {
                     final Map<PhoneType, String> phones = this.getPhones();
@@ -163,16 +154,15 @@ class MemberModel {
                         stringBuilder.append("null");
                     } else {
                         stringBuilder.append('{');
-
-                        for (final PhoneType phoneType : PhoneType.values()) {
+                        for (int i = 0; i < PhoneType.values().length; ++i) {
+                            final PhoneType phoneType = PhoneType.values()[i];
                             stringBuilder.append("%s: ".formatted(phoneType.getJson()));
                             final String phone = phones.get(phoneType);
-                            stringBuilder.append(isNull(phone)
-                                                         ? "null"
-                                                         : "\"%s\"".formatted(phone))
-                                         .append(',');
+                            stringBuilder.append(isNull(phone) ? "null" : "\"%s\"".formatted(phone));
+                            if (i < PhoneType.values().length - 1) {
+                                stringBuilder.append(',');
+                            }
                         }
-
                         stringBuilder.append('}');
                     }
                 }
@@ -182,14 +172,13 @@ class MemberModel {
                         stringBuilder.append("null");
                     } else {
                         stringBuilder.append('[');
-
-                        for (final String line : addressLines) {
-                            stringBuilder.append(isNull(line)
-                                                         ? "null"
-                                                         : "\"%s\"".formatted(line))
-                                         .append(',');
+                        for (int i = 0; i < addressLines.size(); ++i) {
+                            final String line = addressLines.get(i);
+                            stringBuilder.append(isNull(line) ? "null" : "\"%s\"".formatted(line));
+                            if (i < addressLines.size() - 1) {
+                                stringBuilder.append(',');
+                            }
                         }
-
                         stringBuilder.append(']');
                     }
                 }
@@ -197,9 +186,9 @@ class MemberModel {
             }
             stringBuilder.append(',');
         }
-
-        return stringBuilder.append('}')
-                            .toString();
+        // remove last comma
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        return stringBuilder.append('}').toString();
     }
 
     public String getEtag() {

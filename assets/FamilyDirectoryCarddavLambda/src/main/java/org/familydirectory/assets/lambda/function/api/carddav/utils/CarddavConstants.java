@@ -18,6 +18,8 @@ enum CarddavConstants {
     public static final String CRLF = "\r\n";
     public static final Number INFINITY = 3;
     public static final EnumSet<Method> SUPPORTED_METHODS = EnumSet.of(HEAD, PROPFIND, GET, OPTIONS, REPORT);
-    public static final List<Pair<String, String>> SUPPORTED_ADDRESS_DATA = singletonList(new Pair<>("text/vcard", "3.0"));
+    public static final String VCARD_CONTENT_TYPE = "text/vcard";
+    public static final List<Pair<String, String>> SUPPORTED_ADDRESS_DATA = singletonList(new Pair<>(VCARD_CONTENT_TYPE, "3.0"));
     public static final List<AccessControlledResource.Priviledge> SUPPORTED_PRIVILEGES = singletonList(AccessControlledResource.Priviledge.READ);
+    public static final String PRINCIPALS_COLLECTION_PATH = "/users/";
 }

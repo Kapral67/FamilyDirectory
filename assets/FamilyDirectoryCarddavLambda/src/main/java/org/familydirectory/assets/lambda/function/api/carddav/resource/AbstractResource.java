@@ -2,9 +2,9 @@ package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
 import io.milton.http.Auth;
 import io.milton.http.Request;
+import io.milton.http.values.HrefList;
 import io.milton.principal.Principal;
 import io.milton.resource.AccessControlledResource;
-import io.milton.resource.GetableResource;
 import io.milton.resource.PropFindableResource;
 import io.milton.resource.ReportableResource;
 import java.util.List;
@@ -15,11 +15,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 import static java.util.Objects.requireNonNull;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS_COLLECTION_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SUPPORTED_METHODS;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SUPPORTED_PRIVILEGES;
 
 public abstract
-class AbstractResource implements GetableResource, ReportableResource, PropFindableResource, AccessControlledResource {
+class AbstractResource implements ReportableResource, PropFindableResource, AccessControlledResource {
     @NotNull
     protected final CarddavLambdaHelper carddavLambdaHelper;
 
@@ -64,4 +65,18 @@ class AbstractResource implements GetableResource, ReportableResource, PropFinda
     boolean authorise (Request request, Request.Method method, Auth auth) {
         return SUPPORTED_METHODS.contains(method);
     }
+
+    @Override
+    public final
+    String getRealm() {
+        return null;
+    }
+
+    @Override
+    public final
+    HrefList getPrincipalCollectionHrefs () {
+        return HrefList.asList(PRINCIPALS_COLLECTION_PATH);
+    }
+
+    public abstract String getEtag();
 }

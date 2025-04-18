@@ -3,21 +3,20 @@ package org.familydirectory.assets.lambda.function.api.carddav.resource;
 import com.fasterxml.uuid.impl.UUIDUtil;
 import io.milton.common.InternationalizedString;
 import io.milton.http.exceptions.BadRequestException;
-import io.milton.http.exceptions.NotAuthorizedException;
 import io.milton.http.values.Pair;
 import io.milton.principal.PrincipalSearchCriteria;
 import io.milton.resource.AddressBookQuerySearchableResource;
 import io.milton.resource.AddressBookResource;
-import java.time.Instant;
 import java.util.Date;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
+import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.api.helpers.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
@@ -30,7 +29,7 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 public final
 class FamilyDirectoryResource extends AbstractResource implements AddressBookResource, AddressBookQuerySearchableResource {
 
-    private Set<MemberResource> memberResources = new HashSet<>();
+    private Map<UUID, MemberResource> memberResources = new HashMap<>();
     private boolean isMemberResourcesComplete = false;
 
     private UUID ctag = null;
@@ -44,8 +43,28 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
 
     @Override
     public
-    MemberResource child (String childName) throws BadRequestException {
-        return null;
+    String getEtag () {
+        return this.getCTag();
+    }
+
+    @Override
+    public
+    MemberResource child (String uuid) throws BadRequestException {
+        final UUID memberId = UUID.fromString(uuid);
+        final MemberResource prefetch = this.memberResources.get(memberId);
+        if (prefetch != null) {
+            return prefetch;
+        } else if (this.isMemberResourcesComplete) {
+            return null;
+        }
+        return Optional.ofNullable(this.carddavLambdaHelper.getDdbItem(uuid, DdbTable.MEMBER))
+                       .map(MemberRecord::convertDdbMap)
+                       .map(memberRecord -> {
+                           final var resource = new MemberResource(this.carddavLambdaHelper, memberRecord);
+                           this.memberResources.put(memberRecord.id(), resource);
+                           return resource;
+                       })
+                       .orElse(null);
     }
 
     @Override
@@ -54,15 +73,17 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
         if (!this.isMemberResourcesComplete) {
             this.memberResources = this.carddavLambdaHelper.scanMemberDdb()
                                                            .stream()
-                                                           .map(memberRecord -> new MemberResource(this.carddavLambdaHelper, memberRecord))
-                                                           .collect(Collectors.toUnmodifiableSet());
+                                                           .map(memberRecord -> Map.entry(memberRecord.id(), new MemberResource(this.carddavLambdaHelper, memberRecord)))
+                                                           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             this.isMemberResourcesComplete = true;
         }
-        return this.memberResources.stream()
+        return this.memberResources.values()
+                                   .stream()
                                    .toList();
     }
 
     @Override
+    @NotNull
     public
     String getCTag () {
         if (this.ctag != null) return this.ctag.toString();
@@ -93,22 +114,23 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
 
     @Override
     @Unmodifiable
-    public @NotNull
+    @NotNull
+    public
     List<Pair<String, String>> getSupportedAddressData () {
         return SUPPORTED_ADDRESS_DATA;
     }
 
     @Override
-    @Deprecated
+    @NotNull
     public
     Long getMaxResourceSize () {
-        throw new UnsupportedOperationException();
+        return 0L;
     }
 
     @Override
     public
-    List<MemberResource> getChildren (PrincipalSearchCriteria crit) throws NotAuthorizedException, BadRequestException {
-        return List.of();
+    List<MemberResource> getChildren (PrincipalSearchCriteria crit) throws BadRequestException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -116,6 +138,6 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
     public
     Date getModifiedDate () {
         if (this.ctag == null) this.getCTag();
-        return Date.from(Instant.ofEpochMilli(UUIDUtil.extractTimestamp(this.ctag)));
+        return new Date(UUIDUtil.extractTimestamp(this.ctag));
     }
 }

@@ -21,3 +21,9 @@ class FamilyDirectoryCarddavLambda implements RequestHandler<APIGatewayProxyRequ
         }
     }
 }
+
+/* Before continuing the write-it-all-yourself solution,
+ * let's try and see if we can use bedelwork
+ * we can decode the base64 body to byte[]
+ * and feed as InputStream to some
+ */
