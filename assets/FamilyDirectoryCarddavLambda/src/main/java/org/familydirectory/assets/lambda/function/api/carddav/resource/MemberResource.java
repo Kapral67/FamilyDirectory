@@ -114,6 +114,6 @@ class MemberResource extends AbstractResource implements GetableResource {
     @Override
     public
     String getEtag () {
-        return this.member.member().getEftag();
+        return this.member.member().getEtag();
     }
 }
