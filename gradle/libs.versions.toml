@@ -32,4 +32,4 @@ milton-api = { module = "io.milton:milton-api", version = "4.0.5.2400" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop", version = "2.0.17" }
 
 [plugins]
-github-spotbugs = "com.github.spotbugs:6.1.7"
+github-spotbugs = "com.github.spotbugs:6.1.10"
