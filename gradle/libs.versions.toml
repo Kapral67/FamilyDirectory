@@ -2,7 +2,7 @@
 aws-cdk = "2.189.0"
 aws-cdk-alpha = "2.189.0-alpha.0"
 github-spotbugs = "4.9.3"
-jackson = "2.18.3"
+jackson = "2.19.0"
 
 [libraries]
 apache-commons-text = { module = "org.apache.commons:commons-text", version = "1.13.1" }
