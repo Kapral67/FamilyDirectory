@@ -29,6 +29,8 @@ class ApiHelper implements LambdaFunctionHelper {
     protected final @NotNull LambdaLogger logger;
     protected final @NotNull APIGatewayProxyRequestEvent requestEvent;
 
+    private Caller caller = null;
+
     public
     ApiHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) {
         super();
@@ -40,6 +42,9 @@ class ApiHelper implements LambdaFunctionHelper {
     @NotNull
     public final
     Caller getCaller () throws ResponseException {
+        if (this.caller != null) {
+            return this.caller;
+        }
         final MemberRecord caller;
         final boolean isCallerAdmin;
         try {
@@ -74,7 +79,8 @@ class ApiHelper implements LambdaFunctionHelper {
 
         this.getLogger()
             .log("<MEMBER,`%s`> Authenticated".formatted(caller.id()), INFO);
-        return new Caller(caller, isCallerAdmin);
+        this.caller = new Caller(caller, isCallerAdmin);
+        return this.caller;
     }
 
     public final @NotNull

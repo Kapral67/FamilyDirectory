@@ -7,79 +7,82 @@ import io.milton.http.values.Pair;
 import io.milton.principal.PrincipalSearchCriteria;
 import io.milton.resource.AddressBookQuerySearchableResource;
 import io.milton.resource.AddressBookResource;
+import io.milton.resource.Resource;
+import io.milton.resource.SyncCollectionResource;
+import java.net.URI;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.api.helpers.CarddavLambdaHelper;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static com.fasterxml.uuid.UUIDType.TIME_BASED_EPOCH;
 import static java.util.Locale.ENGLISH;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SUPPORTED_ADDRESS_DATA;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SYNC_TOKEN_PATH;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.URL;
 
 public final
-class FamilyDirectoryResource extends AbstractResource implements AddressBookResource, AddressBookQuerySearchableResource {
+class FamilyDirectoryResource extends AbstractResource implements AddressBookResource, AddressBookQuerySearchableResource, SyncCollectionResource {
 
-    private Map<UUID, MemberResource> memberResources = new HashMap<>();
     private boolean isMemberResourcesComplete = false;
-
     private UUID ctag = null;
-
     private InternationalizedString description = null;
 
-    public
+    private final ResourceFactory resourceFactory;
+
+    /**
+     * @see ResourceFactory
+     */
     FamilyDirectoryResource (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
-        super (carddavLambdaHelper);
+        super(carddavLambdaHelper);
+        this.resourceFactory = ResourceFactory.getInstance(carddavLambdaHelper);
     }
 
     @Override
+    @NotNull
     public
     String getEtag () {
         return this.getCTag();
     }
 
     @Override
+    @NotNull
     public
-    MemberResource child (String uuid) throws BadRequestException {
+    IMemberResource child (String uuid) {
         final UUID memberId = UUID.fromString(uuid);
-        final MemberResource prefetch = this.memberResources.get(memberId);
-        if (prefetch != null) {
-            return prefetch;
-        } else if (this.isMemberResourcesComplete) {
-            return null;
+        final var prefetch = this.resourceFactory.getOptionalMemberResource(memberId);
+        if (prefetch.isPresent()) {
+            return prefetch.get();
+        }
+        if (this.isMemberResourcesComplete) {
+            return this.resourceFactory.getMemberResource(memberId, this.getModifiedDate());
         }
         return Optional.ofNullable(this.carddavLambdaHelper.getDdbItem(uuid, DdbTable.MEMBER))
                        .map(MemberRecord::convertDdbMap)
-                       .map(memberRecord -> {
-                           final var resource = new MemberResource(this.carddavLambdaHelper, memberRecord);
-                           this.memberResources.put(memberRecord.id(), resource);
-                           return resource;
-                       })
-                       .orElse(null);
+                       .map(this.resourceFactory::getMemberResource)
+                       .orElseGet(() -> this.resourceFactory.getMemberResource(memberId, this.getModifiedDate()));
     }
 
     @Override
+    @NotNull
+    @Unmodifiable
     public
-    List<MemberResource> getChildren () {
+    List<IMemberResource> getChildren () {
         if (!this.isMemberResourcesComplete) {
-            this.memberResources = this.carddavLambdaHelper.scanMemberDdb()
-                                                           .stream()
-                                                           .map(memberRecord -> Map.entry(memberRecord.id(), new MemberResource(this.carddavLambdaHelper, memberRecord)))
-                                                           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            this.carddavLambdaHelper.scanMemberDdb().forEach(this.resourceFactory::getMemberResource);
             this.isMemberResourcesComplete = true;
         }
-        return this.memberResources.values()
-                                   .stream()
-                                   .toList();
+        return this.resourceFactory.getMemberResources();
     }
 
     @Override
@@ -134,10 +137,36 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
     }
 
     @Override
+    public
+    String getName () {
+        return ADDRESS_BOOK;
+    }
+
+    @Override
     @NotNull
     public
     Date getModifiedDate () {
         if (this.ctag == null) this.getCTag();
         return new Date(UUIDUtil.extractTimestamp(this.ctag));
+    }
+
+    @Contract(" -> new")
+    @Override
+    @NotNull
+    public
+    URI getSyncToken () {
+        return URI.create(URL + SYNC_TOKEN_PATH + this.getCTag());
+    }
+
+    @Override
+    public
+    Map<String, Resource> findResourcesBySyncToken (URI syncToken) throws BadRequestException {
+        try {
+            return Map.of();
+        } catch (final Exception e) {
+            final var toThrow = new BadRequestException(this, "Invalid Sync Token");
+            toThrow.initCause(e);
+            throw toThrow;
+        }
     }
 }
