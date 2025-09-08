@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.CONTACTS_COLLECTION_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.URL;
-import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.USER_PRINCIPALS_COLLECTION_PATH;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS_COLLECTION_PATH;
 
 public final
 class UserPrincipal extends AbstractPrincipal implements DirectoryGatewayCardDavPrincipal {
@@ -46,7 +46,7 @@ class UserPrincipal extends AbstractPrincipal implements DirectoryGatewayCardDav
     @NotNull
     public
     String getPrincipalURL () {
-        return URL + USER_PRINCIPALS_COLLECTION_PATH + this.user.id();
+        return URL + PRINCIPALS_COLLECTION_PATH + this.user.id();
     }
 
     /**
@@ -63,5 +63,11 @@ class UserPrincipal extends AbstractPrincipal implements DirectoryGatewayCardDav
     public
     PrincipleId getIdenitifer () {
         return this.principalId;
+    }
+
+    @Override
+    public
+    String getName () {
+        return this.user.id().toString();
     }
 }

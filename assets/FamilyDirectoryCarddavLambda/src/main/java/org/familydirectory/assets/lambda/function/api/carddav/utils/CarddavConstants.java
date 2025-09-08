@@ -30,7 +30,6 @@ enum CarddavConstants {
     public static final String ADDRESS_BOOK_PATH = "/%s".formatted(ADDRESS_BOOK);
     public static final String CONTACTS_COLLECTION_PATH = "%s/".formatted(ADDRESS_BOOK_PATH);
     public static final String PRINCIPALS_COLLECTION_PATH = "/principals/";
-    public static final String USER_PRINCIPALS_COLLECTION_PATH = "/principals/users/";
     public static final String SYSTEM_PRINCIPAL = "system";
-    public static final String SYSTEM_PRINCIPAL_PATH = "/principals/" +  SYSTEM_PRINCIPAL;
+    public static final String SYSTEM_PRINCIPAL_PATH = PRINCIPALS_COLLECTION_PATH + SYSTEM_PRINCIPAL;
 }

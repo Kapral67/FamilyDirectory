@@ -15,6 +15,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
+import org.familydirectory.assets.lambda.function.api.carddav.principal.AbstractPrincipal;
 import org.familydirectory.assets.lambda.function.api.carddav.principal.SystemPrincipal;
 import org.familydirectory.assets.lambda.function.api.helpers.CarddavLambdaHelper;
 import org.jetbrains.annotations.Contract;
@@ -111,7 +112,19 @@ class ResourceFactory implements io.milton.http.ResourceFactory {
     @NotNull
     @Unmodifiable
     List<IMemberResource> getMemberResources () {
-        return this.getResourceStream(IMemberResource.class::isInstance).map(IMemberResource.class::cast).toList();
+        return this.getResources(IMemberResource.class);
+    }
+
+    @NotNull
+    @Unmodifiable
+    List<AbstractPrincipal> getPrincipals() {
+        return this.getResources(AbstractPrincipal.class);
+    }
+
+    @NotNull
+    @Unmodifiable
+    <T extends IResource> List<T> getResources(@NotNull Class<T> clazz) {
+        return this.getResourceStream(clazz::isInstance).map(clazz::cast).toList();
     }
 
     private <T extends AbstractResourceObject> T getFirstResource(@NotNull Class<T> clazz, Function<CarddavLambdaHelper, T> ctor) {
