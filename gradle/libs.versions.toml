@@ -1,7 +1,7 @@
 [versions]
 aws-cdk = "2.189.0"
 aws-cdk-alpha = "2.189.0-alpha.0"
-github-spotbugs = "4.9.3"
+github-spotbugs = "4.9.6"
 jackson = "2.18.3"
 
 [libraries]
