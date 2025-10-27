@@ -1,8 +1,8 @@
 package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
 import com.amazonaws.services.lambda.runtime.logging.LogLevel;
+import io.milton.http.ResourceFactory;
 import io.milton.http.exceptions.BadRequestException;
-import io.milton.http.exceptions.ConflictException;
 import io.milton.http.exceptions.NotFoundException;
 import java.util.Date;
 import java.util.HashSet;
@@ -12,7 +12,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.api.carddav.principal.AbstractPrincipal;
@@ -24,22 +23,22 @@ import org.jetbrains.annotations.Unmodifiable;
 import static java.util.Objects.requireNonNull;
 
 public final
-class ResourceFactory implements io.milton.http.ResourceFactory {
-    private static ResourceFactory INSTANCE = null;
+class FDResourceFactory implements ResourceFactory {
+    private static FDResourceFactory INSTANCE = null;
 
     @NotNull
     private final CarddavLambdaHelper carddavLambdaHelper;
     private final Set<AbstractResourceObject> resources = new HashSet<>();
 
     private
-    ResourceFactory (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
+    FDResourceFactory (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
         this.carddavLambdaHelper = requireNonNull(carddavLambdaHelper);
     }
 
-    public static
-    ResourceFactory getInstance (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
+    public synchronized static
+    FDResourceFactory getInstance (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
         if (INSTANCE == null) {
-            INSTANCE = new ResourceFactory(carddavLambdaHelper);
+            INSTANCE = new FDResourceFactory(carddavLambdaHelper);
         }
         return INSTANCE;
     }

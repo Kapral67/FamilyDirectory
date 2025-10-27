@@ -1,7 +1,6 @@
 package org.familydirectory.assets.lambda.function.stream.helper;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.fasterxml.uuid.impl.UUIDUtil;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.temporal.TemporalAmount;
 import org.familydirectory.assets.ddb.utils.DdbUtils;

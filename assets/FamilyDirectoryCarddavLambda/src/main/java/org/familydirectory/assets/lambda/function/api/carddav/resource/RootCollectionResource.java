@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 public final
 class RootCollectionResource extends AbstractResource implements CollectionResource {
     /**
-     * @see ResourceFactory
+     * @see FDResourceFactory
      */
     RootCollectionResource (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
         super(carddavLambdaHelper);
@@ -27,7 +27,7 @@ class RootCollectionResource extends AbstractResource implements CollectionResou
     @Override
     public
     List<IResource> getChildren () throws NotAuthorizedException, BadRequestException {
-        return ResourceFactory.getInstance(this.carddavLambdaHelper).getResources(IResource.class);
+        return FDResourceFactory.getInstance(this.carddavLambdaHelper).getResources(IResource.class);
     }
 
     @Override

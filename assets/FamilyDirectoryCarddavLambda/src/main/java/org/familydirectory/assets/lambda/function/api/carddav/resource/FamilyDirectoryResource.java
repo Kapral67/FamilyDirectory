@@ -38,14 +38,14 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
     private UUID ctag = null;
     private InternationalizedString description = null;
 
-    private final ResourceFactory resourceFactory;
+    private final FDResourceFactory resourceFactory;
 
     /**
-     * @see ResourceFactory
+     * @see FDResourceFactory
      */
     FamilyDirectoryResource (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
         super(carddavLambdaHelper);
-        this.resourceFactory = ResourceFactory.getInstance(carddavLambdaHelper);
+        this.resourceFactory = FDResourceFactory.getInstance(carddavLambdaHelper);
     }
 
     @Override

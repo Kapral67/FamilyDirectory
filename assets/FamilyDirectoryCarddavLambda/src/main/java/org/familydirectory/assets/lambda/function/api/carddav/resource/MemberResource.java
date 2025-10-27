@@ -26,7 +26,7 @@ class MemberResource extends AbstractResource implements IMemberResource, Getabl
     private final byte[] vcard;
 
     /**
-     * @see ResourceFactory
+     * @see FDResourceFactory
      */
     MemberResource (@NotNull CarddavLambdaHelper carddavLambdaHelper, @NotNull MemberRecord member) {
         super(carddavLambdaHelper);

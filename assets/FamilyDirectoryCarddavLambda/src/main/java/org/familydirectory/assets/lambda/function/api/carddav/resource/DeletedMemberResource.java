@@ -16,7 +16,7 @@ class DeletedMemberResource extends AbstractResourceObject implements IMemberRes
     private final Date modifiedDate;
 
     /**
-     * @see ResourceFactory
+     * @see FDResourceFactory
      */
     DeletedMemberResource(@NotNull UUID id, @NotNull Date modifiedDate) {
         this.id = requireNonNull(id);
@@ -33,6 +33,6 @@ class DeletedMemberResource extends AbstractResourceObject implements IMemberRes
     @NotNull
     public
     Date getModifiedDate () {
-        return this.modifiedDate;
+        return (Date) this.modifiedDate.clone();
     }
 }

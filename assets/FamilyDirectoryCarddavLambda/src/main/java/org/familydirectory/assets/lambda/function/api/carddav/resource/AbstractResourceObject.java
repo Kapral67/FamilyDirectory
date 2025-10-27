@@ -21,4 +21,10 @@ class AbstractResourceObject implements IResource {
 
         return this.getName().equals(((AbstractResourceObject) o).getName());
     }
+
+    @Override
+    public final
+    int hashCode () {
+        return this.getName().hashCode();
+    }
 }

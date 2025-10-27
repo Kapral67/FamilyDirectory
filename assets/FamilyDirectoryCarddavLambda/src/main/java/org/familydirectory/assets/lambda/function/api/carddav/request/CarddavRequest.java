@@ -279,7 +279,7 @@ class CarddavRequest implements Request {
     @Override
     public
     Map<String, Object> getAttributes () {
-        return this.attributes;
+        return Collections.unmodifiableMap(this.attributes);
     }
 
     @SuppressWarnings("unchecked")

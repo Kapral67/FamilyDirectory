@@ -7,17 +7,11 @@ import io.milton.resource.AccessControlledResource;
 import io.milton.resource.PropFindableResource;
 import io.milton.resource.ReportableResource;
 import java.time.Instant;
-import java.util.AbstractMap;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.familydirectory.assets.lambda.function.api.helpers.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -48,7 +42,7 @@ class AbstractResource extends AbstractResourceObject implements ReportableResou
     @Override
     public final
     Map<Principal, List<Priviledge>> getAccessControlList () {
-        return ResourceFactory.getInstance(this.carddavLambdaHelper).getPrincipals().stream().collect(toUnmodifiableMap(identity(), () -> SUPPORTED_PRIVILEGES));
+        return FDResourceFactory.getInstance(this.carddavLambdaHelper).getPrincipals().stream().collect(toUnmodifiableMap(identity(), p -> p.getPriviledges(null)));
     }
 
     @Override
