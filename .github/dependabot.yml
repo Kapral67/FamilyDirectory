@@ -15,3 +15,6 @@ updates:
       awscdk:
         patterns:
           - "software.amazon.awscdk:*"
+      github-spotbugs:
+        patterns:
+          - "github*spotbugs"
