@@ -151,9 +151,10 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
 
     @Override
     public
-    List<IMemberResource> getChildren (PrincipalSearchCriteria crit) throws BadRequestException {
-        // TODO
-        throw new UnsupportedOperationException();
+    List<IMemberResource> getChildren (PrincipalSearchCriteria crit) {
+        // We return all children to any addressbook-query request
+        // to prefer clients perform filtering locally
+        return this.getChildren();
     }
 
     @Override
