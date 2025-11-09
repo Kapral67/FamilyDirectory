@@ -1,67 +1,63 @@
 package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
-import io.milton.http.Auth;
-import io.milton.http.Request;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.milton.http.exceptions.BadRequestException;
-import io.milton.http.exceptions.NotAuthorizedException;
 import io.milton.resource.CollectionResource;
-import io.milton.resource.Resource;
 import java.util.Date;
 import java.util.List;
+import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
+import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
+import org.jetbrains.annotations.NotNull;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS;
 
 public final
-class PrincipalCollectionResource implements CollectionResource {
+class PrincipalCollectionResource extends AbstractResource implements CollectionResource {
+    private final SystemPrincipal systemPrincipal;
+    private final UserPrincipal userPrincipal;
+
+    /**
+     * @see FDResourceFactory
+     */
+    PrincipalCollectionResource(@NotNull CarddavLambdaHelper carddavLambdaHelper) throws ApiHelper.ResponseException {
+        super(carddavLambdaHelper);
+        this.systemPrincipal = new SystemPrincipal(carddavLambdaHelper);
+        this.userPrincipal = new UserPrincipal(carddavLambdaHelper);
+    }
+
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     @Override
     public
-    Resource child (String childName) throws NotAuthorizedException, BadRequestException {
-        return null;
+    AbstractPrincipal child (String name) throws BadRequestException {
+        if (systemPrincipal.getName().equals(name)) {
+            return systemPrincipal;
+        }
+        if (userPrincipal.getName().equals(name)) {
+            return userPrincipal;
+        }
+        throw new BadRequestException(this, "Unknown principal: " + name);
     }
 
     @Override
     public
-    List<? extends Resource> getChildren () throws NotAuthorizedException, BadRequestException {
-        return List.of();
-    }
-
-    @Override
-    public
-    String getUniqueId () {
-        return "";
+    List<AbstractPrincipal> getChildren () {
+        return List.of(systemPrincipal, userPrincipal);
     }
 
     @Override
     public
     String getName () {
-        return "";
-    }
-
-    @Override
-    public
-    Object authenticate (String user, String password) {
-        return null;
-    }
-
-    @Override
-    public
-    boolean authorise (Request request, Request.Method method, Auth auth) {
-        return false;
-    }
-
-    @Override
-    public
-    String getRealm () {
-        return "";
+        return PRINCIPALS;
     }
 
     @Override
     public
     Date getModifiedDate () {
-        return null;
+        return this.getCreateDate();
     }
 
     @Override
     public
-    String checkRedirect (Request request) throws NotAuthorizedException, BadRequestException {
-        return "";
+    String getEtag () {
+        return this.getName();
     }
 }

@@ -15,17 +15,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
-import org.familydirectory.assets.lambda.function.api.helpers.CarddavLambdaHelper;
+import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static com.fasterxml.uuid.UUIDType.TIME_BASED_EPOCH;
+import static java.util.Collections.emptyMap;
 import static java.util.Locale.ENGLISH;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SUPPORTED_ADDRESS_DATA;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SYNC_TOKEN_PATH;
@@ -38,14 +42,11 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
     private UUID ctag = null;
     private InternationalizedString description = null;
 
-    private final FDResourceFactory resourceFactory;
-
     /**
      * @see FDResourceFactory
      */
     FamilyDirectoryResource (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
         super(carddavLambdaHelper);
-        this.resourceFactory = FDResourceFactory.getInstance(carddavLambdaHelper);
     }
 
     @Override
@@ -60,17 +61,22 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
     public
     IMemberResource child (String uuid) {
         final UUID memberId = UUID.fromString(uuid);
-        final var prefetch = this.resourceFactory.getOptionalMemberResource(memberId);
+        final var prefetch = this.resourceFactory.getResources()
+                                                 .stream()
+                                                 .filter(IMemberResource.class::isInstance)
+                                                 .map(IMemberResource.class::cast)
+                                                 .filter(memberResource -> memberResource.getName().equals(uuid))
+                                                 .findAny();
         if (prefetch.isPresent()) {
             return prefetch.get();
         }
         if (this.isMemberResourcesComplete) {
-            return this.resourceFactory.getMemberResource(memberId, this.getModifiedDate());
+            return new DeletedMemberResource(this.carddavLambdaHelper, memberId, this.getModifiedDate());
         }
         return Optional.ofNullable(this.carddavLambdaHelper.getDdbItem(uuid, DdbTable.MEMBER))
                        .map(MemberRecord::convertDdbMap)
-                       .map(this.resourceFactory::getMemberResource)
-                       .orElseGet(() -> this.resourceFactory.getMemberResource(memberId, this.getModifiedDate()));
+                       .map(memberRecord -> (IMemberResource) new PresentMemberResource(this.carddavLambdaHelper, memberRecord))
+                       .orElse(new DeletedMemberResource(this.carddavLambdaHelper, memberId, this.getModifiedDate()));
     }
 
     @Override
@@ -79,10 +85,23 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
     public
     List<IMemberResource> getChildren () {
         if (!this.isMemberResourcesComplete) {
-            this.carddavLambdaHelper.scanMemberDdb().forEach(this.resourceFactory::getMemberResource);
+            final var existingResources = this.resourceFactory.getResources()
+                                                              .stream()
+                                                              .filter(PresentMemberResource.class::isInstance)
+                                                              .map(PresentMemberResource.class::cast)
+                                                              .map(PresentMemberResource::getName)
+                                                              .collect(Collectors.toUnmodifiableSet());
+            this.carddavLambdaHelper.scanMemberDdb()
+                                    .stream()
+                                    .filter(memberRecord -> !existingResources.contains(memberRecord.id().toString()))
+                                    .forEach(memberRecord -> new PresentMemberResource(this.carddavLambdaHelper, memberRecord));
             this.isMemberResourcesComplete = true;
         }
-        return this.resourceFactory.getMemberResources();
+        return this.resourceFactory.getResources()
+                                   .stream()
+                                   .filter(IMemberResource.class::isInstance)
+                                   .map(IMemberResource.class::cast)
+                                   .toList();
     }
 
     @Override
@@ -132,7 +151,8 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
 
     @Override
     public
-    List<MemberResource> getChildren (PrincipalSearchCriteria crit) throws BadRequestException {
+    List<IMemberResource> getChildren (PrincipalSearchCriteria crit) throws BadRequestException {
+        // TODO
         throw new UnsupportedOperationException();
     }
 
@@ -160,13 +180,19 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
 
     @Override
     public
-    Map<String, Resource> findResourcesBySyncToken (URI syncToken) throws BadRequestException {
+    Map<String, Resource> findResourcesBySyncToken (URI syncTokenUri) throws BadRequestException {
         try {
-            return Map.of();
+            if (this.getSyncToken().equals(syncTokenUri)) {
+                return emptyMap();
+            }
+            final var syncToken = UUID.fromString(syncTokenUri.getPath().split("/")[2]);
+            return this.carddavLambdaHelper.traverseSyncDdb(syncToken)
+                                           .stream()
+                                           .map(UUID::toString)
+                                           .map(this::child)
+                                           .collect(toUnmodifiableMap(IMemberResource::getHref, identity()));
         } catch (final Exception e) {
-            final var toThrow = new BadRequestException(this, "Invalid Sync Token");
-            toThrow.initCause(e);
-            throw toThrow;
+            throw (BadRequestException) new BadRequestException(this, "Invalid Sync Token").initCause(e);
         }
     }
 }

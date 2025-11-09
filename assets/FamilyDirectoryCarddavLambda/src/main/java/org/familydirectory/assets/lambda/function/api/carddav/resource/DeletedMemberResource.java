@@ -3,6 +3,7 @@ package org.familydirectory.assets.lambda.function.api.carddav.resource;
 import io.milton.resource.RemovedResource;
 import java.util.Date;
 import java.util.UUID;
+import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
 import static java.util.Objects.requireNonNull;
 
@@ -18,7 +19,8 @@ class DeletedMemberResource extends AbstractResourceObject implements IMemberRes
     /**
      * @see FDResourceFactory
      */
-    DeletedMemberResource(@NotNull UUID id, @NotNull Date modifiedDate) {
+    DeletedMemberResource(@NotNull CarddavLambdaHelper carddavLambdaHelper, @NotNull UUID id, @NotNull Date modifiedDate) {
+        super(carddavLambdaHelper);
         this.id = requireNonNull(id);
         this.modifiedDate = requireNonNull(modifiedDate);
     }

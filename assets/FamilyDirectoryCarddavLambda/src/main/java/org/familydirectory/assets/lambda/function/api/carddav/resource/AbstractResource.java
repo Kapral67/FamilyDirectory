@@ -10,10 +10,9 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import org.familydirectory.assets.lambda.function.api.helpers.CarddavLambdaHelper;
+import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
-import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS_COLLECTION_PATH;
@@ -23,12 +22,9 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 
 public abstract
 class AbstractResource extends AbstractResourceObject implements ReportableResource, PropFindableResource, AccessControlledResource {
-    @NotNull
-    protected final CarddavLambdaHelper carddavLambdaHelper;
-
     protected
     AbstractResource (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
-        this.carddavLambdaHelper = requireNonNull(carddavLambdaHelper);
+        super(carddavLambdaHelper);
     }
 
     @Override
@@ -42,7 +38,14 @@ class AbstractResource extends AbstractResourceObject implements ReportableResou
     @Override
     public final
     Map<Principal, List<Priviledge>> getAccessControlList () {
-        return FDResourceFactory.getInstance(this.carddavLambdaHelper).getPrincipals().stream().collect(toUnmodifiableMap(identity(), p -> p.getPriviledges(null)));
+        return this.resourceFactory.getRoot()
+                                   .getChildren()
+                                   .stream()
+                                   .filter(PrincipalCollectionResource.class::isInstance)
+                                   .map(PrincipalCollectionResource.class::cast)
+                                   .map(PrincipalCollectionResource::getChildren)
+                                   .flatMap(List::stream)
+                                   .collect(toUnmodifiableMap(identity(), p -> p.getPriviledges(null)));
     }
 
     @Override

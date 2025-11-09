@@ -1,156 +1,66 @@
 package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
-import com.amazonaws.services.lambda.runtime.logging.LogLevel;
+import io.milton.common.Path;
 import io.milton.http.ResourceFactory;
 import io.milton.http.exceptions.BadRequestException;
-import io.milton.http.exceptions.NotFoundException;
-import java.util.Date;
+import io.milton.http.exceptions.NotAuthorizedException;
+import io.milton.resource.CollectionResource;
+import io.milton.resource.Resource;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
-import org.familydirectory.assets.ddb.models.member.MemberRecord;
-import org.familydirectory.assets.lambda.function.api.carddav.principal.AbstractPrincipal;
-import org.familydirectory.assets.lambda.function.api.carddav.principal.SystemPrincipal;
-import org.familydirectory.assets.lambda.function.api.helpers.CarddavLambdaHelper;
+import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
+import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Unmodifiable;
+import org.jetbrains.annotations.UnmodifiableView;
 import static java.util.Objects.requireNonNull;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.INITIAL_RESOURCE_CONTAINER_SIZE;
 
 public final
 class FDResourceFactory implements ResourceFactory {
-    private static FDResourceFactory INSTANCE = null;
+    private final Set<AbstractResourceObject> resources = new HashSet<>(INITIAL_RESOURCE_CONTAINER_SIZE);
+    private final RootCollectionResource rootCollectionResource;
 
-    @NotNull
-    private final CarddavLambdaHelper carddavLambdaHelper;
-    private final Set<AbstractResourceObject> resources = new HashSet<>();
-
-    private
-    FDResourceFactory (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
-        this.carddavLambdaHelper = requireNonNull(carddavLambdaHelper);
-    }
-
-    public synchronized static
-    FDResourceFactory getInstance (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
-        if (INSTANCE == null) {
-            INSTANCE = new FDResourceFactory(carddavLambdaHelper);
-        }
-        return INSTANCE;
+    public
+    FDResourceFactory (@NotNull CarddavLambdaHelper carddavLambdaHelper) throws ApiHelper.ResponseException {
+        requireNonNull(carddavLambdaHelper);
+        carddavLambdaHelper.registerResourceFactory(this);
+        this.rootCollectionResource = new RootCollectionResource(carddavLambdaHelper);
     }
 
     @Override
     public
-    AbstractResourceObject getResource (String host, String path) throws BadRequestException {
-        final BadRequestException toThrow = new BadRequestException("Bad Path");
-        try {
-        } catch (final Exception e) {
-            toThrow.initCause(e);
+    Resource getResource (String host, String sPath) throws BadRequestException, NotAuthorizedException {
+        return this.find(Path.path(sPath));
+    }
+
+    private Resource find(Path path) throws BadRequestException, NotAuthorizedException {
+        if (path.isRoot()) {
+            return this.rootCollectionResource;
         }
-        throw toThrow;
-    }
-
-    @NotNull
-    public
-    IMemberResource getMemberResource (final String name) throws NotFoundException {
-       return this.getOptionalMemberResource(UUID.fromString(name)).orElseThrow(() -> new NotFoundException("Member not found"));
-    }
-
-    @NotNull
-    public
-    SystemPrincipal getSystemPrincipal () {
-        return getFirstResource(SystemPrincipal.class, SystemPrincipal::new);
-    }
-
-    @NotNull
-    public
-    FamilyDirectoryResource getFamilyDirectoryResource () {
-        return getFirstResource(FamilyDirectoryResource.class, FamilyDirectoryResource::new);
-    }
-
-    @NotNull
-    Optional<IMemberResource> getOptionalMemberResource(@NotNull final UUID name) {
-        final var clazz = IMemberResource.class;
-        return this.getResourceStream(clazz::isInstance, getNamePredicate(name.toString())).map(clazz::cast).findFirst();
-    }
-
-    @NotNull
-    IMemberResource getMemberResource(@NotNull final UUID name, final Date modifiedDate) {
-        final var potential = this.getResourceStream(IMemberResource.class::isInstance, getNamePredicate(name.toString())).findFirst();
-        if (potential.isPresent()) {
-            if (potential.get() instanceof DeletedMemberResource deleted) {
-                return deleted;
-            }
-            this.carddavLambdaHelper.getLogger().log("[CONFLICT] Expected Member %s Deleted".formatted(name), LogLevel.WARN);
-            return (IMemberResource) potential.get();
+        final var parent = find(path.getParent());
+        if (parent instanceof CollectionResource parentCollection) {
+            return parentCollection.child(path.getName());
         }
-        final var deleted = new DeletedMemberResource(name, modifiedDate);
-        this.resources.add(deleted);
-        return deleted;
+        throw new BadRequestException(parent, "Unknown Resource: " + path.getName());
     }
 
-    @NotNull
-    IMemberResource getMemberResource(@NotNull final MemberRecord memberRecord) {
-        final var potential = this.getResourceStream(IMemberResource.class::isInstance, getNamePredicate(memberRecord.id().toString())).findFirst();
-        if (potential.isPresent()) {
-            if (potential.get() instanceof MemberResource member) {
-                return member;
-            }
-            this.carddavLambdaHelper.getLogger().log("[CONFLICT] Expected Member %s Exists".formatted(memberRecord.id()), LogLevel.WARN);
-            return (IMemberResource) potential.get();
+    void registerNewResource (AbstractResourceObject resource) {
+        if (this.resources.contains(resource)) {
+            throw new IllegalStateException("Resource `%s` already exists".formatted(resource.getName()));
         }
-        final var member = new MemberResource(this.carddavLambdaHelper,  memberRecord);
-        this.resources.add(member);
-        return member;
-    }
-
-    @NotNull
-    @Unmodifiable
-    List<IMemberResource> getMemberResources () {
-        return this.getResources(IMemberResource.class);
-    }
-
-    @NotNull
-    @Unmodifiable
-    List<AbstractPrincipal> getPrincipals() {
-        return this.getResources(AbstractPrincipal.class);
-    }
-
-    @NotNull
-    @Unmodifiable
-    <T extends IResource> List<T> getResources(@NotNull Class<T> clazz) {
-        return this.getResourceStream(clazz::isInstance).map(clazz::cast).toList();
-    }
-
-    private <T extends AbstractResourceObject> T getFirstResource(@NotNull Class<T> clazz, Function<CarddavLambdaHelper, T> ctor) {
-        final var potential = this.getResourceStream(clazz::isInstance).map(clazz::cast).findFirst();
-        if (potential.isPresent()) {
-            return potential.get();
-        } else {
-            final var t = ctor.apply(this.carddavLambdaHelper);
-            this.resources.add(t);
-            return t;
-        }
-    }
-
-    @SafeVarargs
-    private
-    Stream<AbstractResourceObject> getResourceStream (Predicate<? super AbstractResourceObject> @NotNull ...predicates) {
-        var stream = this.resources.stream();
-        for (final var predicate : predicates) {
-            stream = stream.filter(predicate);
-        }
-        return stream;
+        this.resources.add(resource);
     }
 
     @Contract(pure = true)
     @NotNull
-    private static
-    Predicate<? super AbstractResourceObject> getNamePredicate(final String name) {
-        return resource -> resource.getName().equals(name);
+    @UnmodifiableView
+    Set<AbstractResourceObject> getResources () {
+        return Collections.unmodifiableSet(this.resources);
+    }
+
+    RootCollectionResource getRoot() {
+        return this.rootCollectionResource;
     }
 }

@@ -5,7 +5,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
-import org.familydirectory.assets.lambda.function.api.helpers.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
 import static io.milton.http.ResponseStatus.SC_INTERNAL_SERVER_ERROR;
 

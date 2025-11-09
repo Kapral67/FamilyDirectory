@@ -29,7 +29,9 @@ enum CarddavConstants {
     public static final String ADDRESS_BOOK = "addressbook";
     public static final String ADDRESS_BOOK_PATH = "/%s".formatted(ADDRESS_BOOK);
     public static final String CONTACTS_COLLECTION_PATH = "%s/".formatted(ADDRESS_BOOK_PATH);
-    public static final String PRINCIPALS_COLLECTION_PATH = "/principals/";
+    public static final String PRINCIPALS = "principals";
+    public static final String PRINCIPALS_COLLECTION_PATH = "/%s/".formatted(PRINCIPALS);
     public static final String SYSTEM_PRINCIPAL = "system";
     public static final String SYSTEM_PRINCIPAL_PATH = PRINCIPALS_COLLECTION_PATH + SYSTEM_PRINCIPAL;
+    public static final int INITIAL_RESOURCE_CONTAINER_SIZE = 256;
 }

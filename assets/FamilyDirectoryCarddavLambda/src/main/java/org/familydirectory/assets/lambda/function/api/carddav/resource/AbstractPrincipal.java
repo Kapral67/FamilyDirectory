@@ -1,9 +1,8 @@
-package org.familydirectory.assets.lambda.function.api.carddav.principal;
+package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
 import io.milton.principal.DiscretePrincipal;
 import java.util.Date;
-import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResource;
-import org.familydirectory.assets.lambda.function.api.helpers.CarddavLambdaHelper;
+import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
 
 public sealed abstract

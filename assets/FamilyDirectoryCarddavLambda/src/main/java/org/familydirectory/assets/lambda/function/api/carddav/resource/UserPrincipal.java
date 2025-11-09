@@ -1,14 +1,13 @@
-package org.familydirectory.assets.lambda.function.api.carddav.principal;
+package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
 import io.milton.http.values.HrefList;
 import io.milton.principal.DirectoryGatewayCardDavPrincipal;
 import io.milton.principal.HrefPrincipleId;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
-import org.familydirectory.assets.lambda.function.api.helpers.CarddavLambdaHelper;
+import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK_PATH;
-import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.CONTACTS_COLLECTION_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.URL;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS_COLLECTION_PATH;
 
@@ -21,7 +20,9 @@ class UserPrincipal extends AbstractPrincipal implements DirectoryGatewayCardDav
     @NotNull
     private final PrincipleId principalId;
 
-    public
+    /**
+     * @see FDResourceFactory
+     */
     UserPrincipal (@NotNull CarddavLambdaHelper carddavLambdaHelper) throws ApiHelper.ResponseException {
         super(carddavLambdaHelper);
         this.user = this.carddavLambdaHelper.getCaller().caller();
@@ -32,14 +33,14 @@ class UserPrincipal extends AbstractPrincipal implements DirectoryGatewayCardDav
     @NotNull
     public
     HrefList getAddressBookHomeSet () {
-        return new HrefList();
+        return HrefList.asList(this.getAddress());
     }
 
     @Override
     @NotNull
     public
     String getAddress () {
-        return URL + CONTACTS_COLLECTION_PATH + this.user.id();
+        return URL + ADDRESS_BOOK_PATH;
     }
 
     @Override
@@ -56,7 +57,7 @@ class UserPrincipal extends AbstractPrincipal implements DirectoryGatewayCardDav
     @NotNull
     public
     HrefList getDirectoryGateway () {
-        return HrefList.asList(URL + ADDRESS_BOOK_PATH);
+        return HrefList.asList(this.getAddress());
     }
 
     @Override
