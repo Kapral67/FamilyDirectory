@@ -20,8 +20,12 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SYSTEM_PRINCIPAL_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.URL;
 
-public abstract
-class AbstractResource extends AbstractResourceObject implements ReportableResource, PropFindableResource, AccessControlledResource {
+public sealed abstract
+class AbstractResource
+    extends AbstractResourceObject
+    implements ReportableResource, PropFindableResource, AccessControlledResource
+    permits RootCollectionResource, PrincipalCollectionResource, FamilyDirectoryResource, AbstractPrincipal, PresentMemberResource
+{
     protected
     AbstractResource (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
         super(carddavLambdaHelper);

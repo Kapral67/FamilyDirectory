@@ -5,4 +5,5 @@ dependencies {
     implementation libs.jetbrains.annotations
     implementation libs.jug
     implementation libs.milton.api
+    implementation libs.lombok
 }

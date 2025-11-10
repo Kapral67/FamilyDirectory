@@ -1,11 +1,20 @@
 package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
+import io.milton.http.Request;
+import io.milton.resource.AccessControlledResource;
+import io.milton.resource.GetableResource;
+import io.milton.resource.PropFindableResource;
+import io.milton.resource.ReportableResource;
+import java.util.EnumSet;
+import java.util.Set;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.UnmodifiableView;
+import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 
-public abstract non-sealed
-class AbstractResourceObject implements IResource {
+public sealed abstract
+class AbstractResourceObject implements IResource permits AbstractResource, DeletedMemberResource {
     @NotNull
     protected final CarddavLambdaHelper carddavLambdaHelper;
     @NotNull
@@ -42,5 +51,26 @@ class AbstractResourceObject implements IResource {
     public final
     int hashCode () {
         return this.getName().hashCode();
+    }
+
+    @NotNull
+    @UnmodifiableView
+    public final
+    Set<Request.Method> getAllowedMethods() {
+        final var allowedMethods = EnumSet.of(Request.Method.OPTIONS);
+        if (this instanceof PropFindableResource) {
+            allowedMethods.add(Request.Method.PROPFIND);
+        }
+        if (this instanceof ReportableResource) {
+            allowedMethods.add(Request.Method.REPORT);
+        }
+        if (this instanceof GetableResource) {
+            allowedMethods.add(Request.Method.GET);
+            allowedMethods.add(Request.Method.HEAD);
+        }
+        if (this instanceof AccessControlledResource) {
+            allowedMethods.add(Request.Method.ACL);
+        }
+        return unmodifiableSet(allowedMethods);
     }
 }

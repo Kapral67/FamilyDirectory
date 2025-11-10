@@ -4,9 +4,12 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
+import org.familydirectory.assets.lambda.function.api.carddav.response.CarddavResponse;
+import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
-import static io.milton.http.ResponseStatus.SC_INTERNAL_SERVER_ERROR;
+import org.jetbrains.annotations.Nullable;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
 
 public
 class FamilyDirectoryCarddavLambda implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -15,11 +18,21 @@ class FamilyDirectoryCarddavLambda implements RequestHandler<APIGatewayProxyRequ
     public final
     APIGatewayProxyResponseEvent handleRequest (final @NotNull APIGatewayProxyRequestEvent input, final @NotNull Context context) {
         try (final CarddavLambdaHelper helper = new CarddavLambdaHelper(context.getLogger(), input)) {
-            throw new UnsupportedOperationException();
-        } catch (final ApiHelper.ResponseException e) {
-            return e.getResponseEvent();
-        } catch (final Throwable e) {
-            return new APIGatewayProxyResponseEvent().withStatusCode(SC_INTERNAL_SERVER_ERROR);
+            return wrapResponse(helper.getResponse());
+        } catch (CarddavLambdaHelper.CarddavResponseException e) {
+            LambdaUtils.logTrace(context.getLogger(), e, ERROR);
+            return wrapResponse(e.getResponse());
+        } catch (Throwable e) {
+            LambdaUtils.logTrace(context.getLogger(), e, FATAL);
+            // TODO
+            return wrapResponse(null);
         }
+    }
+
+    @NotNull
+    private static
+    APIGatewayProxyResponseEvent wrapResponse(@Nullable CarddavResponse response) {
+        // TODO: this method cannot throw!
+        return new APIGatewayProxyResponseEvent();
     }
 }
