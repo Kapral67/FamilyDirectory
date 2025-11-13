@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
@@ -30,6 +29,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Locale.ENGLISH;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toUnmodifiableMap;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SUPPORTED_ADDRESS_DATA;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SYNC_TOKEN_PATH;
@@ -90,7 +90,7 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
                                                               .filter(PresentMemberResource.class::isInstance)
                                                               .map(PresentMemberResource.class::cast)
                                                               .map(PresentMemberResource::getName)
-                                                              .collect(Collectors.toUnmodifiableSet());
+                                                              .collect(toUnmodifiableSet());
             this.carddavLambdaHelper.scanMemberDdb()
                                     .stream()
                                     .filter(memberRecord -> !existingResources.contains(memberRecord.id().toString()))

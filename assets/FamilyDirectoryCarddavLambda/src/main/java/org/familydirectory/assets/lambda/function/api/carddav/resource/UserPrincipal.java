@@ -1,7 +1,7 @@
 package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
 import io.milton.http.values.HrefList;
-import io.milton.principal.DirectoryGatewayCardDavPrincipal;
+import io.milton.principal.CardDavPrincipal;
 import io.milton.principal.HrefPrincipleId;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
@@ -12,7 +12,7 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS_COLLECTION_PATH;
 
 public final
-class UserPrincipal extends AbstractPrincipal implements DirectoryGatewayCardDavPrincipal {
+class UserPrincipal extends AbstractPrincipal implements CardDavPrincipal {
 
     @NotNull
     private final MemberRecord user;
@@ -48,16 +48,6 @@ class UserPrincipal extends AbstractPrincipal implements DirectoryGatewayCardDav
     public
     String getPrincipalURL () {
         return URL + PRINCIPALS_COLLECTION_PATH + this.user.id();
-    }
-
-    /**
-     * @see <a href="https://github.com/miltonio/milton2/issues/25">CardDAV Directory Gateway Extension</a>
-     */
-    @Override
-    @NotNull
-    public
-    HrefList getDirectoryGateway () {
-        return HrefList.asList(this.getAddress());
     }
 
     @Override
