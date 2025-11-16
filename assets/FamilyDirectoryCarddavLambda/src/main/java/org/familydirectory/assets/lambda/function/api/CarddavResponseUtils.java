@@ -17,6 +17,7 @@ import static io.milton.http.DateUtils.formatForWebDavModifiedDate;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.CURRENT_USER_PRIVILEGE_SET;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS_COLLECTION_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.VCARD_CONTENT_TYPE;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cParent;
@@ -71,7 +72,8 @@ enum CarddavResponseUtils {
             case OPTIONS -> options(resource);
             case PROPFIND -> {
                 final var props = List.of(
-                    dParent("resourcetype", singletonList(dEmpty("collection")))
+                    dParent("resourcetype", singletonList(dEmpty("collection"))),
+                    CURRENT_USER_PRIVILEGE_SET
                 );
                 final var davResponse = new DavResponse("/", singletonList(okPropstat(props)));
                 yield CarddavResponse.builder()
@@ -90,7 +92,8 @@ enum CarddavResponseUtils {
             case OPTIONS -> options(resource);
             case PROPFIND -> {
                 final var props = List.of(
-                    dParent("resourcetype", singletonList(dEmpty("collection")))
+                    dParent("resourcetype", singletonList(dEmpty("collection"))),
+                    CURRENT_USER_PRIVILEGE_SET
                 );
                 final var davResponse = new DavResponse(PRINCIPALS_COLLECTION_PATH, singletonList(okPropstat(props)));
                 yield CarddavResponse.builder()
@@ -125,6 +128,7 @@ enum CarddavResponseUtils {
                     dProp("getetag", '"' + resource.getEtag() + '"'),
                     dProp("getlastmodified", formatForWebDavModifiedDate(resource.getModifiedDate())),
                     dEmpty("resourcetype"),
+                    CURRENT_USER_PRIVILEGE_SET,
                     // TODO: optional displayname dProp, in case we need lock emojis
                     cProp("address-data", resource.getAddressData(), emptyMap())
                 );
@@ -150,7 +154,8 @@ enum CarddavResponseUtils {
             case OPTIONS -> options(principal);
             case PROPFIND -> {
                 final var props = List.of(
-                    dParent("resourcetype", singletonList(dEmpty("principal")))
+                    dParent("resourcetype", singletonList(dEmpty("principal"))),
+                    CURRENT_USER_PRIVILEGE_SET
                 );
                 final var davResponse = new DavResponse(principal.getPrincipalURL(), singletonList(okPropstat(props)));
                 yield CarddavResponse.builder()
@@ -170,7 +175,8 @@ enum CarddavResponseUtils {
             case PROPFIND -> {
                 final var props = List.of(
                     dParent("resourcetype", singletonList(dEmpty("principal"))),
-                    cParent("addressbook-home-set", singletonList(dProp("href", principal.getAddress())))
+                    cParent("addressbook-home-set", singletonList(dProp("href", principal.getAddress()))),
+                    CURRENT_USER_PRIVILEGE_SET
                 );
                 final var davResponse = new DavResponse(principal.getPrincipalURL(), singletonList(okPropstat(props)));
                 yield CarddavResponse.builder()

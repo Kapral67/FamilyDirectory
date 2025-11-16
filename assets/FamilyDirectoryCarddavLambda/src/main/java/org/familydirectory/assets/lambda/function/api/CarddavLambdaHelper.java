@@ -59,6 +59,7 @@ import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtil
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleUserPrincipal;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.options;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK_PATH;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.CURRENT_USER_PRIVILEGE_SET;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.INITIAL_RESOURCE_CONTAINER_SIZE;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cEmpty;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cParent;
@@ -136,6 +137,8 @@ class CarddavLambdaHelper extends ApiHelper {
 
             props.add(dParent("resourcetype", List.of(dEmpty("collection"), cEmpty("addressbook"))));
 
+            props.add(CURRENT_USER_PRIVILEGE_SET);
+
             props.add(dProp("displayname", addressbook.getDescription().getValue()));
 
             props.add(dProp("sync-token", addressbook.getSyncToken().toString()));
@@ -167,6 +170,7 @@ class CarddavLambdaHelper extends ApiHelper {
                                dProp("getetag", '"' + child.getEtag() + '"'),
                                dProp("getlastmodified", formatForWebDavModifiedDate(child.getModifiedDate())),
                                dEmpty("resourcetype"),
+                               CURRENT_USER_PRIVILEGE_SET,
                                cProp("address-data", child.getAddressData(), emptyMap())
                            );
                            return new DavResponse(child.getHref(), singletonList(okPropstat(props)));
