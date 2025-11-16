@@ -3,6 +3,7 @@ package org.familydirectory.assets.lambda.function.api;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import io.milton.http.Request;
 import io.milton.http.exceptions.BadRequestException;
 import io.milton.http.exceptions.MiltonException;
 import io.milton.http.exceptions.NotAuthorizedException;
@@ -40,13 +41,14 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.commons.codec.binary.Base64.decodeBase64;
 import static org.apache.commons.codec.binary.Base64.isBase64;
 import static org.apache.commons.codec.binary.StringUtils.newStringUtf8;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getDefaultMethodResponse;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleDeletedMemberResource;
-import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleFamilyDirectoryResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handlePresentMemberResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handlePrincipalCollectionResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleRootCollectionResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleSystemPrincipal;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleUserPrincipal;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.options;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.INITIAL_RESOURCE_CONTAINER_SIZE;
 
 public final
@@ -89,11 +91,25 @@ class CarddavLambdaHelper extends ApiHelper {
         return switch (resource) {
             case RootCollectionResource root -> handleRootCollectionResource(method, root);
             case PrincipalCollectionResource principals -> handlePrincipalCollectionResource(method, principals);
-            case FamilyDirectoryResource addressbook -> handleFamilyDirectoryResource(method, addressbook);
+            case FamilyDirectoryResource addressbook -> processAddressBookRequest(method, addressbook);
             case PresentMemberResource presentMember -> handlePresentMemberResource(method, presentMember);
             case DeletedMemberResource deletedMember -> handleDeletedMemberResource(method, deletedMember);
             case SystemPrincipal systemPrincipal -> handleSystemPrincipal(method, systemPrincipal);
             case UserPrincipal callerPrincipal -> handleUserPrincipal(method, callerPrincipal);
+        };
+    }
+
+    private
+    CarddavResponse processAddressBookRequest(Request.Method method, FamilyDirectoryResource addressbook) {
+        return switch (method) {
+            case OPTIONS -> options(addressbook);
+            case PROPFIND -> {
+                // TODO
+            }
+            case REPORT -> {
+                // TODO
+            }
+            default -> getDefaultMethodResponse(method, addressbook);
         };
     }
 

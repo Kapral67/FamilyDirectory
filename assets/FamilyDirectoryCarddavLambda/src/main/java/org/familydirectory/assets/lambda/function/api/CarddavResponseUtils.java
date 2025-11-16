@@ -5,22 +5,24 @@ import io.milton.http.Response;
 import java.util.List;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResourceObject;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.DeletedMemberResource;
-import org.familydirectory.assets.lambda.function.api.carddav.resource.FamilyDirectoryResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PresentMemberResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PrincipalCollectionResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.RootCollectionResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.SystemPrincipal;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.UserPrincipal;
 import org.familydirectory.assets.lambda.function.api.carddav.response.CarddavResponse;
-import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils;
+import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.DavResponse;
 import static io.milton.http.DateUtils.formatForHeader;
 import static io.milton.http.DateUtils.formatForWebDavModifiedDate;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS_COLLECTION_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.VCARD_CONTENT_TYPE;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cParent;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cProp;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dEmpty;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dParent;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dProp;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.okPropstat;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.renderMultistatus;
@@ -42,6 +44,10 @@ enum CarddavResponseUtils {
                        .collect(joining(","));
     }
 
+    static CarddavResponse getDefaultMethodResponse(Request.Method method, AbstractResourceObject resource) {
+        return method.isWrite ? FORBIDDEN : methodNotAllowed(resource);
+    }
+
     static
     CarddavResponse methodNotAllowed(AbstractResourceObject resource) {
         return CarddavResponse.builder()
@@ -61,17 +67,40 @@ enum CarddavResponseUtils {
 
     static
     CarddavResponse handleRootCollectionResource(Request.Method method, RootCollectionResource resource) {
-
+        return switch (method) {
+            case OPTIONS -> options(resource);
+            case PROPFIND -> {
+                final var props = List.of(
+                    dParent("resourcetype", singletonList(dEmpty("collection")))
+                );
+                final var davResponse = new DavResponse("/", singletonList(okPropstat(props)));
+                yield CarddavResponse.builder()
+                                     .status(Response.Status.SC_MULTI_STATUS)
+                                     .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
+                                     .body(renderMultistatus(singletonList(davResponse)))
+                                     .build();
+            }
+            default -> getDefaultMethodResponse(method, resource);
+        };
     }
 
     static
     CarddavResponse handlePrincipalCollectionResource(Request.Method method, PrincipalCollectionResource resource) {
-
-    }
-
-    static
-    CarddavResponse handleFamilyDirectoryResource(Request.Method method, FamilyDirectoryResource resource) {
-
+        return switch (method) {
+            case OPTIONS -> options(resource);
+            case PROPFIND -> {
+                final var props = List.of(
+                    dParent("resourcetype", singletonList(dEmpty("collection")))
+                );
+                final var davResponse = new DavResponse(PRINCIPALS_COLLECTION_PATH, singletonList(okPropstat(props)));
+                yield CarddavResponse.builder()
+                                     .status(Response.Status.SC_MULTI_STATUS)
+                                     .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
+                                     .body(renderMultistatus(singletonList(davResponse)))
+                                     .build();
+            }
+            default -> getDefaultMethodResponse(method, resource);
+        };
     }
 
     static
@@ -99,14 +128,14 @@ enum CarddavResponseUtils {
                     // TODO: optional displayname dProp, in case we need lock emojis
                     cProp("address-data", resource.getAddressData(), emptyMap())
                 );
-                final var davResponse = new CarddavXmlUtils.DavResponse(resource.getHref(), singletonList(okPropstat(props)));
+                final var davResponse = new DavResponse(resource.getHref(), singletonList(okPropstat(props)));
                 yield CarddavResponse.builder()
                                      .status(Response.Status.SC_MULTI_STATUS)
                                      .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
                                      .body(renderMultistatus(singletonList(davResponse)))
                                      .build();
             }
-            default -> method.isWrite ? FORBIDDEN : methodNotAllowed(resource);
+            default -> getDefaultMethodResponse(method, resource);
         };
     }
 
@@ -117,11 +146,40 @@ enum CarddavResponseUtils {
 
     static
     CarddavResponse handleSystemPrincipal(Request.Method method, SystemPrincipal principal) {
-
+        return switch (method) {
+            case OPTIONS -> options(principal);
+            case PROPFIND -> {
+                final var props = List.of(
+                    dParent("resourcetype", singletonList(dEmpty("principal")))
+                );
+                final var davResponse = new DavResponse(principal.getPrincipalURL(), singletonList(okPropstat(props)));
+                yield CarddavResponse.builder()
+                                     .status(Response.Status.SC_MULTI_STATUS)
+                                     .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
+                                     .body(renderMultistatus(singletonList(davResponse)))
+                                     .build();
+            }
+            default -> getDefaultMethodResponse(method, principal);
+        };
     }
 
     static
     CarddavResponse handleUserPrincipal(Request.Method method, UserPrincipal principal) {
-
+        return switch (method) {
+            case OPTIONS -> options(principal);
+            case PROPFIND -> {
+                final var props = List.of(
+                    dParent("resourcetype", singletonList(dEmpty("principal"))),
+                    cParent("addressbook-home-set", singletonList(dProp("href", principal.getAddress())))
+                );
+                final var davResponse = new DavResponse(principal.getPrincipalURL(), singletonList(okPropstat(props)));
+                yield CarddavResponse.builder()
+                                     .status(Response.Status.SC_MULTI_STATUS)
+                                     .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
+                                     .body(renderMultistatus(singletonList(davResponse)))
+                                     .build();
+            }
+            default -> getDefaultMethodResponse(method, principal);
+        };
     }
 }

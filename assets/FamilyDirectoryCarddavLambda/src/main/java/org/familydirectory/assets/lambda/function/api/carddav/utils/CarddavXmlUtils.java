@@ -76,7 +76,11 @@ enum CarddavXmlUtils {
             }
         }
 
-        if (p.textContent() != null && !p.textContent().isEmpty()) {
+        if (p.children() != null && !p.children().isEmpty()) {
+            for (DavProperty child : p.children()) {
+                writeProperty(xw, child);
+            }
+        } else if (p.textContent() != null && !p.textContent().isEmpty()) {
             xw.writeCharacters(p.textContent());
         }
 
@@ -110,7 +114,8 @@ enum CarddavXmlUtils {
      * textContent: null => empty element (<d:x />)
      * attributes: may be empty
      */
-    public record DavProperty(String prefix, String localName, String textContent, Map<String, String> attributes) {}
+    public record DavProperty(String prefix, String localName, String textContent, Map<String, String> attributes,
+                              List<DavProperty> children) {}
 
     /**
      * Single <d:propstat> block.
@@ -122,16 +127,24 @@ enum CarddavXmlUtils {
      */
     public record DavResponse(String href, List<DavPropStat> propStats) {}
 
+    public static DavProperty dParent(String name, List<DavProperty> children) {
+        return new DavProperty("d", name, null, Map.of(), children);
+    }
+
     public static DavProperty dProp(String name, String value) {
-        return new DavProperty("d", name, value, Map.of());
+        return new DavProperty("d", name, value, Map.of(), List.of());
     }
 
     public static DavProperty dEmpty(String name) {
-        return new DavProperty("d", name, null, Map.of());
+        return new DavProperty("d", name, null, Map.of(), List.of());
+    }
+
+    public static DavProperty cParent(String name, List<DavProperty> children) {
+        return new DavProperty("C", name, null, Map.of(), children);
     }
 
     public static DavProperty cProp(String name, String value, Map<String, String> attrs) {
-        return new DavProperty("C", name, value, attrs == null ? Map.of() : attrs);
+        return new DavProperty("C", name, value, attrs == null ? Map.of() : attrs, List.of());
     }
 
     public static DavPropStat okPropstat(List<DavProperty> props) {
