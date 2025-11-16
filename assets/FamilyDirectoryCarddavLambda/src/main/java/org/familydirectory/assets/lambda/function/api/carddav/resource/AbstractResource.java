@@ -17,7 +17,6 @@ import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS_COLLECTION_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SUPPORTED_PRIVILEGES;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SYSTEM_PRINCIPAL_PATH;
-import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.URL;
 
 public sealed abstract
 class AbstractResource extends AbstractResourceObject implements PropFindableResource, AccessControlledResource
@@ -70,7 +69,7 @@ class AbstractResource extends AbstractResourceObject implements PropFindableRes
     @Override
     public
     String getPrincipalURL() {
-        return URL + SYSTEM_PRINCIPAL_PATH;
+        return SYSTEM_PRINCIPAL_PATH;
     }
 
     public abstract String getEtag();

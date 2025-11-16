@@ -33,8 +33,6 @@ import static java.util.stream.Collectors.toUnmodifiableMap;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SUPPORTED_ADDRESS_DATA;
-import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SYNC_TOKEN_PATH;
-import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.URL;
 
 public final
 class FamilyDirectoryResource extends AbstractResource implements AddressBookResource, AddressBookQuerySearchableResource, SyncCollectionResource, ReportableResource {
@@ -177,7 +175,7 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
     @NotNull
     public
     URI getSyncToken () {
-        return URI.create(URL + SYNC_TOKEN_PATH + this.getCTag());
+        return URI.create(this.getCTag());
     }
 
     @Override
@@ -187,7 +185,7 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
             if (this.getSyncToken().equals(syncTokenUri)) {
                 return emptyMap();
             }
-            final var syncToken = UUID.fromString(syncTokenUri.getPath().split("/")[2]);
+            final var syncToken = UUID.fromString(syncTokenUri.toString());
             return this.carddavLambdaHelper.traverseSyncDdb(syncToken)
                                            .stream()
                                            .map(UUID::toString)

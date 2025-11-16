@@ -8,7 +8,6 @@ import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK_PATH;
-import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.URL;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS_COLLECTION_PATH;
 
 public final
@@ -40,14 +39,14 @@ class UserPrincipal extends AbstractPrincipal implements CardDavPrincipal {
     @NotNull
     public
     String getAddress () {
-        return URL + ADDRESS_BOOK_PATH;
+        return ADDRESS_BOOK_PATH;
     }
 
     @Override
     @NotNull
     public
     String getPrincipalURL () {
-        return URL + PRINCIPALS_COLLECTION_PATH + this.user.id();
+        return PRINCIPALS_COLLECTION_PATH + this.user.id();
     }
 
     @Override

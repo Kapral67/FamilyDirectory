@@ -5,7 +5,6 @@ import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SYSTEM_PRINCIPAL;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SYSTEM_PRINCIPAL_PATH;
-import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.URL;
 
 public final
 class SystemPrincipal extends AbstractPrincipal {
@@ -17,7 +16,7 @@ class SystemPrincipal extends AbstractPrincipal {
      */
     SystemPrincipal (@NotNull CarddavLambdaHelper helper) {
         super(helper);
-        this.principalId = new HrefPrincipleId(URL + SYSTEM_PRINCIPAL_PATH);
+        this.principalId = new HrefPrincipleId(SYSTEM_PRINCIPAL_PATH);
     }
 
     @Override
