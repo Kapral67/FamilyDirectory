@@ -147,6 +147,10 @@ enum CarddavXmlUtils {
         return new DavProperty("C", name, value, attrs == null ? Map.of() : attrs, List.of());
     }
 
+    public static DavProperty cEmpty(String name) {
+        return new DavProperty("C", name, null, Map.of(), List.of());
+    }
+
     public static DavPropStat okPropstat(List<DavProperty> props) {
         return new DavPropStat(Response.Status.SC_OK, props);
     }

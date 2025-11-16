@@ -4,9 +4,11 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import io.milton.http.Request;
+import io.milton.http.Response;
 import io.milton.http.exceptions.BadRequestException;
 import io.milton.http.exceptions.MiltonException;
 import io.milton.http.exceptions.NotAuthorizedException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
@@ -29,14 +32,20 @@ import org.familydirectory.assets.lambda.function.api.carddav.resource.RootColle
 import org.familydirectory.assets.lambda.function.api.carddav.resource.SystemPrincipal;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.UserPrincipal;
 import org.familydirectory.assets.lambda.function.api.carddav.response.CarddavResponse;
+import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils;
+import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.DavProperty;
+import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.DavResponse;
 import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import static io.milton.http.DateUtils.formatForWebDavModifiedDate;
 import static io.milton.http.ResponseStatus.SC_BAD_REQUEST;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.codec.binary.Base64.decodeBase64;
 import static org.apache.commons.codec.binary.Base64.isBase64;
@@ -49,7 +58,16 @@ import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtil
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleSystemPrincipal;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleUserPrincipal;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.options;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.INITIAL_RESOURCE_CONTAINER_SIZE;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cEmpty;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cParent;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cProp;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dEmpty;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dParent;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dProp;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.okPropstat;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.renderMultistatus;
 
 public final
 class CarddavLambdaHelper extends ApiHelper {
@@ -103,14 +121,67 @@ class CarddavLambdaHelper extends ApiHelper {
     CarddavResponse processAddressBookRequest(Request.Method method, FamilyDirectoryResource addressbook) {
         return switch (method) {
             case OPTIONS -> options(addressbook);
-            case PROPFIND -> {
-                // TODO
-            }
-            case REPORT -> {
-                // TODO
-            }
+            case PROPFIND -> handleAddressBookPropFind(addressbook);
+            case REPORT -> handleAddressBookReport(addressbook);
             default -> getDefaultMethodResponse(method, addressbook);
         };
+    }
+
+    private
+    CarddavResponse handleAddressBookPropFind(FamilyDirectoryResource addressbook) {
+        final int depth = this.request.getDepthHeader();
+        final var responses = new ArrayList<DavResponse>();
+        {
+            final var props = new ArrayList<DavProperty>();
+
+            props.add(dParent("resourcetype", List.of(dEmpty("collection"), cEmpty("addressbook"))));
+
+            props.add(dProp("displayname", addressbook.getDescription().getValue()));
+
+            props.add(dProp("sync-token", addressbook.getSyncToken().toString()));
+
+            final var supportedAddressDataTypes = new ArrayList<DavProperty>(1);
+            addressbook.getSupportedAddressData().forEach(pair -> supportedAddressDataTypes.add(
+               cProp("address-data-type", null, Map.of("content-type", pair.getObject1(), "version", pair.getObject2()))
+            ));
+            props.add(cParent("supported-address-data", unmodifiableList(supportedAddressDataTypes)));
+
+            final var supportedReports = Stream.of("addressbook-multiget", "sync-collection")
+                                               .map(CarddavXmlUtils::dEmpty)
+                                               .map(Collections::singletonList)
+                                               .map(dProps -> dParent("report", dProps))
+                                               .map(Collections::singletonList)
+                                               .map(dProps -> dParent("supported-report", dProps))
+                                               .toList();
+            props.add(dParent("supported-report-set", supportedReports));
+
+            responses.add(new DavResponse(ADDRESS_BOOK_PATH, singletonList(okPropstat(props))));
+        }
+        if (depth > 0) {
+            addressbook.getChildren()
+                       .stream()
+                       .filter(PresentMemberResource.class::isInstance)
+                       .map(PresentMemberResource.class::cast)
+                       .map(child -> {
+                           final var props = List.of(
+                               dProp("getetag", '"' + child.getEtag() + '"'),
+                               dProp("getlastmodified", formatForWebDavModifiedDate(child.getModifiedDate())),
+                               dEmpty("resourcetype"),
+                               cProp("address-data", child.getAddressData(), emptyMap())
+                           );
+                           return new DavResponse(child.getHref(), singletonList(okPropstat(props)));
+                       }).forEach(responses::add);
+        }
+        return CarddavResponse.builder()
+                              .status(Response.Status.SC_MULTI_STATUS)
+                              .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
+                              .body(renderMultistatus(unmodifiableList(responses)))
+                              .build();
+    }
+
+    private
+    CarddavResponse handleAddressBookReport(FamilyDirectoryResource addressbook) {
+        // TODO
     }
 
     @NotNull
