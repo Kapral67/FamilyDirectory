@@ -32,7 +32,7 @@ class CarddavRequest implements Request {
     private final SequencedMap<String, String> headers;
     private final Method method;
     private final String requestUri;
-    private final InputStream body;
+    private final String body;
 
     public CarddavRequest(final @NotNull String rawRequest) {
         Objects.requireNonNull(rawRequest);
@@ -46,8 +46,7 @@ class CarddavRequest implements Request {
         this.requestUri = requestAttributes[1];
         // version is assumed to be HTTP/1.1
 
-        final String body = request.length > 1 ? request[1] : "";
-        this.body = new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8));
+        this.body = request.length > 1 ? request[1] : "";
     }
 
     @UnmodifiableView
@@ -207,7 +206,7 @@ class CarddavRequest implements Request {
     @Override
     public
     InputStream getInputStream () {
-        return this.body;
+        return new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override

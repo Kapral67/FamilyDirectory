@@ -2,6 +2,7 @@ package org.familydirectory.assets.lambda.function.api.carddav.utils;
 
 import io.milton.http.Response;
 
+import java.net.URI;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -13,7 +14,7 @@ public
 enum CarddavXmlUtils {
     ;
     private static final String DAV_NS = "DAV:";
-    private static final String CARDDAV_NS = "urn:ietf:params:xml:ns:carddav";
+    public static final String CARDDAV_NS = "urn:ietf:params:xml:ns:carddav";
 
     private static XMLStreamWriter newXmlWriter(StringWriter sw) throws XMLStreamException {
         XMLOutputFactory factory = XMLOutputFactory.newFactory();
@@ -88,6 +89,10 @@ enum CarddavXmlUtils {
     }
 
     public static String renderMultistatus(List<DavResponse> responses) {
+        return renderMultistatus(responses, null);
+    }
+
+    public static String renderMultistatus(List<DavResponse> responses, URI syncToken) {
         try {
             StringWriter sw = new StringWriter(1024);
             XMLStreamWriter xw = newXmlWriter(sw);
@@ -96,6 +101,12 @@ enum CarddavXmlUtils {
 
             for (DavResponse r : responses) {
                 writeResponse(xw, r);
+            }
+
+            if (syncToken != null) {
+                xw.writeStartElement("d", "sync-token", DAV_NS);
+                xw.writeCharacters(syncToken.toString());
+                xw.writeEndElement();
             }
 
             endMultistatus(xw);

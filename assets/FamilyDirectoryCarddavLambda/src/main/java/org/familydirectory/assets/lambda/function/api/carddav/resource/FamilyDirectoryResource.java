@@ -178,6 +178,9 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
         return URI.create(this.getCTag());
     }
 
+    /**
+     * @throws CarddavLambdaHelper.NoSuchTokenException when sync token has been ttl'd
+     */
     @Override
     public
     Map<String, Resource> findResourcesBySyncToken (URI syncTokenUri) throws BadRequestException {
@@ -191,6 +194,8 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
                                            .map(UUID::toString)
                                            .map(this::child)
                                            .collect(toUnmodifiableMap(IMemberResource::getHref, identity()));
+        } catch (final CarddavLambdaHelper.NoSuchTokenException e) {
+            throw e;
         } catch (final Exception e) {
             throw (BadRequestException) new BadRequestException(this, "Invalid Sync Token").initCause(e);
         }

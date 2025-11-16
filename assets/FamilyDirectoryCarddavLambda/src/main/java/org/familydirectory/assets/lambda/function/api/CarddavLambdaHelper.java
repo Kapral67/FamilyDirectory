@@ -8,16 +8,21 @@ import io.milton.http.Response;
 import io.milton.http.exceptions.BadRequestException;
 import io.milton.http.exceptions.MiltonException;
 import io.milton.http.exceptions.NotAuthorizedException;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
@@ -50,6 +55,7 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.commons.codec.binary.Base64.decodeBase64;
 import static org.apache.commons.codec.binary.Base64.isBase64;
 import static org.apache.commons.codec.binary.StringUtils.newStringUtf8;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.FORBIDDEN;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getDefaultMethodResponse;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleDeletedMemberResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handlePresentMemberResource;
@@ -61,6 +67,8 @@ import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtil
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.CURRENT_USER_PRIVILEGE_SET;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.INITIAL_RESOURCE_CONTAINER_SIZE;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.SUPPORTED_REPORTS;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.CARDDAV_NS;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cEmpty;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cParent;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cProp;
@@ -112,21 +120,71 @@ class CarddavLambdaHelper extends ApiHelper {
             case PrincipalCollectionResource principals -> handlePrincipalCollectionResource(method, principals);
             case FamilyDirectoryResource addressbook -> processAddressBookRequest(method, addressbook);
             case PresentMemberResource presentMember -> handlePresentMemberResource(method, presentMember);
-            case DeletedMemberResource deletedMember -> handleDeletedMemberResource(method, deletedMember);
+            case DeletedMemberResource ignored -> handleDeletedMemberResource();
             case SystemPrincipal systemPrincipal -> handleSystemPrincipal(method, systemPrincipal);
             case UserPrincipal callerPrincipal -> handleUserPrincipal(method, callerPrincipal);
         };
     }
 
+    private record ReportRoot(String namespaceUri, String localName) {}
+    private ReportRoot parseReportRoot() throws BadRequestException {
+        try (final var in = this.request.getInputStream()) {
+            final var factory = XMLInputFactory.newFactory();
+            factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+            factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+
+            final var reader = factory.createXMLStreamReader(in);
+            try {
+                while (reader.hasNext()) {
+                    int event = reader.next();
+                    if (event != XMLStreamConstants.START_ELEMENT) {
+                        continue;
+                    }
+                    String ns = reader.getNamespaceURI();
+                    String local = reader.getLocalName();
+                    return new ReportRoot(ns == null ? "" : ns, local);
+                }
+                throw new BadRequestException("REPORT body does not contain a root element");
+            } finally {
+                reader.close();
+            }
+        } catch (XMLStreamException e) {
+            throw new BadRequestException("Invalid REPORT XML", e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     private
-    CarddavResponse processAddressBookRequest(Request.Method method, FamilyDirectoryResource addressbook) {
+    CarddavResponse processAddressBookRequest(Request.Method method, FamilyDirectoryResource addressbook) throws BadRequestException {
         return switch (method) {
             case OPTIONS -> options(addressbook);
             case PROPFIND -> handleAddressBookPropFind(addressbook);
-            case REPORT -> handleAddressBookReport(addressbook);
+            case REPORT -> {
+                final var reportRoot = parseReportRoot();
+                final var ns = reportRoot.namespaceUri();
+                if (!ns.startsWith("DAV") && !ns.contains(CARDDAV_NS)) {
+                    yield FORBIDDEN;
+                }
+                yield switch (reportRoot.localName()) {
+                    case "addressbook-multiget" -> handleAddressbookMultigetReport(addressbook);
+                    case "addressbook-query" -> handleAddressbookQueryReport(addressbook);
+                    case "sync-collection" -> handleAddressbookSyncReport(addressbook);
+                    default -> FORBIDDEN;
+                };
+            }
             default -> getDefaultMethodResponse(method, addressbook);
         };
     }
+
+    private
+    CarddavResponse handleAddressbookMultigetReport(FamilyDirectoryResource addressbook) {}
+
+    private
+    CarddavResponse handleAddressbookQueryReport(FamilyDirectoryResource addressbook) {}
+
+    private
+    CarddavResponse handleAddressbookSyncReport(FamilyDirectoryResource addressbook) {}
 
     private
     CarddavResponse handleAddressBookPropFind(FamilyDirectoryResource addressbook) {
@@ -149,7 +207,7 @@ class CarddavLambdaHelper extends ApiHelper {
             ));
             props.add(cParent("supported-address-data", unmodifiableList(supportedAddressDataTypes)));
 
-            final var supportedReports = Stream.of("addressbook-multiget", "sync-collection")
+            final var supportedReports = SUPPORTED_REPORTS.stream()
                                                .map(CarddavXmlUtils::dEmpty)
                                                .map(Collections::singletonList)
                                                .map(dProps -> dParent("report", dProps))
@@ -181,11 +239,6 @@ class CarddavLambdaHelper extends ApiHelper {
                               .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
                               .body(renderMultistatus(unmodifiableList(responses)))
                               .build();
-    }
-
-    private
-    CarddavResponse handleAddressBookReport(FamilyDirectoryResource addressbook) {
-        // TODO
     }
 
     @NotNull
@@ -221,12 +274,13 @@ class CarddavLambdaHelper extends ApiHelper {
     @NotNull
     @UnmodifiableView
     public
-    Set<UUID> traverseSyncDdb (UUID fromToken) {
+    Set<UUID> traverseSyncDdb (UUID fromToken) throws NoSuchTokenException {
         final var changedMemberIds = new HashSet<UUID>();
         Optional<UUID> nextToken = Optional.of(fromToken);
         while (nextToken.isPresent()) {
-            final var tokenAttrMap = Optional.ofNullable(this.getDdbItem(fromToken.toString(), DdbTable.SYNC))
-                                             .orElseThrow();
+            final String token = nextToken.get().toString();
+            final var tokenAttrMap = Optional.ofNullable(this.getDdbItem(token, DdbTable.SYNC))
+                                             .orElseThrow(() -> new NoSuchTokenException(token));
             nextToken = Optional.ofNullable(tokenAttrMap.get(SyncTableParameter.NEXT.toString()))
                                 .map(AttributeValue::s)
                                 .filter(Predicate.not(String::isBlank))
@@ -252,6 +306,13 @@ class CarddavLambdaHelper extends ApiHelper {
     public
     FDResourceFactory getResourceFactory () {
         return requireNonNull(this.resourceFactory);
+    }
+
+    public static final
+    class NoSuchTokenException extends NoSuchElementException {
+        NoSuchTokenException(String token) {
+            super(token);
+        }
     }
 
     public static final

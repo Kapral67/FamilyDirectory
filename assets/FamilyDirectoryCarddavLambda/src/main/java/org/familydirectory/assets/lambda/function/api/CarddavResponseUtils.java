@@ -4,7 +4,6 @@ import io.milton.http.Request;
 import io.milton.http.Response;
 import java.util.List;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResourceObject;
-import org.familydirectory.assets.lambda.function.api.carddav.resource.DeletedMemberResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PresentMemberResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PrincipalCollectionResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.RootCollectionResource;
@@ -19,7 +18,6 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.CURRENT_USER_PRIVILEGE_SET;
-import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS_COLLECTION_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.VCARD_CONTENT_TYPE;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cParent;
@@ -169,7 +167,7 @@ enum CarddavResponseUtils {
     }
 
     static
-    CarddavResponse handleDeletedMemberResource(Request.Method method, DeletedMemberResource resource) {
+    CarddavResponse handleDeletedMemberResource() {
         return NOT_FOUND;
     }
 

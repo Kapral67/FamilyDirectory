@@ -34,4 +34,5 @@ enum CarddavConstants {
     public static final String SYSTEM_PRINCIPAL = "system";
     public static final String SYSTEM_PRINCIPAL_PATH = PRINCIPALS_COLLECTION_PATH + SYSTEM_PRINCIPAL;
     public static final int INITIAL_RESOURCE_CONTAINER_SIZE = 256;
+    public static final List<String> SUPPORTED_REPORTS = List.of("addressbook-multiget", "addressbook-query", "sync-collection");
 }
