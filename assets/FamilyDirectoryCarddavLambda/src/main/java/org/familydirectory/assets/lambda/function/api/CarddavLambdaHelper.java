@@ -59,7 +59,7 @@ class CarddavLambdaHelper extends ApiHelper {
     CarddavLambdaHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) throws CarddavResponseException {
         super(logger, requestEvent);
         try {
-            if (!this.requestEvent.getIsBase64Encoded() || !isBase64(this.requestEvent.getBody())) {
+            if (!isBase64(this.requestEvent.getBody())) {
                 throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
             }
             this.request = new CarddavRequest(newStringUtf8(decodeBase64(this.requestEvent.getBody())));

@@ -2,6 +2,7 @@ package org.familydirectory.assets.lambda.function.api;
 
 import io.milton.http.Request;
 import io.milton.http.Response;
+import java.util.List;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResourceObject;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.DeletedMemberResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.FamilyDirectoryResource;
@@ -11,9 +12,18 @@ import org.familydirectory.assets.lambda.function.api.carddav.resource.RootColle
 import org.familydirectory.assets.lambda.function.api.carddav.resource.SystemPrincipal;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.UserPrincipal;
 import org.familydirectory.assets.lambda.function.api.carddav.response.CarddavResponse;
+import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils;
 import static io.milton.http.DateUtils.formatForHeader;
+import static io.milton.http.DateUtils.formatForWebDavModifiedDate;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.VCARD_CONTENT_TYPE;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cProp;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dEmpty;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dProp;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.okPropstat;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.renderMultistatus;
 
 enum CarddavResponseUtils {
     ;
@@ -81,11 +91,22 @@ enum CarddavResponseUtils {
                 yield responseBuilder.build();
             }
             case PROPFIND -> {
-                // TODO
+                // No request parsing, just return full prop set
+                final var props = List.of(
+                    dProp("getetag", '"' + resource.getEtag() + '"'),
+                    dProp("getlastmodified", formatForWebDavModifiedDate(resource.getModifiedDate())),
+                    dEmpty("resourcetype"),
+                    // TODO: optional displayname dProp, in case we need lock emojis
+                    cProp("address-data", resource.getAddressData(), emptyMap())
+                );
+                final var davResponse = new CarddavXmlUtils.DavResponse(resource.getHref(), singletonList(okPropstat(props)));
+                yield CarddavResponse.builder()
+                                     .status(Response.Status.SC_MULTI_STATUS)
+                                     .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
+                                     .body(renderMultistatus(singletonList(davResponse)))
+                                     .build();
             }
-            default -> method.isWrite
-                ? FORBIDDEN
-                : methodNotAllowed(resource);
+            default -> method.isWrite ? FORBIDDEN : methodNotAllowed(resource);
         };
     }
 
