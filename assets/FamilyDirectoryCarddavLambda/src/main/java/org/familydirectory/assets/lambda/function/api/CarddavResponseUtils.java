@@ -11,6 +11,7 @@ import org.familydirectory.assets.lambda.function.api.carddav.resource.RootColle
 import org.familydirectory.assets.lambda.function.api.carddav.resource.SystemPrincipal;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.UserPrincipal;
 import org.familydirectory.assets.lambda.function.api.carddav.response.CarddavResponse;
+import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.DavProperty;
 import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.DavResponse;
 import static io.milton.http.DateUtils.formatForHeader;
 import static io.milton.http.DateUtils.formatForWebDavModifiedDate;
@@ -18,6 +19,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.CURRENT_USER_PRIVILEGE_SET;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS_COLLECTION_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.VCARD_CONTENT_TYPE;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.cParent;
@@ -67,13 +69,29 @@ enum CarddavResponseUtils {
     }
 
     static
+    DavProperty getCurrentUserPrincipalProp(UserPrincipal principal) {
+        return dParent("current-user-principal", singletonList(dProp("href", principal.getPrincipalURL())));
+    }
+
+    static
     CarddavResponse handleRootCollectionResource(Request.Method method, RootCollectionResource resource) {
         return switch (method) {
             case OPTIONS -> options(resource);
             case PROPFIND -> {
+                final UserPrincipal user = resource.getChildren()
+                                                   .stream()
+                                                   .filter(PrincipalCollectionResource.class::isInstance)
+                                                   .map(PrincipalCollectionResource.class::cast)
+                                                   .map(PrincipalCollectionResource::getChildren)
+                                                   .flatMap(List::stream)
+                                                   .filter(UserPrincipal.class::isInstance)
+                                                   .map(UserPrincipal.class::cast)
+                                                   .findAny()
+                                                   .orElseThrow();
                 final var props = List.of(
                     dParent("resourcetype", singletonList(dEmpty("collection"))),
-                    CURRENT_USER_PRIVILEGE_SET
+                    CURRENT_USER_PRIVILEGE_SET,
+                    getCurrentUserPrincipalProp(user)
                 );
                 final var davResponse = new DavResponse("/", singletonList(okPropstat(props)));
                 yield CarddavResponse.builder()
@@ -91,9 +109,16 @@ enum CarddavResponseUtils {
         return switch (method) {
             case OPTIONS -> options(resource);
             case PROPFIND -> {
+                final UserPrincipal user = resource.getChildren()
+                                                   .stream()
+                                                   .filter(UserPrincipal.class::isInstance)
+                                                   .map(UserPrincipal.class::cast)
+                                                   .findAny()
+                                                   .orElseThrow();
                 final var props = List.of(
                     dParent("resourcetype", singletonList(dEmpty("collection"))),
-                    CURRENT_USER_PRIVILEGE_SET
+                    CURRENT_USER_PRIVILEGE_SET,
+                    getCurrentUserPrincipalProp(user)
                 );
                 final var davResponse = new DavResponse(PRINCIPALS_COLLECTION_PATH, singletonList(okPropstat(props)));
                 yield CarddavResponse.builder()
