@@ -72,6 +72,18 @@ enum CarddavResponseUtils {
     }
 
     static
+    List<DavProperty> getPresentMemberResourceProps(PresentMemberResource resource) {
+        return List.of(
+            dProp("getetag", '"' + resource.getEtag() + '"'),
+            dProp("getlastmodified", formatForWebDavModifiedDate(resource.getModifiedDate())),
+            dEmpty("resourcetype"),
+            CURRENT_USER_PRIVILEGE_SET,
+            // TODO: optional displayname dProp, in case we need lock emojis
+            cProp("address-data", resource.getAddressData(), emptyMap())
+        );
+    }
+
+    static
     CarddavResponse handleRootCollectionResource(Request.Method method, RootCollectionResource resource) {
         return switch (method) {
             case OPTIONS -> options(resource);
@@ -147,14 +159,7 @@ enum CarddavResponseUtils {
             }
             case PROPFIND -> {
                 // No request parsing, just return full prop set
-                final var props = List.of(
-                    dProp("getetag", '"' + resource.getEtag() + '"'),
-                    dProp("getlastmodified", formatForWebDavModifiedDate(resource.getModifiedDate())),
-                    dEmpty("resourcetype"),
-                    CURRENT_USER_PRIVILEGE_SET,
-                    // TODO: optional displayname dProp, in case we need lock emojis
-                    cProp("address-data", resource.getAddressData(), emptyMap())
-                );
+                final var props = getPresentMemberResourceProps(resource);
                 final var davResponse = new DavResponse(resource.getHref(), singletonList(okPropstat(props)));
                 yield CarddavResponse.builder()
                                      .status(Response.Status.SC_MULTI_STATUS)

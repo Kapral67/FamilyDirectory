@@ -3,13 +3,13 @@ package org.familydirectory.assets.lambda.function.api;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import io.milton.http.Request;
 import io.milton.http.Response;
 import io.milton.http.exceptions.BadRequestException;
 import io.milton.http.exceptions.MiltonException;
 import io.milton.http.exceptions.NotAuthorizedException;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -20,9 +20,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
@@ -31,6 +28,7 @@ import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractR
 import org.familydirectory.assets.lambda.function.api.carddav.resource.DeletedMemberResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.FDResourceFactory;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.FamilyDirectoryResource;
+import org.familydirectory.assets.lambda.function.api.carddav.resource.IMemberResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PresentMemberResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PrincipalCollectionResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.RootCollectionResource;
@@ -41,22 +39,25 @@ import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUt
 import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.DavProperty;
 import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.DavResponse;
 import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
+import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
-import static io.milton.http.DateUtils.formatForWebDavModifiedDate;
 import static io.milton.http.ResponseStatus.SC_BAD_REQUEST;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 import static org.apache.commons.codec.binary.Base64.decodeBase64;
 import static org.apache.commons.codec.binary.Base64.isBase64;
 import static org.apache.commons.codec.binary.StringUtils.newStringUtf8;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.FORBIDDEN;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getDefaultMethodResponse;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getPresentMemberResourceProps;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleDeletedMemberResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handlePresentMemberResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handlePrincipalCollectionResource;
@@ -76,7 +77,11 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dParent;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dProp;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.okPropstat;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.parseReportRoot;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.parseSyncToken;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.renderMultistatus;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.renderValidSyncTokenError;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.statusPropstat;
 
 public final
 class CarddavLambdaHelper extends ApiHelper {
@@ -126,47 +131,18 @@ class CarddavLambdaHelper extends ApiHelper {
         };
     }
 
-    private record ReportRoot(String namespaceUri, String localName) {}
-    private ReportRoot parseReportRoot() throws BadRequestException {
-        try (final var in = this.request.getInputStream()) {
-            final var factory = XMLInputFactory.newFactory();
-            factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
-            factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
-
-            final var reader = factory.createXMLStreamReader(in);
-            try {
-                while (reader.hasNext()) {
-                    int event = reader.next();
-                    if (event != XMLStreamConstants.START_ELEMENT) {
-                        continue;
-                    }
-                    String ns = reader.getNamespaceURI();
-                    String local = reader.getLocalName();
-                    return new ReportRoot(ns == null ? "" : ns, local);
-                }
-                throw new BadRequestException("REPORT body does not contain a root element");
-            } finally {
-                reader.close();
-            }
-        } catch (XMLStreamException e) {
-            throw new BadRequestException("Invalid REPORT XML", e);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
     private
     CarddavResponse processAddressBookRequest(Request.Method method, FamilyDirectoryResource addressbook) throws BadRequestException {
         return switch (method) {
             case OPTIONS -> options(addressbook);
             case PROPFIND -> handleAddressBookPropFind(addressbook);
             case REPORT -> {
-                final var reportRoot = parseReportRoot();
-                final var ns = reportRoot.namespaceUri();
+                final var reportRoot = parseReportRoot(this.request::getInputStream);
+                final var ns = reportRoot.getNamespaceURI();
                 if (!ns.startsWith("DAV") && !ns.contains(CARDDAV_NS)) {
                     yield FORBIDDEN;
                 }
-                yield switch (reportRoot.localName()) {
+                yield switch (reportRoot.getLocalPart()) {
                     case "addressbook-multiget" -> handleAddressbookMultigetReport(addressbook);
                     case "addressbook-query" -> handleAddressbookQueryReport(addressbook);
                     case "sync-collection" -> handleAddressbookSyncReport(addressbook);
@@ -184,7 +160,36 @@ class CarddavLambdaHelper extends ApiHelper {
     CarddavResponse handleAddressbookQueryReport(FamilyDirectoryResource addressbook) {}
 
     private
-    CarddavResponse handleAddressbookSyncReport(FamilyDirectoryResource addressbook) {}
+    CarddavResponse handleAddressbookSyncReport(FamilyDirectoryResource addressbook) {
+        final URI syncTokenUri;
+        final Set<IMemberResource> changesSinceLastSync;
+        try {
+            syncTokenUri = URI.create(UUID.fromString(parseSyncToken(this.request::getInputStream)).toString());
+            changesSinceLastSync = addressbook.findResourcesBySyncToken(syncTokenUri)
+                                              .values().stream()
+                                              .map(IMemberResource.class::cast)
+                                              .collect(toUnmodifiableSet());
+        } catch (final Exception e) {
+            LambdaUtils.logTrace(this.getLogger(), e, LogLevel.INFO);
+            return CarddavResponse.builder()
+                                  .status(Response.Status.SC_FORBIDDEN)
+                                  .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
+                                  .body(renderValidSyncTokenError())
+                                  .build();
+        }
+
+        final var responses = changesSinceLastSync.stream().map(memberResource -> switch (memberResource) {
+            case DeletedMemberResource deleted ->
+                new DavResponse(deleted.getHref(), singletonList(statusPropstat(Response.Status.SC_NOT_FOUND, emptyList())));
+            case PresentMemberResource present ->
+                new DavResponse(present.getHref(), singletonList(okPropstat(getPresentMemberResourceProps(present))));
+        }).toList();
+
+        return CarddavResponse.builder().status(Response.Status.SC_MULTI_STATUS)
+                              .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
+                              .body(renderMultistatus(responses, addressbook.getSyncToken()))
+                              .build();
+    }
 
     private
     CarddavResponse handleAddressBookPropFind(FamilyDirectoryResource addressbook) {
@@ -223,16 +228,9 @@ class CarddavLambdaHelper extends ApiHelper {
                        .stream()
                        .filter(PresentMemberResource.class::isInstance)
                        .map(PresentMemberResource.class::cast)
-                       .map(child -> {
-                           final var props = List.of(
-                               dProp("getetag", '"' + child.getEtag() + '"'),
-                               dProp("getlastmodified", formatForWebDavModifiedDate(child.getModifiedDate())),
-                               dEmpty("resourcetype"),
-                               CURRENT_USER_PRIVILEGE_SET,
-                               cProp("address-data", child.getAddressData(), emptyMap())
-                           );
-                           return new DavResponse(child.getHref(), singletonList(okPropstat(props)));
-                       }).forEach(responses::add);
+                       .map(child ->
+                            new DavResponse(child.getHref(), singletonList(okPropstat(getPresentMemberResourceProps(child))))
+                       ).forEach(responses::add);
         }
         return CarddavResponse.builder()
                               .status(Response.Status.SC_MULTI_STATUS)

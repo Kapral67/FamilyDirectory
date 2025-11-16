@@ -1,20 +1,84 @@
 package org.familydirectory.assets.lambda.function.api.carddav.utils;
 
 import io.milton.http.Response;
-
-import java.net.URI;
-import javax.xml.stream.XMLOutputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
+import io.milton.http.exceptions.BadRequestException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.function.Supplier;
+import javax.xml.namespace.QName;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+import javax.xml.stream.XMLStreamWriter;
 
 public
 enum CarddavXmlUtils {
     ;
     private static final String DAV_NS = "DAV:";
     public static final String CARDDAV_NS = "urn:ietf:params:xml:ns:carddav";
+
+    // INPUT //
+
+    @FunctionalInterface
+    private interface XMLFunction<T, R> {
+        R apply(T t) throws XMLStreamException, IOException;
+    }
+
+    private static <T> T parseXml(Supplier<InputStream> inSupplier, XMLFunction<XMLStreamReader, T> behavior, String exceptionMessage) throws BadRequestException {
+        try (final var in = inSupplier.get()) {
+            final var factory = XMLInputFactory.newFactory();
+            factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+            factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+            final var reader = factory.createXMLStreamReader(in);
+            RuntimeException badRequestCause = null;
+            try {
+                while (reader.hasNext()) {
+                    int event = reader.next();
+                    if (event != XMLStreamConstants.START_ELEMENT) {
+                        continue;
+                    }
+                    return behavior.apply(reader);
+                }
+            } catch (RuntimeException e) {
+                badRequestCause = e;
+            } finally {
+                reader.close();
+            }
+            throw new BadRequestException(exceptionMessage, badRequestCause);
+        } catch (XMLStreamException e) {
+            throw new BadRequestException("Invalid REPORT XML", e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public static QName parseReportRoot(Supplier<InputStream> inSupplier) throws BadRequestException {
+        return parseXml(inSupplier, XMLStreamReader::getName, "REPORT body does not contain a root element");
+    }
+
+    public static String parseSyncToken(Supplier<InputStream> inSupplier) throws BadRequestException {
+        final XMLFunction<XMLStreamReader, String> behavior = reader -> {
+            if ("sync-token".equals(reader.getLocalName())) {
+                String ns = reader.getNamespaceURI();
+                if (ns == null || ns.isEmpty() || DAV_NS.equals(ns)) {
+                    String token = reader.getElementText();
+                    return token == null ? "" : token.trim();
+                }
+            }
+            throw new NoSuchElementException();
+        };
+        return parseXml(inSupplier, behavior, "sync-collection REPORT missing DAV:sync-token element");
+    }
+
+    // OUTPUT //
 
     private static XMLStreamWriter newXmlWriter(StringWriter sw) throws XMLStreamException {
         XMLOutputFactory factory = XMLOutputFactory.newFactory();
@@ -29,11 +93,6 @@ enum CarddavXmlUtils {
         xw.writeStartElement("d", "multistatus", DAV_NS);
         xw.writeNamespace("d", DAV_NS);
         xw.writeNamespace("C", CARDDAV_NS);
-    }
-
-    private static void endMultistatus(XMLStreamWriter xw) throws XMLStreamException {
-        xw.writeEndElement();
-        xw.writeEndDocument();
     }
 
     private static void writeResponse(XMLStreamWriter xw, DavResponse r) throws XMLStreamException {
@@ -108,13 +167,34 @@ enum CarddavXmlUtils {
                 xw.writeCharacters(syncToken.toString());
                 xw.writeEndElement();
             }
+            xw.writeEndElement();
 
-            endMultistatus(xw);
+            xw.writeEndDocument();
             xw.flush();
             xw.close();
             return sw.toString();
         } catch (XMLStreamException e) {
             throw new RuntimeException("Failed to build DAV multistatus XML", e);
+        }
+    }
+
+    public static String renderValidSyncTokenError() {
+        try {
+            StringWriter sw = new StringWriter(1024);
+            XMLStreamWriter xw = newXmlWriter(sw);
+
+            xw.setPrefix("d", DAV_NS);
+            xw.writeStartElement("d", "error", DAV_NS);
+            xw.writeNamespace("d", DAV_NS);
+            xw.writeEmptyElement("d", "valid-sync-token", DAV_NS);
+            xw.writeEndElement();
+
+            xw.writeEndDocument();
+            xw.flush();
+            xw.close();
+            return sw.toString();
+        } catch (XMLStreamException e) {
+            throw new RuntimeException("Failed to build d:valid-sync-token error", e);
         }
     }
 
