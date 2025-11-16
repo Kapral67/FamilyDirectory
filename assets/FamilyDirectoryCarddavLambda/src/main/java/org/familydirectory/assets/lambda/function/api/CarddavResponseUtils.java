@@ -2,6 +2,7 @@ package org.familydirectory.assets.lambda.function.api;
 
 import io.milton.http.Request;
 import io.milton.http.Response;
+import java.net.URI;
 import java.util.List;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResourceObject;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PresentMemberResource;
@@ -45,7 +46,20 @@ enum CarddavResponseUtils {
                        .collect(joining(","));
     }
 
-    static CarddavResponse getDefaultMethodResponse(Request.Method method, AbstractResourceObject resource) {
+    static
+    String normalizeHref(String href) {
+        try {
+            final var uri = URI.create(href);
+            final var path = uri.getPath();
+            return (path == null || path.isEmpty()) ? href : path;
+        } catch (final IllegalArgumentException e) {
+            // If it's not a valid URI, just use it as-is
+            return href;
+        }
+    }
+
+    static
+    CarddavResponse getDefaultMethodResponse(Request.Method method, AbstractResourceObject resource) {
         return method.isWrite ? FORBIDDEN : methodNotAllowed(resource);
     }
 

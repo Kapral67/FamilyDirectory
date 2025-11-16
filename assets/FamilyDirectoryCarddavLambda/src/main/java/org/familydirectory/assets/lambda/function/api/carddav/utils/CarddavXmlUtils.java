@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -18,6 +19,8 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Objects.requireNonNullElse;
 
 public
 enum CarddavXmlUtils {
@@ -28,11 +31,11 @@ enum CarddavXmlUtils {
     // INPUT //
 
     @FunctionalInterface
-    private interface XMLFunction<T, R> {
-        R apply(T t) throws XMLStreamException, IOException;
+    private interface XMLFunction<R> {
+        R apply(XMLStreamReader r) throws XMLStreamException, IOException;
     }
 
-    private static <T> T parseXml(Supplier<InputStream> inSupplier, XMLFunction<XMLStreamReader, T> behavior, String exceptionMessage) throws BadRequestException {
+    private static <T> T parseXml(Supplier<InputStream> inSupplier, XMLFunction<T> behavior, String exceptionMessage) throws BadRequestException {
         try (final var in = inSupplier.get()) {
             final var factory = XMLInputFactory.newFactory();
             factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
@@ -65,7 +68,7 @@ enum CarddavXmlUtils {
     }
 
     public static String parseSyncToken(Supplier<InputStream> inSupplier) throws BadRequestException {
-        final XMLFunction<XMLStreamReader, String> behavior = reader -> {
+        final XMLFunction<String> behavior = reader -> {
             if ("sync-token".equals(reader.getLocalName())) {
                 String ns = reader.getNamespaceURI();
                 if (ns == null || ns.isEmpty() || DAV_NS.equals(ns)) {
@@ -76,6 +79,27 @@ enum CarddavXmlUtils {
             throw new NoSuchElementException();
         };
         return parseXml(inSupplier, behavior, "sync-collection REPORT missing DAV:sync-token element");
+    }
+
+    public static List<String> parseMultigetHrefs(Supplier<InputStream> inSupplier) throws BadRequestException {
+        final XMLFunction<List<String>> behavior = reader -> {
+            final var hrefs = new ArrayList<String>();
+            for (var firstIter = true; firstIter || reader.hasNext(); firstIter = false) {
+                if (!firstIter) reader.next();
+                if (!reader.isStartElement() || !"href".equals(reader.getLocalName())) {
+                    continue;
+                }
+                final var href = requireNonNullElse(reader.getElementText(), "").trim();
+                if (!href.isEmpty()) {
+                    hrefs.add(href);
+                }
+            }
+            if (hrefs.isEmpty()) {
+                throw new NoSuchElementException();
+            }
+            return unmodifiableList(hrefs);
+        };
+        return parseXml(inSupplier, behavior, "addressbook-multiget REPORT missing DAV:href");
     }
 
     // OUTPUT //

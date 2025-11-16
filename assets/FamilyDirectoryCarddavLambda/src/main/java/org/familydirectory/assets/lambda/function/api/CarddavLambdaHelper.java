@@ -64,6 +64,7 @@ import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtil
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleRootCollectionResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleSystemPrincipal;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleUserPrincipal;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.normalizeHref;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.options;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.CURRENT_USER_PRIVILEGE_SET;
@@ -77,6 +78,7 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dParent;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dProp;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.okPropstat;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.parseMultigetHrefs;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.parseReportRoot;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.parseSyncToken;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.renderMultistatus;
@@ -109,8 +111,20 @@ class CarddavLambdaHelper extends ApiHelper {
         try {
             return this.process();
         } catch (MiltonException e) {
-            // TODO
-            return CarddavResponse.builder().build();
+            if (!(e instanceof BadRequestException badE)) {
+                throw new RuntimeException(e);
+            }
+            if (badE.getReason() != null && badE.getResource() != null) {
+                final var msg = "Bad Request: %s.class %s".formatted(
+                    badE.getResource().getClass().getSimpleName(),
+                    String.valueOf(badE.getReason())
+                );
+                this.getLogger().log(msg, LogLevel.INFO);
+            }
+            LambdaUtils.logTrace(this.getLogger(), badE, LogLevel.INFO);
+            return CarddavResponse.builder()
+                                  .status(Response.Status.SC_BAD_REQUEST)
+                                  .build();
         }
     }
 
@@ -132,7 +146,7 @@ class CarddavLambdaHelper extends ApiHelper {
     }
 
     private
-    CarddavResponse processAddressBookRequest(Request.Method method, FamilyDirectoryResource addressbook) throws BadRequestException {
+    CarddavResponse processAddressBookRequest(Request.Method method, FamilyDirectoryResource addressbook) throws BadRequestException, NotAuthorizedException {
         return switch (method) {
             case OPTIONS -> options(addressbook);
             case PROPFIND -> handleAddressBookPropFind(addressbook);
@@ -154,7 +168,38 @@ class CarddavLambdaHelper extends ApiHelper {
     }
 
     private
-    CarddavResponse handleAddressbookMultigetReport(FamilyDirectoryResource addressbook) {}
+    CarddavResponse handleAddressbookMultigetReport(FamilyDirectoryResource addressbook) throws BadRequestException {
+        final var hrefs = parseMultigetHrefs(this.request::getInputStream);
+
+        final List<DavResponse> responses = new ArrayList<>(hrefs.size());
+        for (final var href : hrefs) {
+            final var path = normalizeHref(href);
+            final IMemberResource resource;
+            try {
+                resource = (IMemberResource) this.resourceFactory.getResource("", path);
+            } catch (final Exception e) {
+                LambdaUtils.logTrace(this.getLogger(), e, LogLevel.INFO);
+                responses.add(
+                    new DavResponse(href, singletonList(statusPropstat(Response.Status.SC_BAD_REQUEST, emptyList())))
+                );
+                continue;
+            }
+            responses.add(
+                switch (resource) {
+                    case DeletedMemberResource ignored ->
+                        new DavResponse(href, singletonList(statusPropstat(Response.Status.SC_NOT_FOUND, emptyList())));
+                    case PresentMemberResource presentMemberResource ->
+                        new DavResponse(href, singletonList(okPropstat(getPresentMemberResourceProps(presentMemberResource))));
+                }
+            );
+        }
+
+        return CarddavResponse.builder()
+                              .status(Response.Status.SC_MULTI_STATUS)
+                              .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
+                              .body(renderMultistatus(unmodifiableList(responses)))
+                              .build();
+    }
 
     private
     CarddavResponse handleAddressbookQueryReport(FamilyDirectoryResource addressbook) {}
