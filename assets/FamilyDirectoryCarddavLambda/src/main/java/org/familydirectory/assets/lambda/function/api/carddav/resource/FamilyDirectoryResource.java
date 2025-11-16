@@ -7,6 +7,7 @@ import io.milton.http.values.Pair;
 import io.milton.principal.PrincipalSearchCriteria;
 import io.milton.resource.AddressBookQuerySearchableResource;
 import io.milton.resource.AddressBookResource;
+import io.milton.resource.ReportableResource;
 import io.milton.resource.Resource;
 import io.milton.resource.SyncCollectionResource;
 import java.net.URI;
@@ -36,7 +37,7 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.URL;
 
 public final
-class FamilyDirectoryResource extends AbstractResource implements AddressBookResource, AddressBookQuerySearchableResource, SyncCollectionResource {
+class FamilyDirectoryResource extends AbstractResource implements AddressBookResource, AddressBookQuerySearchableResource, SyncCollectionResource, ReportableResource {
 
     private boolean isMemberResourcesComplete = false;
     private UUID ctag = null;

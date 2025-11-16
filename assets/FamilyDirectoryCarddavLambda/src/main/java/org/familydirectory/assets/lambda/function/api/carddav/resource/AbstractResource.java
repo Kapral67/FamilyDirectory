@@ -5,7 +5,6 @@ import io.milton.http.values.HrefList;
 import io.milton.principal.Principal;
 import io.milton.resource.AccessControlledResource;
 import io.milton.resource.PropFindableResource;
-import io.milton.resource.ReportableResource;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -21,9 +20,7 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.URL;
 
 public sealed abstract
-class AbstractResource
-    extends AbstractResourceObject
-    implements ReportableResource, PropFindableResource, AccessControlledResource
+class AbstractResource extends AbstractResourceObject implements PropFindableResource, AccessControlledResource
     permits RootCollectionResource, PrincipalCollectionResource, FamilyDirectoryResource, AbstractPrincipal, PresentMemberResource
 {
     protected

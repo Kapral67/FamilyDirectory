@@ -1,7 +1,6 @@
 package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
 import io.milton.http.Request;
-import io.milton.resource.AccessControlledResource;
 import io.milton.resource.GetableResource;
 import io.milton.resource.PropFindableResource;
 import io.milton.resource.ReportableResource;
@@ -67,9 +66,6 @@ class AbstractResourceObject implements IResource permits AbstractResource, Dele
         if (this instanceof GetableResource) {
             allowedMethods.add(Request.Method.GET);
             allowedMethods.add(Request.Method.HEAD);
-        }
-        if (this instanceof AccessControlledResource) {
-            allowedMethods.add(Request.Method.ACL);
         }
         return unmodifiableSet(allowedMethods);
     }

@@ -40,6 +40,13 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.commons.codec.binary.Base64.decodeBase64;
 import static org.apache.commons.codec.binary.Base64.isBase64;
 import static org.apache.commons.codec.binary.StringUtils.newStringUtf8;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleDeletedMemberResource;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleFamilyDirectoryResource;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handlePresentMemberResource;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handlePrincipalCollectionResource;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleRootCollectionResource;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleSystemPrincipal;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleUserPrincipal;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.INITIAL_RESOURCE_CONTAINER_SIZE;
 
 public final
@@ -77,17 +84,16 @@ class CarddavLambdaHelper extends ApiHelper {
     CarddavResponse process() throws BadRequestException, NotAuthorizedException {
         final FDResourceFactory resourceFactory = this.getResourceFactory();
         final var resource = (AbstractResourceObject) resourceFactory.getResource("", this.request.getAbsolutePath());
-
-        // TODO: handle OPTIONS request or ANY DeletedMemberResource request
+        final var method = this.request.getMethod();
 
         return switch (resource) {
-            case RootCollectionResource root -> {}
-            case PrincipalCollectionResource principals -> {}
-            case FamilyDirectoryResource addressbook -> {}
-            case PresentMemberResource presentMember -> {}
-            case DeletedMemberResource deletedMember -> {}
-            case SystemPrincipal systemPrincipal -> {}
-            case UserPrincipal callerPrincipal -> {}
+            case RootCollectionResource root -> handleRootCollectionResource(method, root);
+            case PrincipalCollectionResource principals -> handlePrincipalCollectionResource(method, principals);
+            case FamilyDirectoryResource addressbook -> handleFamilyDirectoryResource(method, addressbook);
+            case PresentMemberResource presentMember -> handlePresentMemberResource(method, presentMember);
+            case DeletedMemberResource deletedMember -> handleDeletedMemberResource(method, deletedMember);
+            case SystemPrincipal systemPrincipal -> handleSystemPrincipal(method, systemPrincipal);
+            case UserPrincipal callerPrincipal -> handleUserPrincipal(method, callerPrincipal);
         };
     }
 

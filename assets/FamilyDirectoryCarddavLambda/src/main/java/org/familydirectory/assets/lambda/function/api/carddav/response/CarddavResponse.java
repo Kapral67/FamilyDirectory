@@ -41,7 +41,7 @@ class CarddavResponse {
         }
 
         for (final var header : headers.entrySet()) {
-            if (Response.Header.CONTENT_LENGTH.equals(header.getKey())) {
+            if (Response.Header.CONTENT_LENGTH.equals(header.getKey()) && bodyBytes.length > 0) {
                 continue;
             }
             sb.append(header.getKey().code)
