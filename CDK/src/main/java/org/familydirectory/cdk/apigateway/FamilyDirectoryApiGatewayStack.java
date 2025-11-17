@@ -143,15 +143,17 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                                                                                           .build());
             final HttpLambdaIntegration httpLambdaIntegration = new HttpLambdaIntegration(func.httpIntegrationId(), function);
 //      Add Lambda as HttpIntegration to HttpApi
-            httpApi.addRoutes(AddRoutesOptions.builder()
-                                              .authorizationScopes(HTTP_API_ROUTE_AUTHORIZATION_SCOPES)
-                                              .authorizer(!ApiFunction.CARDDAV.equals(func)
-                                                ? userPoolAuthorizer
-                                                : carddavAuthorizer
-                                              ).path(func.endpoint())
-                                              .methods(func.methods())
-                                              .integration(httpLambdaIntegration)
-                                              .build());
+            final var addRoutesOptionsBuilder = AddRoutesOptions.builder();
+            if (ApiFunction.CARDDAV.equals(func)) {
+                addRoutesOptionsBuilder.authorizer(carddavAuthorizer);
+            } else {
+                addRoutesOptionsBuilder.authorizer(userPoolAuthorizer)
+                                       .authorizationScopes(HTTP_API_ROUTE_AUTHORIZATION_SCOPES);
+            }
+            httpApi.addRoutes(addRoutesOptionsBuilder.path(func.endpoint())
+                                                     .methods(func.methods())
+                                                     .integration(httpLambdaIntegration)
+                                                     .build());
         }
 
         httpApi.addStage(HTTP_API_PUBLIC_STAGE_ID, HttpStageOptions.builder()
