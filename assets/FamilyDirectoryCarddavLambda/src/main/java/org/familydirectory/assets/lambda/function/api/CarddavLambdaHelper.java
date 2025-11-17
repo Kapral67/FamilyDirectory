@@ -367,12 +367,14 @@ class CarddavLambdaHelper extends ApiHelper {
         Optional<UUID> nextToken = Optional.of(fromToken);
         while (nextToken.isPresent()) {
             final String token = nextToken.get().toString();
+            final boolean isFromToken = fromToken.equals(nextToken.get());
             final var tokenAttrMap = Optional.ofNullable(this.getDdbItem(token, DdbTable.SYNC))
                                              .orElseThrow(() -> new NoSuchTokenException(token));
             nextToken = Optional.ofNullable(tokenAttrMap.get(SyncTableParameter.NEXT.jsonFieldName()))
                                 .map(AttributeValue::s)
                                 .filter(Predicate.not(String::isBlank))
                                 .map(UUID::fromString);
+            if (isFromToken) continue;
             changedMemberIds.addAll(Optional.ofNullable(tokenAttrMap.get(SyncTableParameter.MEMBERS.jsonFieldName()))
                                             .map(AttributeValue::ss)
                                             .stream()
