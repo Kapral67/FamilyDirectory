@@ -35,6 +35,13 @@ enum SyncTableParameter implements DdbTableParameter {
     }
 
     @Override
+    @NotNull
+    public
+    String toString () {
+        return this.jsonFieldName();
+    }
+
+    @Override
     public final @Nullable
     GlobalSecondaryIndexProps gsiProps () {
         return null;

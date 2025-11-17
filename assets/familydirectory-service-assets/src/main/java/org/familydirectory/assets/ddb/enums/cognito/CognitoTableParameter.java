@@ -52,6 +52,13 @@ enum CognitoTableParameter implements DdbTableParameter {
     }
 
     @Override
+    @NotNull
+    public
+    String toString () {
+        return this.jsonFieldName();
+    }
+
+    @Override
     @Nullable
     public final
     GlobalSecondaryIndexProps gsiProps () {

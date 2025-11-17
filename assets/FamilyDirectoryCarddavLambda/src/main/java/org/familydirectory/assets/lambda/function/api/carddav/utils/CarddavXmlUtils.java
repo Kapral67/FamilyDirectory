@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLInputFactory;
@@ -69,18 +71,27 @@ enum CarddavXmlUtils {
         return parseXml(inSupplier, XMLStreamReader::getName, "REPORT body does not contain a root element");
     }
 
-    public static String parseSyncToken(Supplier<InputStream> inSupplier) throws BadRequestException {
-        final XMLFunction<String> behavior = reader -> {
-            if ("sync-token".equals(reader.getLocalName())) {
-                String ns = reader.getNamespaceURI();
-                if (ns == null || ns.isEmpty() || DAV_NS.equals(ns)) {
-                    String token = reader.getElementText();
-                    return token == null ? "" : token.trim();
+    public static Optional<String> parseSyncToken(Supplier<InputStream> inSupplier) throws BadRequestException {
+        final XMLFunction<Optional<String>> behavior = reader -> {
+            Optional<String> token = Optional.empty();
+            for (boolean first = true; first || reader.hasNext(); first = false) {
+                if (!first) reader.next();
+                if (!reader.isStartElement() || !"sync-token".equals(reader.getLocalName())) {
+                    continue;
                 }
+                String ns = reader.getNamespaceURI();
+                if (!DAV_NS.equals(ns)) {
+                    continue;
+                }
+
+                token = Optional.ofNullable(reader.getElementText())
+                                .filter(Predicate.not(String::isBlank))
+                                .map(String::trim);
+                break;
             }
-            throw new NoSuchElementException();
+            return token;
         };
-        return parseXml(inSupplier, behavior, "sync-collection REPORT missing DAV:sync-token element");
+        return parseXml(inSupplier, behavior, "sync-collection report bad sync token");
     }
 
     public static List<String> parseMultigetHrefs(Supplier<InputStream> inSupplier) throws BadRequestException {

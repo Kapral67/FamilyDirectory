@@ -109,7 +109,7 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
     String getCTag () {
         if (this.ctag != null) return this.ctag.toString();
         this.ctag = Optional.ofNullable(this.carddavLambdaHelper.getDdbItem(DdbUtils.SYNC_TOKEN_LATEST.toString(), DdbTable.SYNC))
-                            .map(map -> map.get(SyncTableParameter.NEXT.toString()))
+                            .map(map -> map.get(SyncTableParameter.NEXT.jsonFieldName()))
                             .map(AttributeValue::s)
                             .map(UUID::fromString)
                             .filter(ctag -> TIME_BASED_EPOCH.equals(UUIDUtil.typeOf(ctag)))

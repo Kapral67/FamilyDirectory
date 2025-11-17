@@ -245,11 +245,18 @@ class CarddavLambdaHelper extends ApiHelper {
         final URI syncTokenUri;
         final Set<IMemberResource> changesSinceLastSync;
         try {
-            syncTokenUri = URI.create(UUID.fromString(parseSyncToken(this.request::getInputStream)).toString());
-            changesSinceLastSync = addressbook.findResourcesBySyncToken(syncTokenUri)
-                                              .values().stream()
-                                              .map(IMemberResource.class::cast)
-                                              .collect(toUnmodifiableSet());
+            syncTokenUri = parseSyncToken(this.request::getInputStream).map(UUID::fromString)
+                                                                       .map(UUID::toString)
+                                                                       .map(URI::create)
+                                                                       .orElse(null);
+            final var stream = syncTokenUri == null
+                ? addressbook.getChildren()
+                             .stream()
+                : addressbook.findResourcesBySyncToken(syncTokenUri)
+                             .values()
+                             .stream()
+                             .map(IMemberResource.class::cast);
+            changesSinceLastSync = stream.collect(toUnmodifiableSet());
         } catch (final Exception e) {
             LambdaUtils.logTrace(this.getLogger(), e, LogLevel.INFO);
             return CarddavResponse.builder()
@@ -362,11 +369,11 @@ class CarddavLambdaHelper extends ApiHelper {
             final String token = nextToken.get().toString();
             final var tokenAttrMap = Optional.ofNullable(this.getDdbItem(token, DdbTable.SYNC))
                                              .orElseThrow(() -> new NoSuchTokenException(token));
-            nextToken = Optional.ofNullable(tokenAttrMap.get(SyncTableParameter.NEXT.toString()))
+            nextToken = Optional.ofNullable(tokenAttrMap.get(SyncTableParameter.NEXT.jsonFieldName()))
                                 .map(AttributeValue::s)
                                 .filter(Predicate.not(String::isBlank))
                                 .map(UUID::fromString);
-            changedMemberIds.addAll(Optional.ofNullable(tokenAttrMap.get(SyncTableParameter.MEMBERS.toString()))
+            changedMemberIds.addAll(Optional.ofNullable(tokenAttrMap.get(SyncTableParameter.MEMBERS.jsonFieldName()))
                                             .map(AttributeValue::ss)
                                             .stream()
                                             .flatMap(List::stream)
