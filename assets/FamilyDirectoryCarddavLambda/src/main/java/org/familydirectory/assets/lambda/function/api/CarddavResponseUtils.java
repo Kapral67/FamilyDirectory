@@ -3,8 +3,10 @@ package org.familydirectory.assets.lambda.function.api;
 import io.milton.http.Request;
 import io.milton.http.Response;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResourceObject;
+import org.familydirectory.assets.lambda.function.api.carddav.resource.FamilyDirectoryResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PresentMemberResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PrincipalCollectionResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.RootCollectionResource;
@@ -73,10 +75,16 @@ enum CarddavResponseUtils {
 
     static
     CarddavResponse options(AbstractResourceObject resource) {
+        final var davTokens = new ArrayList<String>(3);
+        davTokens.add("1");
+        if (resource instanceof FamilyDirectoryResource) {
+            davTokens.add("addressbook");
+            davTokens.add("sync-collection");
+        }
         return CarddavResponse.builder()
                               .status(Response.Status.SC_OK)
                               .header(Response.Header.ALLOW, getAllowHeader(resource))
-                              .header(Response.Header.DAV, "1,addressbook,sync-collection")
+                              .header(Response.Header.DAV, String.join(",", davTokens))
                               .build();
     }
 
