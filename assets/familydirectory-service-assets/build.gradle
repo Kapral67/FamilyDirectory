@@ -6,9 +6,10 @@ group = "${rootProject.group}.assets"
 
 dependencies {
     api platform(libs.aws.sdk.bom)
+    compileOnly libs.lombok
+    annotationProcessor libs.lombok
     implementation libs.jackson.databind
     implementation libs.jug
-    implementation libs.lombok
     implementation libs.googlecode.libphonenumber
     implementation libs.commons.codec
     implementation libs.commons.validator

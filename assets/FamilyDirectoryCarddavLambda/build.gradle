@@ -1,9 +1,10 @@
 group = "${rootProject.group}.assets.lambda.function.api.familydirectorycarddavlambda"
 
 dependencies {
+    compileOnly libs.lombok
+    annotationProcessor libs.lombok
     implementation libs.jackson.annotations
     implementation libs.jetbrains.annotations
     implementation libs.jug
     implementation libs.milton.api
-    implementation libs.lombok
 }

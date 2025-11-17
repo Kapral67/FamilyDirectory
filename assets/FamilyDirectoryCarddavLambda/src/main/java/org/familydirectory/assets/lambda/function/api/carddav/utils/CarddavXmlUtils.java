@@ -1,5 +1,6 @@
 package org.familydirectory.assets.lambda.function.api.carddav.utils;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.milton.http.Response;
 import io.milton.http.exceptions.BadRequestException;
 import java.io.IOException;
@@ -22,6 +23,7 @@ import javax.xml.stream.XMLStreamWriter;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNullElse;
 
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public
 enum CarddavXmlUtils {
     ;
