@@ -38,6 +38,10 @@ class CarddavResponse {
               .append(": ")
               .append(bodyBytes.length)
               .append(CRLF);
+        } else if (!headers.containsKey(Response.Header.CONTENT_LENGTH)) {
+            sb.append(Response.Header.CONTENT_LENGTH.code)
+              .append(": 0")
+              .append(CRLF);
         }
 
         for (final var header : headers.entrySet()) {
