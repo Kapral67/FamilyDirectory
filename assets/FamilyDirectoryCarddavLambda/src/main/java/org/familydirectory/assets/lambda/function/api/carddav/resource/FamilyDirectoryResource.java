@@ -75,7 +75,7 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
         return Optional.ofNullable(this.carddavLambdaHelper.getDdbItem(uuid, DdbTable.MEMBER))
                        .map(MemberRecord::convertDdbMap)
                        .map(memberRecord -> (IMemberResource) new PresentMemberResource(this.carddavLambdaHelper, memberRecord))
-                       .orElse(new DeletedMemberResource(this.carddavLambdaHelper, memberId, this.getModifiedDate()));
+                       .orElseGet(() -> new DeletedMemberResource(this.carddavLambdaHelper, memberId, this.getModifiedDate()));
     }
 
     @Override
