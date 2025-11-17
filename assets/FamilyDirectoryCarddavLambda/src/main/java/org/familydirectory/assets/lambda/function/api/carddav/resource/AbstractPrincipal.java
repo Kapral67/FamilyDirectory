@@ -8,8 +8,8 @@ import org.jetbrains.annotations.NotNull;
 public sealed abstract
 class AbstractPrincipal extends AbstractResource implements DiscretePrincipal permits SystemPrincipal, UserPrincipal {
     protected
-    AbstractPrincipal (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
-        super(carddavLambdaHelper);
+    AbstractPrincipal (@NotNull CarddavLambdaHelper carddavLambdaHelper, @NotNull String name) {
+        super(carddavLambdaHelper, name);
     }
 
     @Override

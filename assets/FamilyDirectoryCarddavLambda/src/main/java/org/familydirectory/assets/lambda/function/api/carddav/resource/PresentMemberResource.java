@@ -13,7 +13,6 @@ import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
 import static java.time.ZoneOffset.UTC;
-import static java.util.Objects.requireNonNull;
 import static org.apache.commons.codec.binary.StringUtils.getBytesUtf8;
 import static org.apache.commons.codec.binary.StringUtils.newStringUtf8;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.VCARD_CONTENT_TYPE;
@@ -29,15 +28,9 @@ class PresentMemberResource extends AbstractResource implements IMemberResource,
      * @see FDResourceFactory
      */
     PresentMemberResource (@NotNull CarddavLambdaHelper carddavLambdaHelper, @NotNull MemberRecord member) {
-        super(carddavLambdaHelper);
-        this.member = requireNonNull(member);
+        super(carddavLambdaHelper, member.id().toString());
+        this.member = member;
         this.vcard = getBytesUtf8(new Vcard(this.member).toString());
-    }
-
-    @Override
-    public
-    String getName () {
-        return this.member.id().toString();
     }
 
     @Override

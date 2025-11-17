@@ -15,14 +15,8 @@ class SystemPrincipal extends AbstractPrincipal {
      * @see FDResourceFactory
      */
     SystemPrincipal (@NotNull CarddavLambdaHelper helper) {
-        super(helper);
+        super(helper, SYSTEM_PRINCIPAL);
         this.principalId = new HrefPrincipleId(SYSTEM_PRINCIPAL_PATH);
-    }
-
-    @Override
-    public
-    String getName () {
-        return SYSTEM_PRINCIPAL;
     }
 
     @Override

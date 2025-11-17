@@ -20,7 +20,7 @@ class RootCollectionResource extends AbstractResource implements CollectionResou
      * @see FDResourceFactory
      */
     RootCollectionResource (@NotNull CarddavLambdaHelper carddavLambdaHelper) throws ApiHelper.ResponseException {
-        super(carddavLambdaHelper);
+        super(carddavLambdaHelper, "");
         this.principalsCollection = new PrincipalCollectionResource(carddavLambdaHelper);
         this.membersCollection = new FamilyDirectoryResource(carddavLambdaHelper);
     }
@@ -45,12 +45,6 @@ class RootCollectionResource extends AbstractResource implements CollectionResou
     public
     List<AbstractResource> getChildren () {
         return List.of(principalsCollection, membersCollection);
-    }
-
-    @Override
-    public
-    String getName () {
-        return "";
     }
 
     @Override

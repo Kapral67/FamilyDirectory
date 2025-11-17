@@ -11,24 +11,14 @@ public final
 class DeletedMemberResource extends AbstractResourceObject implements IMemberResource, RemovedResource {
 
     @NotNull
-    private final UUID id;
-
-    @NotNull
     private final Date modifiedDate;
 
     /**
      * @see FDResourceFactory
      */
     DeletedMemberResource(@NotNull CarddavLambdaHelper carddavLambdaHelper, @NotNull UUID id, @NotNull Date modifiedDate) {
-        super(carddavLambdaHelper);
-        this.id = requireNonNull(id);
+        super(carddavLambdaHelper, id.toString());
         this.modifiedDate = requireNonNull(modifiedDate);
-    }
-
-    @Override
-    public
-    String getName () {
-        return this.id.toString();
     }
 
     @Override

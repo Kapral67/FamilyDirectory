@@ -23,8 +23,8 @@ class AbstractResource extends AbstractResourceObject implements PropFindableRes
     permits RootCollectionResource, PrincipalCollectionResource, FamilyDirectoryResource, AbstractPrincipal, PresentMemberResource
 {
     protected
-    AbstractResource (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
-        super(carddavLambdaHelper);
+    AbstractResource (@NotNull CarddavLambdaHelper carddavLambdaHelper, @NotNull String name) {
+        super(carddavLambdaHelper, name);
     }
 
     @Override

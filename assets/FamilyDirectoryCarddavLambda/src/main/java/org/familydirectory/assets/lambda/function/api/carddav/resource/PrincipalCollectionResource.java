@@ -18,8 +18,8 @@ class PrincipalCollectionResource extends AbstractResource implements Collection
     /**
      * @see FDResourceFactory
      */
-    PrincipalCollectionResource(@NotNull CarddavLambdaHelper carddavLambdaHelper) throws ApiHelper.ResponseException {
-        super(carddavLambdaHelper);
+    PrincipalCollectionResource(@NotNull CarddavLambdaHelper carddavLambdaHelper) {
+        super(carddavLambdaHelper, PRINCIPALS);
         this.systemPrincipal = new SystemPrincipal(carddavLambdaHelper);
         this.userPrincipal = new UserPrincipal(carddavLambdaHelper);
     }
@@ -41,12 +41,6 @@ class PrincipalCollectionResource extends AbstractResource implements Collection
     public
     List<AbstractPrincipal> getChildren () {
         return List.of(systemPrincipal, userPrincipal);
-    }
-
-    @Override
-    public
-    String getName () {
-        return PRINCIPALS;
     }
 
     @Override

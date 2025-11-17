@@ -3,8 +3,6 @@ package org.familydirectory.assets.lambda.function.api.carddav.resource;
 import io.milton.http.values.HrefList;
 import io.milton.principal.CardDavPrincipal;
 import io.milton.principal.HrefPrincipleId;
-import org.familydirectory.assets.ddb.models.member.MemberRecord;
-import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK_PATH;
@@ -14,17 +12,13 @@ public final
 class UserPrincipal extends AbstractPrincipal implements CardDavPrincipal {
 
     @NotNull
-    private final MemberRecord user;
-
-    @NotNull
     private final PrincipleId principalId;
 
     /**
      * @see FDResourceFactory
      */
-    UserPrincipal (@NotNull CarddavLambdaHelper carddavLambdaHelper) throws ApiHelper.ResponseException {
-        super(carddavLambdaHelper);
-        this.user = this.carddavLambdaHelper.getCaller().caller();
+    UserPrincipal (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
+        super(carddavLambdaHelper, carddavLambdaHelper.getCaller().caller().id().toString());
         this.principalId = new HrefPrincipleId(this.getPrincipalURL());
     }
 
@@ -46,18 +40,12 @@ class UserPrincipal extends AbstractPrincipal implements CardDavPrincipal {
     @NotNull
     public
     String getPrincipalURL () {
-        return PRINCIPALS_COLLECTION_PATH + this.user.id();
+        return PRINCIPALS_COLLECTION_PATH + this.getName();
     }
 
     @Override
     public
     PrincipleId getIdenitifer () {
         return this.principalId;
-    }
-
-    @Override
-    public
-    String getName () {
-        return this.user.id().toString();
     }
 }

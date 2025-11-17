@@ -45,7 +45,7 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
      * @see FDResourceFactory
      */
     FamilyDirectoryResource (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
-        super(carddavLambdaHelper);
+        super(carddavLambdaHelper, ADDRESS_BOOK);
     }
 
     @Override
@@ -154,12 +154,6 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
         // We return all children to any addressbook-query request
         // to prefer clients perform filtering locally
         return this.getChildren();
-    }
-
-    @Override
-    public
-    String getName () {
-        return ADDRESS_BOOK;
     }
 
     @Override

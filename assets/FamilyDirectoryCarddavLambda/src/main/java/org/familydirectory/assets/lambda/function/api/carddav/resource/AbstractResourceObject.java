@@ -18,12 +18,22 @@ class AbstractResourceObject implements IResource permits AbstractResource, Dele
     protected final CarddavLambdaHelper carddavLambdaHelper;
     @NotNull
     protected final FDResourceFactory resourceFactory;
+    @NotNull
+    private final String name;
 
     protected
-    AbstractResourceObject (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
+    AbstractResourceObject (@NotNull CarddavLambdaHelper carddavLambdaHelper, @NotNull String name) {
         this.carddavLambdaHelper = requireNonNull(carddavLambdaHelper);
         this.resourceFactory = carddavLambdaHelper.getResourceFactory();
+        this.name = name;
         this.resourceFactory.registerNewResource(this);
+    }
+
+    @Override
+    @NotNull
+    public final
+    String getName() {
+        return this.name;
     }
 
     @Override
