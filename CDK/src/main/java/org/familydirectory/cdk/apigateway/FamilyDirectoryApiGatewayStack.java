@@ -8,6 +8,7 @@ import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaAuthorizer;
 import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpUserPoolAuthorizer;
 import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpUserPoolAuthorizerProps;
 import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;
@@ -19,7 +20,9 @@ import software.amazon.awscdk.services.apigatewayv2.DomainNameProps;
 import software.amazon.awscdk.services.apigatewayv2.EndpointType;
 import software.amazon.awscdk.services.apigatewayv2.HttpApi;
 import software.amazon.awscdk.services.apigatewayv2.HttpApiProps;
+import software.amazon.awscdk.services.apigatewayv2.HttpNoneAuthorizer;
 import software.amazon.awscdk.services.apigatewayv2.HttpStageOptions;
+import software.amazon.awscdk.services.apigatewayv2.IHttpRouteAuthorizer;
 import software.amazon.awscdk.services.apigatewayv2.SecurityPolicy;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.CertificateProps;
@@ -52,6 +55,7 @@ class FamilyDirectoryApiGatewayStack extends Stack {
     public static final String API_CERTIFICATE_NAME = "%s-%s".formatted(API_DOMAIN_NAME, API_CERTIFICATE_RESOURCE_ID);
     public static final String API_DOMAIN_NAME_RESOURCE_ID = "ApiDomainName";
     public static final String API_COGNITO_AUTHORIZER_RESOURCE_ID = "HttpUserPoolAuthorizer";
+    public static final String API_CARDDAV_AUTHORIZER_RESOURCE_ID = "HttpCarddavAuthorizer";
     public static final String HTTP_API_RESOURCE_ID = "HttpApi";
     public static final Duration CORS_MAX_AGE = Duration.days(1);
     public static final boolean HTTP_API_DISABLE_EXECUTE_API_ENDPOINT = true;
@@ -129,6 +133,8 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                                                      UserPool.fromUserPoolId(this, FamilyDirectoryCognitoStack.COGNITO_USER_POOL_RESOURCE_ID,
                                                                                                              importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)),
                                                                                      httpUserPoolAuthorizerProps);
+        // TODO: make protected
+        final IHttpRouteAuthorizer carddavAuthorizer = new HttpNoneAuthorizer();
 
         for (final ApiFunction func : ApiFunction.values()) {
             final IFunction function = Function.fromFunctionAttributes(this, func.functionName(), FunctionAttributes.builder()
@@ -139,8 +145,10 @@ class FamilyDirectoryApiGatewayStack extends Stack {
 //      Add Lambda as HttpIntegration to HttpApi
             httpApi.addRoutes(AddRoutesOptions.builder()
                                               .authorizationScopes(HTTP_API_ROUTE_AUTHORIZATION_SCOPES)
-                                              .authorizer(userPoolAuthorizer)
-                                              .path(func.endpoint())
+                                              .authorizer(!ApiFunction.CARDDAV.equals(func)
+                                                ? userPoolAuthorizer
+                                                : carddavAuthorizer
+                                              ).path(func.endpoint())
                                               .methods(func.methods())
                                               .integration(httpLambdaIntegration)
                                               .build());

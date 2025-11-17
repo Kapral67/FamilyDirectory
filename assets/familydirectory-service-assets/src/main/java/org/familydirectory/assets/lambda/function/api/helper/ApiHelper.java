@@ -29,7 +29,7 @@ class ApiHelper implements LambdaFunctionHelper {
     protected final @NotNull LambdaLogger logger;
     protected final @NotNull APIGatewayProxyRequestEvent requestEvent;
 
-    private Caller caller = null;
+    protected Caller caller = null;
 
     public
     ApiHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) {
@@ -40,7 +40,7 @@ class ApiHelper implements LambdaFunctionHelper {
     }
 
     @NotNull
-    public final
+    public
     Caller getCaller () throws ResponseException {
         if (this.caller != null) {
             return this.caller;

@@ -28,7 +28,8 @@ enum ApiFunction implements LambdaFunctionModel {
             singletonList(HttpMethod.GET), "pdf"),
     UPDATE_MEMBER("UpdateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER,
                                          List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, List.of("amplify:GetApp", "amplify:StartJob", "amplify:UpdateApp"),
-                  singletonList(HttpMethod.PUT), "update");
+                  singletonList(HttpMethod.PUT), "update"),
+    CARDDAV("Carddav", Map.of(DdbTable.SYNC, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, List.of("dynamodb:GetItem", "dynamodb:Scan")), null, null, null, null, singletonList(HttpMethod.POST), "carddav");
 
     @NotNull
     private final String functionName;
@@ -132,5 +133,15 @@ enum ApiFunction implements LambdaFunctionModel {
     public final
     String httpIntegrationId () {
         return "%sHttpIntegration".formatted(this.functionName);
+    }
+
+    @Override
+    @NotNull
+    public
+    Number memorySize() {
+        if (CARDDAV.equals(this)) {
+            return NEW_ACCOUNT_MAX_MEMORY_SIZE;
+        }
+        return LambdaFunctionModel.super.memorySize();
     }
 }
