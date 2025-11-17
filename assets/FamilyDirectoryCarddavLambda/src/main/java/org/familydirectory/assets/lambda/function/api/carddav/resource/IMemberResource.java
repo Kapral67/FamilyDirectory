@@ -1,11 +1,11 @@
 package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
-import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.CONTACTS_COLLECTION_PATH;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK_PATH;
 
 public sealed
 interface IMemberResource extends IResource permits PresentMemberResource, DeletedMemberResource {
     default
     String getHref() {
-        return CONTACTS_COLLECTION_PATH + this.getName();
+        return ADDRESS_BOOK_PATH + this.getName();
     }
 }

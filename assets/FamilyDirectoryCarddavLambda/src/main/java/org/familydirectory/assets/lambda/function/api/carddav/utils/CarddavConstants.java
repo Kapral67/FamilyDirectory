@@ -27,8 +27,7 @@ enum CarddavConstants {
             dParent("privilege", singletonList(dEmpty("read")))
         ));
     public static final String ADDRESS_BOOK = "addressbook";
-    public static final String ADDRESS_BOOK_PATH = "/%s".formatted(ADDRESS_BOOK);
-    public static final String CONTACTS_COLLECTION_PATH = "%s/".formatted(ADDRESS_BOOK_PATH);
+    public static final String ADDRESS_BOOK_PATH = "/%s/".formatted(ADDRESS_BOOK);
     public static final String PRINCIPALS = "principals";
     public static final String PRINCIPALS_COLLECTION_PATH = "/%s/".formatted(PRINCIPALS);
     public static final String SYSTEM_PRINCIPAL = "system";
