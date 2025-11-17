@@ -59,6 +59,7 @@ import static org.apache.commons.codec.binary.StringUtils.newStringUtf8;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.FORBIDDEN;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getDefaultMethodResponse;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getPresentMemberResourceProps;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getPrincipalUrlProp;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleDeletedMemberResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handlePresentMemberResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handlePrincipalCollectionResource;
@@ -289,6 +290,8 @@ class CarddavLambdaHelper extends ApiHelper {
             props.add(dParent("resourcetype", List.of(dEmpty("collection"), cEmpty("addressbook"))));
 
             props.add(CURRENT_USER_PRIVILEGE_SET);
+
+            props.add(getPrincipalUrlProp(addressbook));
 
             props.add(dProp("displayname", addressbook.getDescription().getValue()));
 

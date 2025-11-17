@@ -5,6 +5,7 @@ import io.milton.http.Response;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResourceObject;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.FamilyDirectoryResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PresentMemberResource;
@@ -94,6 +95,11 @@ enum CarddavResponseUtils {
     }
 
     static
+    DavProperty getPrincipalUrlProp(AbstractResource resource) {
+        return dParent("principal-URL", singletonList(dProp("href", resource.getPrincipalURL())));
+    }
+
+    static
     List<DavProperty> getPresentMemberResourceProps(PresentMemberResource resource) {
         return List.of(
             dProp("getetag", '"' + resource.getEtag() + '"'),
@@ -123,7 +129,8 @@ enum CarddavResponseUtils {
                 final var props = List.of(
                     dParent("resourcetype", singletonList(dEmpty("collection"))),
                     CURRENT_USER_PRIVILEGE_SET,
-                    getCurrentUserPrincipalProp(user)
+                    getCurrentUserPrincipalProp(user),
+                    getPrincipalUrlProp(resource)
                 );
                 final var davResponse = new DavResponse("/", singletonList(okPropstat(props)));
                 yield CarddavResponse.builder()
@@ -150,7 +157,8 @@ enum CarddavResponseUtils {
                 final var props = List.of(
                     dParent("resourcetype", singletonList(dEmpty("collection"))),
                     CURRENT_USER_PRIVILEGE_SET,
-                    getCurrentUserPrincipalProp(user)
+                    getCurrentUserPrincipalProp(user),
+                    getPrincipalUrlProp(resource)
                 );
                 final var davResponse = new DavResponse(PRINCIPALS_COLLECTION_PATH, singletonList(okPropstat(props)));
                 yield CarddavResponse.builder()
@@ -205,7 +213,8 @@ enum CarddavResponseUtils {
             case PROPFIND -> {
                 final var props = List.of(
                     dParent("resourcetype", singletonList(dEmpty("principal"))),
-                    CURRENT_USER_PRIVILEGE_SET
+                    CURRENT_USER_PRIVILEGE_SET,
+                    getPrincipalUrlProp(principal)
                 );
                 final var davResponse = new DavResponse(principal.getPrincipalURL(), singletonList(okPropstat(props)));
                 yield CarddavResponse.builder()
@@ -226,7 +235,9 @@ enum CarddavResponseUtils {
                 final var props = List.of(
                     dParent("resourcetype", singletonList(dEmpty("principal"))),
                     cParent("addressbook-home-set", singletonList(dProp("href", principal.getAddress()))),
-                    CURRENT_USER_PRIVILEGE_SET
+                    CURRENT_USER_PRIVILEGE_SET,
+                    getCurrentUserPrincipalProp(principal),
+                    getPrincipalUrlProp(principal)
                 );
                 final var davResponse = new DavResponse(principal.getPrincipalURL(), singletonList(okPropstat(props)));
                 yield CarddavResponse.builder()
