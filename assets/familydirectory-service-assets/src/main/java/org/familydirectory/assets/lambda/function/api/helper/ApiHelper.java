@@ -144,7 +144,7 @@ class ApiHelper implements LambdaFunctionHelper {
         public
         ResponseException (final @NotNull APIGatewayProxyResponseEvent responseEvent) {
             super();
-            this.responseEvent = responseEvent;
+            this.responseEvent = requireNonNull(responseEvent);
         }
 
         public @NotNull

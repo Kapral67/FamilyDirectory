@@ -46,6 +46,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import static io.milton.http.ResponseStatus.SC_BAD_REQUEST;
+import static io.milton.http.ResponseStatus.SC_INTERNAL_SERVER_ERROR;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
@@ -101,8 +102,14 @@ class CarddavLambdaHelper extends ApiHelper {
             this.request = new CarddavRequest(newStringUtf8(decodeBase64(this.requestEvent.getBody())));
             new FDResourceFactory(this);
         } catch (ResponseException e) {
-            // TODO
-            throw new CarddavResponseException(CarddavResponse.builder().build());
+            final var status = Optional.ofNullable(e.getResponseEvent().getStatusCode())
+                                       .map(Response.Status::fromCode)
+                                       .orElse(Response.Status.SC_INTERNAL_SERVER_ERROR);
+            throw (CarddavResponseException) new CarddavResponseException(
+                CarddavResponse.builder()
+                               .status(status)
+                               .build()
+            ).initCause(e);
         }
     }
 
