@@ -202,7 +202,22 @@ class CarddavLambdaHelper extends ApiHelper {
     }
 
     private
-    CarddavResponse handleAddressbookQueryReport(FamilyDirectoryResource addressbook) {}
+    CarddavResponse handleAddressbookQueryReport(FamilyDirectoryResource addressbook) {
+        final var responses = addressbook.getChildren()
+                                         .stream()
+                                         .filter(PresentMemberResource.class::isInstance)
+                                         .map(PresentMemberResource.class::cast)
+                                         .map(member -> new DavResponse(
+                                            member.getHref(),
+                                            singletonList(okPropstat(getPresentMemberResourceProps(member)))
+                                         )).toList();
+
+        return CarddavResponse.builder()
+                              .status(Response.Status.SC_MULTI_STATUS)
+                              .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
+                              .body(renderMultistatus(responses))
+                              .build();
+    }
 
     private
     CarddavResponse handleAddressbookSyncReport(FamilyDirectoryResource addressbook) {
@@ -251,6 +266,8 @@ class CarddavLambdaHelper extends ApiHelper {
 
             props.add(dProp("sync-token", addressbook.getSyncToken().toString()));
 
+            props.add(cProp("getctag", addressbook.getCTag(), emptyMap()));
+
             final var supportedAddressDataTypes = new ArrayList<DavProperty>(1);
             addressbook.getSupportedAddressData().forEach(pair -> supportedAddressDataTypes.add(
                cProp("address-data-type", null, Map.of("content-type", pair.getObject1(), "version", pair.getObject2()))
@@ -266,7 +283,7 @@ class CarddavLambdaHelper extends ApiHelper {
                                                .toList();
             props.add(dParent("supported-report-set", supportedReports));
 
-            responses.add(new DavResponse(ADDRESS_BOOK_PATH, singletonList(okPropstat(props))));
+            responses.add(new DavResponse(ADDRESS_BOOK_PATH, singletonList(okPropstat(unmodifiableList(props)))));
         }
         if (depth > 0) {
             addressbook.getChildren()
