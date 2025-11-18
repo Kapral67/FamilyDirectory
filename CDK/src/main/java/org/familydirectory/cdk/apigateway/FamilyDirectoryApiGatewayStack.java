@@ -8,7 +8,6 @@ import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaAuthorizer;
 import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpUserPoolAuthorizer;
 import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpUserPoolAuthorizerProps;
 import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;

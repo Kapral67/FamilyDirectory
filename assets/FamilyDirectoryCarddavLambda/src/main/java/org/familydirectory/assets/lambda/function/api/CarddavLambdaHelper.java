@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.amazonaws.services.lambda.runtime.logging.LogLevel;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.milton.http.Request;
 import io.milton.http.Response;
 import io.milton.http.exceptions.BadRequestException;
@@ -45,7 +46,6 @@ import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
-import static io.milton.http.ResponseStatus.SC_BAD_REQUEST;
 import static java.lang.System.getenv;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -53,9 +53,6 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toUnmodifiableSet;
-import static org.apache.commons.codec.binary.Base64.decodeBase64;
-import static org.apache.commons.codec.binary.Base64.isBase64;
-import static org.apache.commons.codec.binary.StringUtils.newStringUtf8;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.FORBIDDEN;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getDefaultMethodResponse;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getPresentMemberResourceProps;
@@ -89,6 +86,8 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 
 public final
 class CarddavLambdaHelper extends ApiHelper {
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private FDResourceFactory resourceFactory = null;
     @NotNull
     private final Set<MemberRecord> memberRecords = new HashSet<>(INITIAL_RESOURCE_CONTAINER_SIZE);
@@ -97,13 +96,14 @@ class CarddavLambdaHelper extends ApiHelper {
     CarddavLambdaHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) throws CarddavResponseException {
         super(logger, requestEvent);
         try {
-            if (!isBase64(this.requestEvent.getBody())) {
-                throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_BAD_REQUEST));
-            }
-            this.request = new CarddavRequest(newStringUtf8(decodeBase64(this.requestEvent.getBody())));
+            this.request = OBJECT_MAPPER.readValue(this.requestEvent.getBody(), CarddavRequest.class);
             new FDResourceFactory(this);
-        } catch (ResponseException e) {
-            final var status = Optional.ofNullable(e.getResponseEvent().getStatusCode())
+        } catch (Exception e) {
+            final var status = Optional.of(e)
+                                       .filter(ResponseException.class::isInstance)
+                                       .map(ResponseException.class::cast)
+                                       .map(ResponseException::getResponseEvent)
+                                       .map(APIGatewayProxyResponseEvent::getStatusCode)
                                        .map(Response.Status::fromCode)
                                        .orElse(Response.Status.SC_INTERNAL_SERVER_ERROR);
             throw (CarddavResponseException) new CarddavResponseException(
@@ -153,7 +153,7 @@ class CarddavLambdaHelper extends ApiHelper {
     private
     CarddavResponse process() throws BadRequestException, NotAuthorizedException {
         final FDResourceFactory resourceFactory = this.getResourceFactory();
-        final var resource = (AbstractResourceObject) resourceFactory.getResource("", this.request.getAbsolutePath());
+        final var resource = (AbstractResourceObject) resourceFactory.getResource("", this.request.path());
         final var method = this.request.getMethod();
 
         return switch (resource) {

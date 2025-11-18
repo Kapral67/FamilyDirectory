@@ -2,14 +2,10 @@ package org.familydirectory.assets.lambda.function.api;
 
 import io.milton.http.Request;
 import io.milton.http.Response;
-import io.milton.principal.CardDavPrincipal;
-import io.milton.resource.CollectionResource;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResourceObject;
-import org.familydirectory.assets.lambda.function.api.carddav.resource.FamilyDirectoryResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PresentMemberResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PrincipalCollectionResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.RootCollectionResource;

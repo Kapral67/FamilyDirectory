@@ -17,8 +17,7 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 public
 enum CarddavConstants {
     ;
-    public static final String CRLF = "\r\n";
-    public static final Number INFINITY = 3;
+    public static final int INFINITY = 3;
     public static final EnumSet<Method> SUPPORTED_METHODS = EnumSet.of(HEAD, PROPFIND, GET, OPTIONS, REPORT);
     public static final String VCARD_CONTENT_TYPE = "text/vcard";
     public static final List<Pair<String, String>> SUPPORTED_ADDRESS_DATA = singletonList(new Pair<>(VCARD_CONTENT_TYPE, "3.0"));

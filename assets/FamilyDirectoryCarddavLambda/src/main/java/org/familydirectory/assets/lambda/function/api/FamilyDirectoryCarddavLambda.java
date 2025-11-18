@@ -14,8 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.ERROR;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.FATAL;
 import static io.milton.http.ResponseStatus.SC_OK;
-import static org.apache.commons.codec.binary.Base64.encodeBase64String;
-import static org.apache.commons.codec.binary.StringUtils.getBytesUtf8;
 
 public
 class FamilyDirectoryCarddavLambda implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -42,7 +40,7 @@ class FamilyDirectoryCarddavLambda implements RequestHandler<APIGatewayProxyRequ
                                                   .status(Response.Status.SC_INTERNAL_SERVER_ERROR)
                                                   .build());
         return new APIGatewayProxyResponseEvent().withStatusCode(SC_OK)
-                                                 .withHeaders(Map.of("Content-Type", "text/plain"))
-                                                 .withBody(encodeBase64String(getBytesUtf8(response.toString())));
+                                                 .withHeaders(Map.of(Response.Header.CONTENT_TYPE.code, "application/json"))
+                                                 .withBody(response.toString());
     }
 }
