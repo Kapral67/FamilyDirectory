@@ -140,7 +140,7 @@ class FamilyDirectoryCognitoStackTest {
                                                                                                       singletonList(FamilyDirectoryCdkApp.HTTPS_PREFIX + FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)),
                                                                                                 entry("LogoutURLs",
                                                                                                       singletonList(FamilyDirectoryCdkApp.HTTPS_PREFIX + FamilyDirectoryDomainStack.HOSTED_ZONE_NAME)),
-                                                                                                entry("ExplicitAuthFlows", List.of("ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH")),
+                                                                                                entry("ExplicitAuthFlows", List.of("ALLOW_ADMIN_USER_PASSWORD_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH")),
                                                                                                 entry("GenerateSecret", FamilyDirectoryCognitoStack.COGNITO_USER_POOL_CLIENT_GENERATE_SECRET),
                                                                                                 entry("PreventUserExistenceErrors", "ENABLED"),
                                                                                                 entry("ReadAttributes", List.of("email", "email_verified")), entry("SupportedIdentityProviders",

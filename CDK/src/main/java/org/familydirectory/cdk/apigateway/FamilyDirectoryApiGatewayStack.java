@@ -1,6 +1,7 @@
 package org.familydirectory.cdk.apigateway;
 
 import java.util.List;
+import java.util.Map;
 import org.familydirectory.assets.lambda.function.api.enums.ApiFunction;
 import org.familydirectory.cdk.FamilyDirectoryCdkApp;
 import org.familydirectory.cdk.cognito.FamilyDirectoryCognitoStack;
@@ -8,6 +9,9 @@ import org.familydirectory.cdk.domain.FamilyDirectoryDomainStack;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaAuthorizer;
+import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaAuthorizerProps;
+import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaResponseType;
 import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpUserPoolAuthorizer;
 import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpUserPoolAuthorizerProps;
 import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;
@@ -19,7 +23,6 @@ import software.amazon.awscdk.services.apigatewayv2.DomainNameProps;
 import software.amazon.awscdk.services.apigatewayv2.EndpointType;
 import software.amazon.awscdk.services.apigatewayv2.HttpApi;
 import software.amazon.awscdk.services.apigatewayv2.HttpApiProps;
-import software.amazon.awscdk.services.apigatewayv2.HttpNoneAuthorizer;
 import software.amazon.awscdk.services.apigatewayv2.HttpStageOptions;
 import software.amazon.awscdk.services.apigatewayv2.IHttpRouteAuthorizer;
 import software.amazon.awscdk.services.apigatewayv2.SecurityPolicy;
@@ -29,9 +32,13 @@ import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
 import software.amazon.awscdk.services.cognito.IUserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.cognito.UserPoolClient;
+import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
+import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.route53.ARecord;
 import software.amazon.awscdk.services.route53.ARecordProps;
 import software.amazon.awscdk.services.route53.IPublicHostedZone;
@@ -128,12 +135,28 @@ class FamilyDirectoryApiGatewayStack extends Stack {
         final HttpUserPoolAuthorizerProps httpUserPoolAuthorizerProps = HttpUserPoolAuthorizerProps.builder()
                                                                                                    .userPoolClients(singletonList(userPoolClient))
                                                                                                    .build();
-        final HttpUserPoolAuthorizer userPoolAuthorizer = new HttpUserPoolAuthorizer(API_COGNITO_AUTHORIZER_RESOURCE_ID,
-                                                                                     UserPool.fromUserPoolId(this, FamilyDirectoryCognitoStack.COGNITO_USER_POOL_RESOURCE_ID,
-                                                                                                             importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME)),
-                                                                                     httpUserPoolAuthorizerProps);
-        // TODO: make protected
-        final IHttpRouteAuthorizer carddavAuthorizer = new HttpNoneAuthorizer();
+        final var userPool = UserPool.fromUserPoolId(this, FamilyDirectoryCognitoStack.COGNITO_USER_POOL_RESOURCE_ID, importValue(FamilyDirectoryCognitoStack.COGNITO_USER_POOL_ID_EXPORT_NAME));
+        final HttpUserPoolAuthorizer userPoolAuthorizer = new HttpUserPoolAuthorizer(API_COGNITO_AUTHORIZER_RESOURCE_ID, userPool, httpUserPoolAuthorizerProps);
+        final IFunction carddavAuthorizerHandler = Function.Builder.create(this, "CarddavAuthorizerLambda")
+                                                                   .handler("index.handler")
+                                                                   .timeout(Duration.seconds(5))
+                                                                   .runtime(Runtime.NODEJS_LATEST)
+                                                                   .environment(Map.of(
+                                                                       "USER_POOL_ID", userPool.getUserPoolId(),
+                                                                       "CLIENT_ID", userPoolClient.getUserPoolClientId()
+                                                                   )).code(Code.fromInline(CARDDAV_AUTHORIZER_HANDLER_SRC))
+                                                                   .memorySize(128)
+                                                                   .build();
+        carddavAuthorizerHandler.addToRolePolicy(PolicyStatement.Builder.create()
+                                                                        .effect(Effect.ALLOW)
+                                                                        .actions(List.of("cognito-idp:AdminInitiateAuth", "cognito-idp:AdminGetUser"))
+                                                                        .resources(singletonList(userPool.getUserPoolArn()))
+                                                                        .build());
+        final var carddavAuthorizerProps = HttpLambdaAuthorizerProps.builder()
+                                                                    .resultsCacheTtl(Duration.hours(1))
+                                                                    .responseTypes(singletonList(HttpLambdaResponseType.SIMPLE))
+                                                                    .build();
+        final IHttpRouteAuthorizer carddavAuthorizer = new HttpLambdaAuthorizer(API_CARDDAV_AUTHORIZER_RESOURCE_ID, carddavAuthorizerHandler, carddavAuthorizerProps);
 
         for (final ApiFunction func : ApiFunction.values()) {
             final IFunction function = Function.fromFunctionAttributes(this, func.functionName(), FunctionAttributes.builder()
@@ -164,4 +187,65 @@ class FamilyDirectoryApiGatewayStack extends Stack {
                                                                    .build());
     }
 
+    private static final String CARDDAV_AUTHORIZER_HANDLER_SRC = """
+                                                                 const {
+                                                                   CognitoIdentityProviderClient,
+                                                                   AdminInitiateAuthCommand,
+                                                                   AdminGetUserCommand
+                                                                 } = require("@aws-sdk/client-cognito-identity-provider");
+                                                                 
+                                                                 const client = new CognitoIdentityProviderClient({});
+                                                                 
+                                                                 const USER_POOL_ID = process.env.USER_POOL_ID;
+                                                                 const CLIENT_ID    = process.env.CLIENT_ID;
+                                                                 
+                                                                 exports.handler = async (event) => {
+                                                                   try {
+                                                                     const headers = event.headers || {};
+                                                                     const authHeader = headers.authorization || headers.Authorization;
+                                                                 
+                                                                     if (!authHeader || !authHeader.startsWith("Basic ")) {
+                                                                       return { isAuthorized: false };
+                                                                     }
+                                                                 
+                                                                     const token = authHeader.slice("Basic ".length).trim();
+                                                                     const decoded = Buffer.from(token, "base64").toString("utf-8");
+                                                                     const [username, password] = decoded.split(":", 2);
+                                                                 
+                                                                     if (!username || !password) {
+                                                                       return { isAuthorized: false };
+                                                                     }
+                                                                 
+                                                                     const authCmd = new AdminInitiateAuthCommand({
+                                                                       UserPoolId: USER_POOL_ID,
+                                                                       ClientId:   CLIENT_ID,
+                                                                       AuthFlow:   "ADMIN_USER_PASSWORD_AUTH",
+                                                                       AuthParameters: {
+                                                                         USERNAME: username,
+                                                                         PASSWORD: password
+                                                                       }
+                                                                     });
+                                                                     await client.send(authCmd);
+                                                                 
+                                                                     const getUserCmd = new AdminGetUserCommand({
+                                                                       UserPoolId: USER_POOL_ID,
+                                                                       Username:   username
+                                                                     });
+                                                                     const resp = await client.send(getUserCmd);
+                                                                     const sub = resp.UserAttributes?.find(a => a.Name === "sub")?.Value;
+                                                                 
+                                                                     if (!sub) {
+                                                                       return { isAuthorized: false };
+                                                                     }
+                                                                 
+                                                                     return {
+                                                                       isAuthorized: true,
+                                                                       context: { sub }
+                                                                     };
+                                                                   } catch (e) {
+                                                                     console.log("CardDAV authorizer error:", e?.name, e?.message);
+                                                                     return { isAuthorized: false };
+                                                                   }
+                                                                 };
+                                                                 """;
 }

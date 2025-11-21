@@ -6,6 +6,7 @@ import io.milton.resource.CollectionResource;
 import java.util.Date;
 import java.util.List;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
+import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.jetbrains.annotations.NotNull;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS;
 
@@ -17,7 +18,7 @@ class PrincipalCollectionResource extends AbstractResource implements Collection
     /**
      * @see FDResourceFactory
      */
-    PrincipalCollectionResource(@NotNull CarddavLambdaHelper carddavLambdaHelper) {
+    PrincipalCollectionResource(@NotNull CarddavLambdaHelper carddavLambdaHelper) throws ApiHelper.ResponseException {
         super(carddavLambdaHelper, PRINCIPALS);
         this.systemPrincipal = new SystemPrincipal(carddavLambdaHelper);
         this.userPrincipal = new UserPrincipal(carddavLambdaHelper);

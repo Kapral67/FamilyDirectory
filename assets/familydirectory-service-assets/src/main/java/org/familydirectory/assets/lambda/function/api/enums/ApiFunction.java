@@ -16,20 +16,12 @@ import static java.util.Objects.requireNonNull;
 
 public
 enum ApiFunction implements LambdaFunctionModel {
-    CREATE_MEMBER("CreateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"), DdbTable.MEMBER,
-                                         List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, null, singletonList(HttpMethod.POST), "create"),
-    DELETE_MEMBER("DeleteMember", Map.of(DdbTable.COGNITO, List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query"), DdbTable.FAMILY,
-                                         List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:UpdateItem"), DdbTable.MEMBER, List.of("dynamodb:DeleteItem", "dynamodb:GetItem")),
-                  List.of("cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"), List.of("ses:SendEmail", "ses:SendRawEmail"), null, null, singletonList(HttpMethod.POST), "delete"),
-    GET_MEMBER("GetMember",
-               Map.of(DdbTable.COGNITO, List.of("dynamodb:GetItem", "dynamodb:Query"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null,
-               null, null, null, singletonList(HttpMethod.GET), "get"),
-    GET_PDF("GetPdf", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null, null, singletonList("s3:GetObject"), null,
-            singletonList(HttpMethod.GET), "pdf"),
-    UPDATE_MEMBER("UpdateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER,
-                                         List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, List.of("amplify:GetApp", "amplify:StartJob", "amplify:UpdateApp"),
-                  singletonList(HttpMethod.PUT), "update"),
-    CARDDAV("Carddav", Map.of(DdbTable.SYNC, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, List.of("dynamodb:GetItem", "dynamodb:Scan")), null, null, null, null, singletonList(HttpMethod.POST), "carddav");
+    CREATE_MEMBER("CreateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"), DdbTable.MEMBER, List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, null, singletonList(HttpMethod.POST), "create"),
+    DELETE_MEMBER("DeleteMember", Map.of(DdbTable.COGNITO, List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:Query"), DdbTable.FAMILY, List.of("dynamodb:DeleteItem", "dynamodb:GetItem", "dynamodb:UpdateItem"), DdbTable.MEMBER, List.of("dynamodb:DeleteItem", "dynamodb:GetItem")), List.of("cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"), List.of("ses:SendEmail", "ses:SendRawEmail"), null, null, singletonList(HttpMethod.POST), "delete"),
+    GET_MEMBER("GetMember", Map.of(DdbTable.COGNITO, List.of("dynamodb:GetItem", "dynamodb:Query"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null, null, null, null, singletonList(HttpMethod.GET), "get"),
+    GET_PDF("GetPdf", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, singletonList("dynamodb:GetItem")), null, null, singletonList("s3:GetObject"), null, singletonList(HttpMethod.GET), "pdf"),
+    UPDATE_MEMBER("UpdateMember", Map.of(DdbTable.COGNITO, singletonList("dynamodb:GetItem"), DdbTable.FAMILY, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, List.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query")), null, null, null, List.of("amplify:GetApp", "amplify:StartJob", "amplify:UpdateApp"), singletonList(HttpMethod.PUT), "update"),
+    CARDDAV("Carddav", Map.of(DdbTable.SYNC, singletonList("dynamodb:GetItem"), DdbTable.MEMBER, List.of("dynamodb:GetItem", "dynamodb:Scan"), DdbTable.COGNITO, singletonList("dynamodb:GetItem")), null, null, null, null, singletonList(HttpMethod.POST), "carddav");
 
     @NotNull
     private final String functionName;

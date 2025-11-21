@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.api.carddav.request.CarddavRequest;
@@ -46,7 +47,8 @@ import org.jetbrains.annotations.UnmodifiableView;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
-import static java.lang.System.getenv;
+import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
+import static io.milton.http.ResponseStatus.SC_UNAUTHORIZED;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
@@ -117,15 +119,26 @@ class CarddavLambdaHelper extends ApiHelper {
     @Override
     @NotNull
     public
-    Caller getCaller() {
+    Caller getCaller() throws ResponseException {
         if (this.caller != null) {
             return this.caller;
         }
-        // FIXME
-        return this.caller = Optional.ofNullable(this.getDdbItem(requireNonNull(getenv(LambdaUtils.EnvVar.ROOT_ID.name())), DdbTable.MEMBER))
-                                     .map(MemberRecord::convertDdbMap)
-                                     .map(memberRecord -> new Caller(memberRecord, false))
-                                     .orElseThrow();
+        try {
+            @SuppressWarnings("unchecked")
+            final var sub = (String) ((Map<String, Object>) this.getRequestEvent().getRequestContext().getAuthorizer().get("lambda")).get("sub");
+            final UUID memberId = Optional.ofNullable(this.getDdbItem(requireNonNull(sub), DdbTable.COGNITO))
+                                          .map(ddb -> ddb.get(CognitoTableParameter.MEMBER.jsonFieldName()))
+                                          .map(AttributeValue::s)
+                                          .map(UUID::fromString)
+                                          .orElseThrow();
+            final var memberRecord = MemberRecord.convertDdbMap(requireNonNull(this.getDdbItem(memberId.toString(), DdbTable.MEMBER)));
+            this.getLogger()
+                .log("<MEMBER,`%s`,`%s`> Authenticated".formatted(memberRecord.id(), memberRecord.member().getFullName()), INFO);
+            // TODO: actually fetch isAdmin if needed later
+            return this.caller = new Caller(memberRecord, false);
+        } catch (Exception e) {
+            throw (ResponseException) new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_UNAUTHORIZED)).initCause(e);
+        }
     }
 
     public

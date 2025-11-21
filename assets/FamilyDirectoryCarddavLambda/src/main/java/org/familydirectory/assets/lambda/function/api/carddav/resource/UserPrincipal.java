@@ -4,6 +4,7 @@ import io.milton.http.values.HrefList;
 import io.milton.principal.CardDavPrincipal;
 import io.milton.principal.HrefPrincipleId;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
+import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.jetbrains.annotations.NotNull;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK_PATH;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.PRINCIPALS_COLLECTION_PATH;
@@ -17,7 +18,7 @@ class UserPrincipal extends AbstractPrincipal implements CardDavPrincipal {
     /**
      * @see FDResourceFactory
      */
-    UserPrincipal (@NotNull CarddavLambdaHelper carddavLambdaHelper) {
+    UserPrincipal (@NotNull CarddavLambdaHelper carddavLambdaHelper) throws ApiHelper.ResponseException {
         super(carddavLambdaHelper, carddavLambdaHelper.getCaller().caller().id().toString());
         this.principalId = new HrefPrincipleId(this.getPrincipalURL());
     }

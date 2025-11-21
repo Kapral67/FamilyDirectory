@@ -166,6 +166,7 @@ class FamilyDirectoryCognitoStack extends Stack {
         final UserPoolClientOptions userPoolClientOptions = UserPoolClientOptions.builder()
                                                                                  .authFlows(AuthFlow.builder()
                                                                                                     .userSrp(TRUE)
+                                                                                                    .adminUserPassword(TRUE)
                                                                                                     .build())
                                                                                  .generateSecret(COGNITO_USER_POOL_CLIENT_GENERATE_SECRET)
                                                                                  .oAuth(OAuthSettings.builder()

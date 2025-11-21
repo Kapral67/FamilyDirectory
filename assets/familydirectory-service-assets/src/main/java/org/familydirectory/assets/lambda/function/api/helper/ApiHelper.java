@@ -36,7 +36,6 @@ class ApiHelper implements LambdaFunctionHelper {
         super();
         this.logger = requireNonNull(logger);
         this.requestEvent = requireNonNull(requestEvent);
-        this.logger.log(this.requestEvent.toString(), DEBUG);
     }
 
     @NotNull
