@@ -5,7 +5,6 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.milton.http.Request;
 import io.milton.http.Response;
 import io.milton.http.exceptions.BadRequestException;
 import io.milton.http.exceptions.MiltonException;
@@ -13,6 +12,7 @@ import io.milton.http.exceptions.NotAuthorizedException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
+import javax.xml.namespace.QName;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
@@ -56,6 +57,7 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.FORBIDDEN;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.buildPropStatsForFixedProps;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getDefaultMethodResponse;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getPresentMemberResourceProps;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getPrincipalUrlProp;
@@ -65,6 +67,7 @@ import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtil
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleRootCollectionResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleSystemPrincipal;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleUserPrincipal;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.needsChildrenForProps;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.normalizeHref;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.options;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.ADDRESS_BOOK_PATH;
@@ -80,6 +83,8 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.dProp;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.okPropstat;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.parseMultigetHrefs;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.parsePropFind;
+import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.parseReportProps;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.parseReportRoot;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.parseSyncToken;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.renderMultistatus;
@@ -167,22 +172,21 @@ class CarddavLambdaHelper extends ApiHelper {
     CarddavResponse process() throws BadRequestException, NotAuthorizedException {
         final FDResourceFactory resourceFactory = this.getResourceFactory();
         final var resource = (AbstractResourceObject) resourceFactory.getResource("", this.request.path());
-        final var method = this.request.getMethod();
 
         return switch (resource) {
-            case RootCollectionResource root -> handleRootCollectionResource(method, root);
-            case PrincipalCollectionResource principals -> handlePrincipalCollectionResource(method, principals);
-            case FamilyDirectoryResource addressbook -> processAddressBookRequest(method, addressbook);
-            case PresentMemberResource presentMember -> handlePresentMemberResource(method, presentMember);
+            case RootCollectionResource root -> handleRootCollectionResource(this.request, root);
+            case PrincipalCollectionResource principals -> handlePrincipalCollectionResource(this.request, principals);
+            case FamilyDirectoryResource addressbook -> processAddressBookRequest(addressbook);
+            case PresentMemberResource presentMember -> handlePresentMemberResource(this.request, presentMember);
             case DeletedMemberResource ignored -> handleDeletedMemberResource();
-            case SystemPrincipal systemPrincipal -> handleSystemPrincipal(method, systemPrincipal);
-            case UserPrincipal callerPrincipal -> handleUserPrincipal(method, callerPrincipal);
+            case SystemPrincipal systemPrincipal -> handleSystemPrincipal(this.request, systemPrincipal);
+            case UserPrincipal callerPrincipal -> handleUserPrincipal(this.request, callerPrincipal);
         };
     }
 
     private
-    CarddavResponse processAddressBookRequest(Request.Method method, FamilyDirectoryResource addressbook) throws BadRequestException, NotAuthorizedException {
-        return switch (method) {
+    CarddavResponse processAddressBookRequest(FamilyDirectoryResource addressbook) throws BadRequestException {
+        return switch (this.request.getMethod()) {
             case OPTIONS -> options(addressbook);
             case PROPFIND -> handleAddressBookPropFind(addressbook);
             case REPORT -> {
@@ -198,13 +202,29 @@ class CarddavLambdaHelper extends ApiHelper {
                     default -> FORBIDDEN;
                 };
             }
-            default -> getDefaultMethodResponse(method, addressbook);
+            default -> getDefaultMethodResponse(this.request.getMethod(), addressbook);
         };
+    }
+
+    private
+    CarddavResponse handleAddressbookQueryReport(FamilyDirectoryResource addressbook) {
+        final var response = singletonList(new DavResponse(
+            ADDRESS_BOOK_PATH,
+            singletonList(statusPropstat(Response.Status.SC_INSUFFICIENT_STORAGE, emptyList())),
+            new CarddavXmlUtils.DavError(singletonList(dEmpty("number-of-matches-within-limits")))
+        ));
+
+        return CarddavResponse.builder()
+                              .status(Response.Status.SC_MULTI_STATUS)
+                              .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
+                              .body(renderMultistatus(response))
+                              .build();
     }
 
     private
     CarddavResponse handleAddressbookMultigetReport(FamilyDirectoryResource addressbook) throws BadRequestException {
         final var hrefs = parseMultigetHrefs(this.request::getInputStream);
+        final var requestProps = parseReportProps(this.request::getInputStream);
 
         final List<DavResponse> responses = new ArrayList<>(hrefs.size());
         for (final var href : hrefs) {
@@ -224,7 +244,7 @@ class CarddavLambdaHelper extends ApiHelper {
                     case DeletedMemberResource ignored ->
                         new DavResponse(href, singletonList(statusPropstat(Response.Status.SC_NOT_FOUND, emptyList())));
                     case PresentMemberResource presentMemberResource ->
-                        new DavResponse(href, singletonList(okPropstat(getPresentMemberResourceProps(presentMemberResource))));
+                        new DavResponse(href, singletonList(okPropstat(getPresentMemberResourceProps(presentMemberResource, requestProps, false))));
                 }
             );
         }
@@ -237,32 +257,16 @@ class CarddavLambdaHelper extends ApiHelper {
     }
 
     private
-    CarddavResponse handleAddressbookQueryReport(FamilyDirectoryResource addressbook) {
-        final var responses = addressbook.getChildren()
-                                         .stream()
-                                         .filter(PresentMemberResource.class::isInstance)
-                                         .map(PresentMemberResource.class::cast)
-                                         .map(member -> new DavResponse(
-                                            member.getHref(),
-                                            singletonList(okPropstat(getPresentMemberResourceProps(member)))
-                                         )).toList();
-
-        return CarddavResponse.builder()
-                              .status(Response.Status.SC_MULTI_STATUS)
-                              .header(Response.Header.CONTENT_TYPE, Response.APPLICATION_XML)
-                              .body(renderMultistatus(responses))
-                              .build();
-    }
-
-    private
     CarddavResponse handleAddressbookSyncReport(FamilyDirectoryResource addressbook) {
         final URI syncTokenUri;
         final Set<IMemberResource> changesSinceLastSync;
+        final List<QName> requestProps;
         try {
             syncTokenUri = parseSyncToken(this.request::getInputStream).map(UUID::fromString)
                                                                        .map(UUID::toString)
                                                                        .map(URI::create)
                                                                        .orElse(null);
+            requestProps = parseReportProps(this.request::getInputStream);
             final var stream = syncTokenUri == null
                 ? addressbook.getChildren()
                              .stream()
@@ -284,7 +288,7 @@ class CarddavLambdaHelper extends ApiHelper {
             case DeletedMemberResource deleted ->
                 new DavResponse(deleted.getHref(), singletonList(statusPropstat(Response.Status.SC_NOT_FOUND, emptyList())));
             case PresentMemberResource present ->
-                new DavResponse(present.getHref(), singletonList(okPropstat(getPresentMemberResourceProps(present))));
+                new DavResponse(present.getHref(), singletonList(okPropstat(getPresentMemberResourceProps(present, requestProps, false))));
         }).toList();
 
         return CarddavResponse.builder().status(Response.Status.SC_MULTI_STATUS)
@@ -294,49 +298,68 @@ class CarddavLambdaHelper extends ApiHelper {
     }
 
     private
-    CarddavResponse handleAddressBookPropFind(FamilyDirectoryResource addressbook) {
+    CarddavResponse handleAddressBookPropFind(FamilyDirectoryResource addressbook) throws BadRequestException {
         final int depth = this.request.getDepthHeader();
+        final var propFind = parsePropFind(this.request::getInputStream);
+
         final var responses = new ArrayList<DavResponse>();
+
+        final Map<QName, DavProperty> supported = new HashMap<>();
+
+        final QName RESOURCETYPE   = new QName(CarddavXmlUtils.DAV_NS,     "resourcetype");
+        final QName CURR_PRIVILEGE = new QName(CarddavXmlUtils.DAV_NS,     "current-user-privilege-set");
+        final QName PRINCIPAL_URL  = new QName(CarddavXmlUtils.DAV_NS,     "principal-URL");
+        final QName DISPLAYNAME    = new QName(CarddavXmlUtils.DAV_NS,     "displayname");
+        final QName SYNC_TOKEN     = new QName(CarddavXmlUtils.DAV_NS,     "sync-token");
+        final QName CTAG           = new QName(CarddavXmlUtils.CARDDAV_NS, "getctag");
+        final QName SUPPORTED_ADDR = new QName(CarddavXmlUtils.CARDDAV_NS, "supported-address-data");
+        final QName SUPPORTED_REP  = new QName(CarddavXmlUtils.DAV_NS,     "supported-report-set");
+
+        supported.put(RESOURCETYPE, dParent("resourcetype", List.of(dEmpty("collection"), cEmpty("addressbook"))));
+        supported.put(CURR_PRIVILEGE, CURRENT_USER_PRIVILEGE_SET);
+        supported.put(PRINCIPAL_URL, getPrincipalUrlProp(addressbook));
+        supported.put(DISPLAYNAME, dProp("displayname", addressbook.getDescription().getValue()));
+        supported.put(SYNC_TOKEN, dProp("sync-token", addressbook.getSyncToken().toString()));
+        supported.put(CTAG, cProp("getctag", addressbook.getCTag(), Map.of()));
+
         {
-            final var props = new ArrayList<DavProperty>();
-
-            props.add(dParent("resourcetype", List.of(dEmpty("collection"), cEmpty("addressbook"))));
-
-            props.add(CURRENT_USER_PRIVILEGE_SET);
-
-            props.add(getPrincipalUrlProp(addressbook));
-
-            props.add(dProp("displayname", addressbook.getDescription().getValue()));
-
-            props.add(dProp("sync-token", addressbook.getSyncToken().toString()));
-
-            props.add(cProp("getctag", addressbook.getCTag(), emptyMap()));
-
-            final var supportedAddressDataTypes = new ArrayList<DavProperty>(1);
-            addressbook.getSupportedAddressData().forEach(pair -> supportedAddressDataTypes.add(
-               cProp("address-data-type", null, Map.of("content-type", pair.getObject1(), "version", pair.getObject2()))
-            ));
-            props.add(cParent("supported-address-data", unmodifiableList(supportedAddressDataTypes)));
-
-            final var supportedReports = SUPPORTED_REPORTS.stream()
-                                               .map(CarddavXmlUtils::dEmpty)
-                                               .map(Collections::singletonList)
-                                               .map(dProps -> dParent("report", dProps))
-                                               .map(Collections::singletonList)
-                                               .map(dProps -> dParent("supported-report", dProps))
-                                               .toList();
-            props.add(dParent("supported-report-set", supportedReports));
-
-            responses.add(new DavResponse(ADDRESS_BOOK_PATH, singletonList(okPropstat(unmodifiableList(props)))));
+            final var supportedAddressDataTypes = new ArrayList<DavProperty>();
+            addressbook.getSupportedAddressData()
+                       .forEach(pair -> supportedAddressDataTypes.add(
+                           cProp("address-data-type", null, Map.of("content-type", pair.getObject1(),"version", pair.getObject2()))
+                       ));
+            supported.put(SUPPORTED_ADDR, cParent("supported-address-data", unmodifiableList(supportedAddressDataTypes)));
         }
-        if (depth > 0) {
+
+        {
+            final var supportedReports = SUPPORTED_REPORTS.stream()
+                                                          .map(CarddavXmlUtils::dEmpty)
+                                                          .map(Collections::singletonList)
+                                                          .map(dProps -> dParent("report", dProps))
+                                                          .map(Collections::singletonList)
+                                                          .map(dProps -> dParent("supported-report", dProps))
+                                                          .toList();
+
+            supported.put(SUPPORTED_REP, dParent("supported-report-set", supportedReports));
+        }
+
+        final var propStats = buildPropStatsForFixedProps(propFind, supported);
+
+        responses.add(new DavResponse(ADDRESS_BOOK_PATH, propStats));
+
+        if (depth > 0 && needsChildrenForProps(propFind)) {
+            final List<QName> childRequestedProps = switch (propFind.kind()) {
+                case ALL, NAME -> emptyList();
+                case LIST -> propFind.properties();
+            };
             addressbook.getChildren()
                        .stream()
                        .filter(PresentMemberResource.class::isInstance)
                        .map(PresentMemberResource.class::cast)
-                       .map(child ->
-                            new DavResponse(child.getHref(), singletonList(okPropstat(getPresentMemberResourceProps(child))))
-                       ).forEach(responses::add);
+                       .map(child -> {
+                           final var childProps = getPresentMemberResourceProps(child, childRequestedProps, true);
+                           return new DavResponse(child.getHref(), singletonList(okPropstat(childProps)));
+                       }).forEach(responses::add);
         }
         return CarddavResponse.builder()
                               .status(Response.Status.SC_MULTI_STATUS)

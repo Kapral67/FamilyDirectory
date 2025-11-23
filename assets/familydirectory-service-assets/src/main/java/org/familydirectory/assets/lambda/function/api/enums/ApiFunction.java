@@ -126,14 +126,4 @@ enum ApiFunction implements LambdaFunctionModel {
     String httpIntegrationId () {
         return "%sHttpIntegration".formatted(this.functionName);
     }
-
-    @Override
-    @NotNull
-    public
-    Number memorySize() {
-        if (CARDDAV.equals(this)) {
-            return NEW_ACCOUNT_MAX_MEMORY_SIZE;
-        }
-        return LambdaFunctionModel.super.memorySize();
-    }
 }

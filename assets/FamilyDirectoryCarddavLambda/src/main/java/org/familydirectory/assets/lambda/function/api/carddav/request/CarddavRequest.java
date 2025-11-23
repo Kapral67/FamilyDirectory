@@ -6,9 +6,9 @@ import io.milton.http.Request;
 import io.milton.http.exceptions.BadRequestException;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import static java.util.Objects.requireNonNullElse;
@@ -25,7 +25,12 @@ record CarddavRequest(
 ) {
     public String getHeader(Request.Header header) {
         return Optional.ofNullable(headers())
-                       .map(headers -> headers.get(header.code.toLowerCase(Locale.ROOT)))
+                       .map(Map::entrySet)
+                       .stream()
+                       .flatMap(Set::stream)
+                       .filter(e -> header.code.equalsIgnoreCase(e.getKey()))
+                       .findAny()
+                       .map(Map.Entry::getValue)
                        .map(String::trim)
                        .orElse(null);
     }

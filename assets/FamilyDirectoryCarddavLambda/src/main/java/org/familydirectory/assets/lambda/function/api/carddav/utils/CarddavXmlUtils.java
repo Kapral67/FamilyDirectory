@@ -9,9 +9,11 @@ import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -22,6 +24,9 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
+import org.jetbrains.annotations.Nullable;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNullElse;
 
@@ -29,10 +34,16 @@ import static java.util.Objects.requireNonNullElse;
 public
 enum CarddavXmlUtils {
     ;
-    private static final String DAV_NS = "DAV:";
+    public static final String DAV_NS = "DAV:";
     public static final String CARDDAV_NS = "urn:ietf:params:xml:ns:carddav";
 
     // INPUT //
+
+    public record PropFindRequest(Kind kind, List<QName> properties) {
+        public enum Kind {
+            ALL, NAME, LIST
+        }
+    }
 
     @FunctionalInterface
     private interface XMLFunction<R> {
@@ -115,73 +126,239 @@ enum CarddavXmlUtils {
         return parseXml(inSupplier, behavior, "addressbook-multiget REPORT missing DAV:href");
     }
 
+    public static
+    PropFindRequest parsePropFind (Supplier<InputStream> inSupplier) throws BadRequestException {
+        XMLFunction<PropFindRequest> behavior = reader -> {
+            QName root = reader.getName();
+            if (!DAV_NS.equals(root.getNamespaceURI()) || !"propfind".equals(root.getLocalPart())) {
+                throw new NoSuchElementException();
+            }
+
+            while (reader.hasNext()) {
+                int event = reader.next();
+                if (event != XMLStreamConstants.START_ELEMENT) {
+                    if (event == XMLStreamConstants.END_ELEMENT && "propfind".equals(reader.getLocalName()) && DAV_NS.equals(reader.getNamespaceURI())) {
+                        return new PropFindRequest(PropFindRequest.Kind.ALL, List.of());
+                    }
+                    continue;
+                }
+
+                QName child = reader.getName();
+                String ln = child.getLocalPart();
+                String ns = child.getNamespaceURI();
+
+                if (DAV_NS.equals(ns) && "allprop".equals(ln)) {
+                    return new PropFindRequest(PropFindRequest.Kind.ALL, List.of());
+                }
+                if (DAV_NS.equals(ns) && "propname".equals(ln)) {
+                    return new PropFindRequest(PropFindRequest.Kind.NAME, List.of());
+                }
+                if (DAV_NS.equals(ns) && "prop".equals(ln)) {
+                    List<QName> props = new ArrayList<>();
+                    int depth = 1;
+                    while (reader.hasNext() && depth > 0) {
+                        int ev = reader.next();
+                        if (ev == XMLStreamConstants.START_ELEMENT) {
+                            depth++;
+                            QName propName = reader.getName();
+                            props.add(propName);
+                        } else if (ev == XMLStreamConstants.END_ELEMENT) {
+                            depth--;
+                        }
+                    }
+                    return new PropFindRequest(PropFindRequest.Kind.LIST, unmodifiableList(props));
+                }
+            }
+
+            throw new RuntimeException();
+        };
+
+        return parseXml(inSupplier, behavior, "PROPFIND body does not contain DAV:propfind root");
+    }
+
+    public static List<QName> parseReportProps(Supplier<InputStream> inSupplier) throws BadRequestException {
+        final XMLFunction<List<QName>> behavior = reader -> {
+            final var props = new ArrayList<QName>();
+
+            for (boolean first = true; first || reader.hasNext(); first = false) {
+                if (!first) reader.next();
+                if (!reader.isStartElement() || !DAV_NS.equals(reader.getNamespaceURI()) || !"prop".equals(reader.getLocalName())) {
+                    continue;
+                }
+
+                int depth = 1;
+                while (reader.hasNext() && depth > 0) {
+                    int ev = reader.next();
+                    if (ev == XMLStreamConstants.START_ELEMENT) {
+                        if (depth == 1) {
+                            props.add(reader.getName());
+                        }
+                        depth++;
+                    } else if (ev == XMLStreamConstants.END_ELEMENT) {
+                        depth--;
+                    }
+                }
+                break;
+            }
+
+            return unmodifiableList(props);
+        };
+
+        return parseXml(inSupplier, behavior, "REPORT body could not be parsed for DAV:prop");
+    }
+
+
     // OUTPUT //
 
-    private static XMLStreamWriter newXmlWriter(StringWriter sw) throws XMLStreamException {
-        XMLOutputFactory factory = XMLOutputFactory.newFactory();
-        XMLStreamWriter xw = factory.createXMLStreamWriter(sw);
-        xw.writeStartDocument("UTF-8", "1.0");
-        return xw;
-    }
+    private static final class Renderer {
+        private final StringWriter sw;
+        private final XMLStreamWriter xw;
+        private final Map<String, String> nsToPrefix = new HashMap<>();
 
-    private static void startMultistatus(XMLStreamWriter xw) throws XMLStreamException {
-        xw.setPrefix("d", DAV_NS);
-        xw.setPrefix("C", CARDDAV_NS);
-        xw.writeStartElement("d", "multistatus", DAV_NS);
-        xw.writeNamespace("d", DAV_NS);
-        xw.writeNamespace("C", CARDDAV_NS);
-    }
+        Renderer() throws XMLStreamException {
+            this.sw = new StringWriter(1024);
+            this.xw = XMLOutputFactory.newFactory().createXMLStreamWriter(sw);
 
-    private static void writeResponse(XMLStreamWriter xw, DavResponse r) throws XMLStreamException {
-        xw.writeStartElement("d", "response", DAV_NS);
+            nsToPrefix.put(DAV_NS, "d");
+            nsToPrefix.put(CARDDAV_NS, "C");
 
-        xw.writeStartElement("d", "href", DAV_NS);
-        xw.writeCharacters(r.href());
-        xw.writeEndElement();
-
-        for (DavPropStat ps : r.propStats()) {
-            writePropStat(xw, ps);
+            xw.writeStartDocument("UTF-8", "1.0");
         }
 
-        xw.writeEndElement(); // </d:response>
-    }
+        String renderValidSyncTokenError() throws XMLStreamException {
+            final var d = prefixFor(DAV_NS);
+            xw.setPrefix(d, DAV_NS);
 
-    private static void writePropStat(XMLStreamWriter xw, DavPropStat ps) throws XMLStreamException {
-        xw.writeStartElement("d", "propstat", DAV_NS);
+            writeError(new DavError(singletonList(dEmpty("valid-sync-token"))));
 
-        xw.writeStartElement("d", "prop", DAV_NS);
-        for (DavProperty p : ps.properties()) {
-            writeProperty(xw, p);
+            xw.writeEndDocument();
+            xw.flush();
+            xw.close();
+            return sw.toString();
         }
-        xw.writeEndElement();
 
-        xw.writeStartElement("d", "status", DAV_NS);
-        xw.writeCharacters(ps.status().toString());
-        xw.writeEndElement();
-
-        xw.writeEndElement();
-    }
-
-    private static void writeProperty(XMLStreamWriter xw, DavProperty p) throws XMLStreamException {
-        String ns = "d".equals(p.prefix()) ? DAV_NS : CARDDAV_NS;
-
-        xw.writeStartElement(p.prefix(), p.localName(), ns);
-
-        if (p.attributes() != null) {
-            for (var e : p.attributes().entrySet()) {
-                xw.writeAttribute(e.getKey(), e.getValue());
+        String render(List<DavResponse> responses, URI syncToken) throws XMLStreamException {
+            startMultistatus();
+            for (DavResponse r : responses) {
+                writeResponse(r);
             }
-        }
 
-        if (p.children() != null && !p.children().isEmpty()) {
-            for (DavProperty child : p.children()) {
-                writeProperty(xw, child);
+            if (syncToken != null) {
+                String dPrefix = prefixFor(DAV_NS);
+                xw.writeStartElement(dPrefix, "sync-token", DAV_NS);
+                xw.writeCharacters(syncToken.toString());
+                xw.writeEndElement();
             }
-        } else if (p.textContent() != null && !p.textContent().isEmpty()) {
-            xw.writeCharacters(p.textContent());
+
+            xw.writeEndElement();   // </d:multistatus>
+            xw.writeEndDocument();
+            xw.flush();
+            xw.close();
+            return sw.toString();
         }
 
-        xw.writeEndElement();
+        private void startMultistatus() throws XMLStreamException {
+            String dPrefix = prefixFor(DAV_NS);
+            String cPrefix = prefixFor(CARDDAV_NS);
+
+            xw.setPrefix(dPrefix, DAV_NS);
+            xw.setPrefix(cPrefix, CARDDAV_NS);
+
+            xw.writeStartElement(dPrefix, "multistatus", DAV_NS);
+            xw.writeNamespace(dPrefix, DAV_NS);
+            xw.writeNamespace(cPrefix, CARDDAV_NS);
+        }
+
+        private String prefixFor(String ns) throws XMLStreamException {
+            String existing = nsToPrefix.get(ns);
+            if (existing != null) return existing;
+
+            int idx = 0;
+            String candidate;
+            do {
+                candidate = "x" + idx++;
+            } while (nsToPrefix.containsValue(candidate));
+
+            nsToPrefix.put(ns, candidate);
+            xw.setPrefix(candidate, ns);
+            return candidate;
+        }
+
+        private void writeResponse(DavResponse r) throws XMLStreamException {
+            String dPrefix = prefixFor(DAV_NS);
+
+            xw.writeStartElement(dPrefix, "response", DAV_NS);
+
+            xw.writeStartElement(dPrefix, "href", DAV_NS);
+            xw.writeCharacters(r.href());
+            xw.writeEndElement();
+
+            for (DavPropStat ps : r.propStats()) {
+                writePropStat(ps);
+            }
+
+            if (r.error() != null) {
+                writeError(r.error());
+            }
+
+            xw.writeEndElement(); // </d:response>
+        }
+
+        private void writeError(DavError err) throws XMLStreamException {
+            String dPrefix = prefixFor(DAV_NS);
+            xw.writeStartElement(dPrefix, "error", DAV_NS);
+            xw.writeNamespace(dPrefix, DAV_NS);
+            for (final var child : Objects.<List<DavProperty>>requireNonNullElse(err.properties(), emptyList())) {
+                writeProperty(child);
+            }
+            xw.writeEndElement();
+        }
+
+        private void writePropStat(DavPropStat ps) throws XMLStreamException {
+            String dPrefix = prefixFor(DAV_NS);
+
+            xw.writeStartElement(dPrefix, "propstat", DAV_NS);
+
+            xw.writeStartElement(dPrefix, "prop", DAV_NS);
+            for (DavProperty p : ps.properties()) {
+                writeProperty(p);
+            }
+            xw.writeEndElement();
+
+            xw.writeStartElement(dPrefix, "status", DAV_NS);
+            xw.writeCharacters(ps.status().toString());
+            xw.writeEndElement();
+
+            xw.writeEndElement();
+        }
+
+        private void writeProperty(DavProperty p) throws XMLStreamException {
+            QName name = p.qName();
+            String ns    = name.getNamespaceURI();
+            String local = name.getLocalPart();
+
+            String prefix = prefixFor(ns);
+
+            xw.writeStartElement(prefix, local, ns);
+
+            xw.writeNamespace(prefix, ns);
+
+            if (p.attributes() != null) {
+                for (var e : p.attributes().entrySet()) {
+                    xw.writeAttribute(e.getKey(), e.getValue());
+                }
+            }
+
+            if (p.children() != null && !p.children().isEmpty()) {
+                for (DavProperty child : p.children()) {
+                    writeProperty(child);
+                }
+            } else if (p.textContent() != null && !p.textContent().isEmpty()) {
+                xw.writeCharacters(p.textContent());
+            }
+
+            xw.writeEndElement();
+        }
     }
 
     public static String renderMultistatus(List<DavResponse> responses) {
@@ -190,26 +367,8 @@ enum CarddavXmlUtils {
 
     public static String renderMultistatus(List<DavResponse> responses, URI syncToken) {
         try {
-            StringWriter sw = new StringWriter(1024);
-            XMLStreamWriter xw = newXmlWriter(sw);
-
-            startMultistatus(xw);
-
-            for (DavResponse r : responses) {
-                writeResponse(xw, r);
-            }
-
-            if (syncToken != null) {
-                xw.writeStartElement("d", "sync-token", DAV_NS);
-                xw.writeCharacters(syncToken.toString());
-                xw.writeEndElement();
-            }
-            xw.writeEndElement();
-
-            xw.writeEndDocument();
-            xw.flush();
-            xw.close();
-            return sw.toString();
+            final var r = new Renderer();
+            return r.render(responses, syncToken);
         } catch (XMLStreamException e) {
             throw new RuntimeException("Failed to build DAV multistatus XML", e);
         }
@@ -217,32 +376,19 @@ enum CarddavXmlUtils {
 
     public static String renderValidSyncTokenError() {
         try {
-            StringWriter sw = new StringWriter(1024);
-            XMLStreamWriter xw = newXmlWriter(sw);
-
-            xw.setPrefix("d", DAV_NS);
-            xw.writeStartElement("d", "error", DAV_NS);
-            xw.writeNamespace("d", DAV_NS);
-            xw.writeEmptyElement("d", "valid-sync-token", DAV_NS);
-            xw.writeEndElement();
-
-            xw.writeEndDocument();
-            xw.flush();
-            xw.close();
-            return sw.toString();
+            final var r = new Renderer();
+            return r.renderValidSyncTokenError();
         } catch (XMLStreamException e) {
             throw new RuntimeException("Failed to build d:valid-sync-token error", e);
         }
     }
 
     /**
-     * d:prop values.
-     * prefix: "d" or "C"
-     * localName: "getetag", "address-data", ...
+     * qName: prefix + localName
      * textContent: null => empty element (<d:x />)
      * attributes: may be empty
      */
-    public record DavProperty(String prefix, String localName, String textContent, Map<String, String> attributes,
+    public record DavProperty(QName qName, String textContent, Map<String, String> attributes,
                               List<DavProperty> children) {}
 
     /**
@@ -250,33 +396,39 @@ enum CarddavXmlUtils {
      */
     public record DavPropStat(Response.Status status, List<DavProperty> properties) {}
 
+    public record DavError(List<DavProperty> properties) {}
+
     /**
-     * Single <d:response> (href + propstats).
+     * Single <d:response> (href + propstats ?+ error) .
      */
-    public record DavResponse(String href, List<DavPropStat> propStats) {}
+    public record DavResponse(String href, List<DavPropStat> propStats, @Nullable DavError error) {
+        public DavResponse(String href, List<DavPropStat> propStats) {
+            this(href, propStats, null);
+        }
+    }
 
     public static DavProperty dParent(String name, List<DavProperty> children) {
-        return new DavProperty("d", name, null, Map.of(), children);
+        return new DavProperty(new QName(DAV_NS, name), null, Map.of(), children);
     }
 
     public static DavProperty dProp(String name, String value) {
-        return new DavProperty("d", name, value, Map.of(), List.of());
+        return new DavProperty(new QName(DAV_NS, name), value, Map.of(), List.of());
     }
 
     public static DavProperty dEmpty(String name) {
-        return new DavProperty("d", name, null, Map.of(), List.of());
+        return new DavProperty(new QName(DAV_NS, name), null, Map.of(), List.of());
     }
 
     public static DavProperty cParent(String name, List<DavProperty> children) {
-        return new DavProperty("C", name, null, Map.of(), children);
+        return new DavProperty(new QName(CARDDAV_NS, name), null, Map.of(), children);
     }
 
     public static DavProperty cProp(String name, String value, Map<String, String> attrs) {
-        return new DavProperty("C", name, value, attrs == null ? Map.of() : attrs, List.of());
+        return new DavProperty(new QName(CARDDAV_NS, name), value, attrs == null ? Map.of() : attrs, List.of());
     }
 
     public static DavProperty cEmpty(String name) {
-        return new DavProperty("C", name, null, Map.of(), List.of());
+        return new DavProperty(new QName(CARDDAV_NS, name), null, Map.of(), List.of());
     }
 
     public static DavPropStat okPropstat(List<DavProperty> props) {

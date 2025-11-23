@@ -11,7 +11,6 @@ interface LambdaFunctionModel {
     Number DEFAULT_TIMEOUT_SECONDS = 30;
     Number NEW_ACCOUNT_MAX_MEMORY_SIZE = 3008;
     Number SINGLE_vCPU_MEMORY_SIZE = 1769;
-    Number DEFAULT_MEMORY_SIZE = SINGLE_vCPU_MEMORY_SIZE;
 
     @NotNull
     String handler ();
@@ -61,6 +60,6 @@ interface LambdaFunctionModel {
 
     default @NotNull
     Number memorySize () {
-        return DEFAULT_MEMORY_SIZE;
+        return 512;
     }
 }

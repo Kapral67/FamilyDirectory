@@ -79,6 +79,6 @@ enum TriggerFunction implements LambdaFunctionModel {
     @NotNull
     public final
     Number memorySize () {
-        return LambdaFunctionModel.NEW_ACCOUNT_MAX_MEMORY_SIZE;
+        return LambdaFunctionModel.SINGLE_vCPU_MEMORY_SIZE;
     }
 }
