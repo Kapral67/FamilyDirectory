@@ -6,7 +6,7 @@ plugins {
 
 allprojects {
     group = 'org.familydirectory'
-    version = '0.92'
+    version = '0.93'
     apply plugin: 'groovy'
     repositories {
         mavenCentral()

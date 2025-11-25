@@ -2,6 +2,7 @@ group = "${rootProject.group}.assets.lambda.function.api.familydirectoryupdateme
 
 dependencies {
     implementation 'software.amazon.awssdk:amplify'
+    implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation libs.apache.httpcomponents.httpcore
     implementation libs.aws.cdk.lib
 }

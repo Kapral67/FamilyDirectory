@@ -5,12 +5,14 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.familydirectory.assets.ddb.enums.DdbTable;
+import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.family.FamilyTableParameter;
 import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
@@ -20,13 +22,21 @@ import org.familydirectory.assets.lambda.function.api.models.UpdateEvent;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.services.dynamodb.GlobalSecondaryIndexProps;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.DEBUG;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN;
+import static java.lang.System.getenv;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -39,7 +49,9 @@ import static org.apache.http.HttpStatus.SC_OK;
 
 public final
 class UpdateHelper extends ApiHelper {
+    private static final @NotNull String USER_POOL_ID = requireNonNull(getenv(LambdaUtils.EnvVar.COGNITO_USER_POOL_ID.name()));
     private final @NotNull ObjectMapper objectMapper = new ObjectMapper();
+    private final @NotNull CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create();
 
     public
     UpdateHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) {
@@ -68,6 +80,7 @@ class UpdateHelper extends ApiHelper {
 
         final MemberRecord ddbMemberRecord = MemberRecord.convertDdbMap(ddbMemberMap);
 
+        boolean shouldDeleteCognito = false;
         final String updateMemberEmail = updateEvent.member()
                                                     .getEmail();
         if (nonNull(updateMemberEmail) && !updateMemberEmail.equals(ddbMemberRecord.member().getEmail())) {
@@ -93,10 +106,11 @@ class UpdateHelper extends ApiHelper {
                 throw new ResponseException(new APIGatewayProxyResponseEvent().withStatusCode(SC_CONFLICT)
                                                                               .withBody("EMAIL Already Registered With Another Member"));
             }
+            shouldDeleteCognito = true;
         }
 
         final boolean ddbMemberIsSuperAdult = ddbMemberRecord.member().getAge() >= DdbUtils.AGE_OF_SUPER_MAJORITY;
-        return new EventWrapper(updateEvent, ddbMemberRecord, ddbMemberIsSuperAdult);
+        return new EventWrapper(updateEvent, ddbMemberRecord, ddbMemberIsSuperAdult, shouldDeleteCognito);
     }
 
     public @NotNull
@@ -143,6 +157,81 @@ class UpdateHelper extends ApiHelper {
     }
 
     public
-    record EventWrapper(@NotNull UpdateEvent updateEvent, @NotNull MemberRecord ddbMemberRecord, boolean ddbMemberIsSuperAdult) {
+    void deleteCognitoAccountAndNotify(final String ddbMemberId, final String newEmail) {
+        final var notifyEmailAddresses = new HashSet<String>();
+        notifyEmailAddresses.add(newEmail);
+        final GlobalSecondaryIndexProps cognitoGsiProps = requireNonNull(CognitoTableParameter.MEMBER.gsiProps());
+        final QueryRequest cognitoMemberQueryRequest = QueryRequest.builder()
+                                                                   .tableName(DdbTable.COGNITO.name())
+                                                                   .indexName(cognitoGsiProps.getIndexName())
+                                                                   .keyConditionExpression("#memberId = :memberId")
+                                                                   .expressionAttributeNames(singletonMap("#memberId", cognitoGsiProps.getPartitionKey()
+                                                                                                                                      .getName()))
+                                                                   .expressionAttributeValues(singletonMap(":memberId", AttributeValue.fromS(ddbMemberId)))
+                                                                   .limit(1)
+                                                                   .build();
+        final QueryResponse cognitoMemberQueryResponse = this.dynamoDbClient.query(cognitoMemberQueryRequest);
+        if (!cognitoMemberQueryResponse.items()
+                                       .isEmpty())
+        {
+            final String ddbMemberCognitoSub = Optional.ofNullable(cognitoMemberQueryResponse.items().getFirst().get(CognitoTableParameter.ID.jsonFieldName()))
+                                                       .map(AttributeValue::s)
+                                                       .filter(Predicate.not(String::isBlank))
+                                                       .orElseThrow();
+
+            this.dynamoDbClient.deleteItem(DeleteItemRequest.builder()
+                                                            .tableName(DdbTable.COGNITO.name())
+                                                            .key(singletonMap(CognitoTableParameter.ID.jsonFieldName(), AttributeValue.fromS(ddbMemberCognitoSub)))
+                                                            .build());
+            this.logger.log("COGNITO Table Entry Deleted for <MEMBER,`%s`>: <COGNITO_SUB,`%s`>".formatted(ddbMemberId, ddbMemberCognitoSub), INFO);
+
+            final ListUsersRequest listUsersRequest = ListUsersRequest.builder()
+                                                                      .filter("sub = \"%s\"".formatted(ddbMemberCognitoSub))
+                                                                      .limit(1)
+                                                                      .userPoolId(USER_POOL_ID)
+                                                                      .build();
+            final UserType ddbMemberCognitoUser = Optional.ofNullable(this.cognitoClient.listUsers(listUsersRequest))
+                                                          .filter(ListUsersResponse::hasUsers)
+                                                          .map(ListUsersResponse::users)
+                                                          .map(List::getFirst)
+                                                          .orElseThrow();
+            final String ddbMemberCognitoUsername = Optional.of(ddbMemberCognitoUser)
+                                                            .map(UserType::username)
+                                                            .filter(Predicate.not(String::isBlank))
+                                                            .orElseThrow();
+            this.cognitoClient.adminDeleteUser(AdminDeleteUserRequest.builder()
+                                                                     .userPoolId(USER_POOL_ID)
+                                                                     .username(ddbMemberCognitoUsername)
+                                                                     .build());
+            this.logger.log("Cognito Account Deleted for <MEMBER,`%s`>: <USERNAME,`%s`>".formatted(ddbMemberId, ddbMemberCognitoUsername), INFO);
+
+            Optional.of(ddbMemberCognitoUser)
+                    .filter(UserType::hasAttributes)
+                    .map(UserType::attributes)
+                    .stream()
+                    .flatMap(List::stream)
+                    .filter(attr -> attr.name().equalsIgnoreCase("email"))
+                    .findFirst()
+                    .map(AttributeType::value)
+                    .filter(s -> s.contains("@"))
+                    .ifPresent(notifyEmailAddresses::add);
+            final String emailId = LambdaUtils.sendEmail(
+                notifyEmailAddresses.stream().toList(),
+                "Notice of Account Deletion",
+                "Your old account was deleted due to an email address change. Please sign up again with your new email."
+            );
+            this.logger.log("Sent Account Deletion Notice To <EMAIL's,`%s`>: <MESSAGE_ID,`%s`>".formatted(notifyEmailAddresses, emailId), INFO);
+        }
+    }
+
+    @Override
+    public
+    void close () {
+        super.close();
+        this.cognitoClient.close();
+    }
+
+    public
+    record EventWrapper(@NotNull UpdateEvent updateEvent, @NotNull MemberRecord ddbMemberRecord, boolean ddbMemberIsSuperAdult, boolean shouldDeleteCognito) {
     }
 }
