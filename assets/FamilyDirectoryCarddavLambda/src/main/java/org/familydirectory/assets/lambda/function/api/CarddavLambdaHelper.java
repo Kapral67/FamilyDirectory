@@ -306,21 +306,23 @@ class CarddavLambdaHelper extends ApiHelper {
 
         final Map<QName, DavProperty> supported = new HashMap<>();
 
-        final QName RESOURCETYPE   = new QName(CarddavXmlUtils.DAV_NS,     "resourcetype");
-        final QName CURR_PRIVILEGE = new QName(CarddavXmlUtils.DAV_NS,     "current-user-privilege-set");
-        final QName PRINCIPAL_URL  = new QName(CarddavXmlUtils.DAV_NS,     "principal-URL");
-        final QName DISPLAYNAME    = new QName(CarddavXmlUtils.DAV_NS,     "displayname");
-        final QName SYNC_TOKEN     = new QName(CarddavXmlUtils.DAV_NS,     "sync-token");
-        final QName CTAG           = new QName(CarddavXmlUtils.CARDDAV_NS, "getctag");
+        final QName RESOURCETYPE = new QName(CarddavXmlUtils.DAV_NS, "resourcetype");
+        final QName CURR_PRIVILEGE = new QName(CarddavXmlUtils.DAV_NS, "current-user-privilege-set");
+        final QName PRINCIPAL_URL = new QName(CarddavXmlUtils.DAV_NS, "principal-URL");
+        final QName DISPLAYNAME = new QName(CarddavXmlUtils.DAV_NS, "displayname");
+        final QName SYNC_TOKEN = new QName(CarddavXmlUtils.DAV_NS, "sync-token");
+        final QName CTAG = new QName(CarddavXmlUtils.CS_NS, "getctag");
+        final QName ME_CARD = new QName(CarddavXmlUtils.CS_NS, "me-card");
         final QName SUPPORTED_ADDR = new QName(CarddavXmlUtils.CARDDAV_NS, "supported-address-data");
-        final QName SUPPORTED_REP  = new QName(CarddavXmlUtils.DAV_NS,     "supported-report-set");
+        final QName SUPPORTED_REP = new QName(CarddavXmlUtils.DAV_NS, "supported-report-set");
 
         supported.put(RESOURCETYPE, dParent("resourcetype", List.of(dEmpty("collection"), cEmpty("addressbook"))));
         supported.put(CURR_PRIVILEGE, CURRENT_USER_PRIVILEGE_SET);
         supported.put(PRINCIPAL_URL, getPrincipalUrlProp(addressbook));
         supported.put(DISPLAYNAME, dProp("displayname", addressbook.getDescription().getValue()));
         supported.put(SYNC_TOKEN, dProp("sync-token", addressbook.getSyncToken().toString()));
-        supported.put(CTAG, cProp("getctag", addressbook.getCTag(), Map.of()));
+        supported.put(CTAG, new DavProperty(CTAG, addressbook.getCTag(), emptyMap(), emptyList()));
+        supported.put(ME_CARD, new DavProperty(ME_CARD, null, emptyMap(), singletonList(dProp("href", addressbook.getMeCard()))));
 
         {
             final var supportedAddressDataTypes = new ArrayList<DavProperty>();

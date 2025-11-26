@@ -36,6 +36,7 @@ enum CarddavXmlUtils {
     ;
     public static final String DAV_NS = "DAV:";
     public static final String CARDDAV_NS = "urn:ietf:params:xml:ns:carddav";
+    public static final String CS_NS = "http://calendarserver.org/ns/";
 
     // INPUT //
 
@@ -221,6 +222,7 @@ enum CarddavXmlUtils {
 
             nsToPrefix.put(DAV_NS, "d");
             nsToPrefix.put(CARDDAV_NS, "C");
+            nsToPrefix.put(CS_NS, "A");
 
             xw.writeStartDocument("UTF-8", "1.0");
         }

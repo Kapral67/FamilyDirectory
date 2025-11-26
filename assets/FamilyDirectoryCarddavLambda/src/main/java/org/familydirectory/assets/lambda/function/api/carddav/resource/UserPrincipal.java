@@ -27,14 +27,14 @@ class UserPrincipal extends AbstractPrincipal implements CardDavPrincipal {
     @NotNull
     public
     HrefList getAddressBookHomeSet () {
-        return HrefList.asList(this.getAddress());
+        return HrefList.asList(ADDRESS_BOOK_PATH);
     }
 
     @Override
     @NotNull
     public
     String getAddress () {
-        return ADDRESS_BOOK_PATH;
+        return ADDRESS_BOOK_PATH + this.getName();
     }
 
     @Override

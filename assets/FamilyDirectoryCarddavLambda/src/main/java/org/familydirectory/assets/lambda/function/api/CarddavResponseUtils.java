@@ -22,9 +22,9 @@ import org.familydirectory.assets.lambda.function.api.carddav.resource.RootColle
 import org.familydirectory.assets.lambda.function.api.carddav.resource.SystemPrincipal;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.UserPrincipal;
 import org.familydirectory.assets.lambda.function.api.carddav.response.CarddavResponse;
+import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.DavPropStat;
 import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.DavProperty;
 import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.DavResponse;
-import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.DavPropStat;
 import org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.PropFindRequest;
 import static io.milton.http.DateUtils.formatForHeader;
 import static io.milton.http.DateUtils.formatForWebDavModifiedDate;
@@ -347,12 +347,14 @@ enum CarddavResponseUtils {
                 final QName CURR_PRIV = new QName(DAV_NS, "current-user-privilege-set");
                 final QName CURR_USER_PRINCIPAL = new QName(DAV_NS, "current-user-principal");
                 final QName PRINCIPAL_URL = new QName(DAV_NS, "principal-URL");
+                final QName PRINCIPAL_ADDR = new QName(CARDDAV_NS, "principal-address");
 
                 supported.put(RESOURCETYPE, dParent("resourcetype", List.of(dEmpty("principal"))));
-                supported.put(ADDRBOOK_HOME_SET, cParent("addressbook-home-set", List.of(dProp("href", principal.getAddress()))));
+                supported.put(ADDRBOOK_HOME_SET, cParent("addressbook-home-set", List.of(dProp("href", principal.getAddressBookHomeSet().getFirst()))));
                 supported.put(CURR_PRIV, CURRENT_USER_PRIVILEGE_SET);
                 supported.put(CURR_USER_PRINCIPAL, getCurrentUserPrincipalProp(principal));
                 supported.put(PRINCIPAL_URL, getPrincipalUrlProp(principal));
+                supported.put(PRINCIPAL_ADDR, cParent("principal-address", singletonList(dProp("href", principal.getAddress()))));
 
                 final var propStats = buildPropStatsForFixedProps(pf, supported);
                 final var davResponse = new DavResponse(principal.getPrincipalURL(), propStats);

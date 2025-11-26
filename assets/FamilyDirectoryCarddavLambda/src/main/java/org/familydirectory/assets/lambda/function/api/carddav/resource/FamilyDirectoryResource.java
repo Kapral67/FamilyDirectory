@@ -194,4 +194,15 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
             throw (BadRequestException) new BadRequestException(this, "Invalid Sync Token").initCause(e);
         }
     }
+
+    public
+    String getMeCard() {
+        return this.resourceFactory.getResources()
+                                   .stream()
+                                   .filter(UserPrincipal.class::isInstance)
+                                   .map(UserPrincipal.class::cast)
+                                   .findAny()
+                                   .orElseThrow()
+                                   .getAddress();
+    }
 }
