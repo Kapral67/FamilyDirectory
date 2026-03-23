@@ -78,11 +78,11 @@ class FamilyDirectoryCognitoPostConfirmationTrigger implements RequestHandler<Co
 
             //  Find Member By Email
             final GlobalSecondaryIndexProps emailGsiProps = requireNonNull(MemberTableParameter.EMAIL.gsiProps());
+            final var emailGsiPK = requireNonNull(emailGsiProps.getPartitionKey());
             final QueryRequest memberEmailQueryRequest = QueryRequest.builder()
                                                                      .tableName(DdbTable.MEMBER.name())
                                                                      .indexName(emailGsiProps.getIndexName())
-                                                                     .keyConditionExpression("%s = :email".formatted(emailGsiProps.getPartitionKey()
-                                                                                                                                  .getName()))
+                                                                     .keyConditionExpression("%s = :email".formatted(emailGsiPK.getName()))
                                                                      .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(email)))
                                                                      .limit(2)
                                                                      .build();

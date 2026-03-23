@@ -71,11 +71,11 @@ class CreateHelper extends ApiHelper {
     void validateMemberEmailIsUnique (final @NotNull String callerMemberId, final @Nullable String memberEmail) throws ResponseException {
         if (nonNull(memberEmail) && !memberEmail.isBlank()) {
             final GlobalSecondaryIndexProps emailGsiProps = requireNonNull(MemberTableParameter.EMAIL.gsiProps());
+            final var emailGsiPK = requireNonNull(emailGsiProps.getPartitionKey());
             final QueryRequest emailRequest = QueryRequest.builder()
                                                           .tableName(DdbTable.MEMBER.name())
                                                           .indexName(emailGsiProps.getIndexName())
-                                                          .keyConditionExpression("%s = :email".formatted(emailGsiProps.getPartitionKey()
-                                                                                                                       .getName()))
+                                                          .keyConditionExpression("%s = :email".formatted(emailGsiPK.getName()))
                                                           .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(memberEmail)))
                                                           .limit(1)
                                                           .build();

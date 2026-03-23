@@ -85,11 +85,11 @@ class UpdateHelper extends ApiHelper {
                                                     .getEmail();
         if (nonNull(updateMemberEmail) && !updateMemberEmail.equals(ddbMemberRecord.member().getEmail())) {
             final GlobalSecondaryIndexProps emailGsiProps = requireNonNull(MemberTableParameter.EMAIL.gsiProps());
+            final var emailGsiPK = requireNonNull(emailGsiProps.getPartitionKey());
             final QueryRequest emailRequest = QueryRequest.builder()
                                                           .tableName(DdbTable.MEMBER.name())
                                                           .indexName(emailGsiProps.getIndexName())
-                                                          .keyConditionExpression("%s = :email".formatted(emailGsiProps.getPartitionKey()
-                                                                                                                       .getName()))
+                                                          .keyConditionExpression("%s = :email".formatted(emailGsiPK.getName()))
                                                           .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(updateMemberEmail)))
                                                           .limit(1)
                                                           .build();
@@ -161,12 +161,12 @@ class UpdateHelper extends ApiHelper {
         final var notifyEmailAddresses = new HashSet<String>();
         notifyEmailAddresses.add(newEmail);
         final GlobalSecondaryIndexProps cognitoGsiProps = requireNonNull(CognitoTableParameter.MEMBER.gsiProps());
+        final var cognitoGsiPK = requireNonNull(cognitoGsiProps.getPartitionKey());
         final QueryRequest cognitoMemberQueryRequest = QueryRequest.builder()
                                                                    .tableName(DdbTable.COGNITO.name())
                                                                    .indexName(cognitoGsiProps.getIndexName())
                                                                    .keyConditionExpression("#memberId = :memberId")
-                                                                   .expressionAttributeNames(singletonMap("#memberId", cognitoGsiProps.getPartitionKey()
-                                                                                                                                      .getName()))
+                                                                   .expressionAttributeNames(singletonMap("#memberId", cognitoGsiPK.getName()))
                                                                    .expressionAttributeValues(singletonMap(":memberId", AttributeValue.fromS(ddbMemberId)))
                                                                    .limit(1)
                                                                    .build();

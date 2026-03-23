@@ -198,12 +198,12 @@ class DeleteHelper extends ApiHelper {
     public
     void deleteCognitoAccountAndNotify (final @NotNull String ddbMemberId) {
         final GlobalSecondaryIndexProps cognitoGsiProps = requireNonNull(CognitoTableParameter.MEMBER.gsiProps());
+        final var cognitoGsiPK = requireNonNull(cognitoGsiProps.getPartitionKey());
         final QueryRequest cognitoMemberQueryRequest = QueryRequest.builder()
                                                                    .tableName(DdbTable.COGNITO.name())
                                                                    .indexName(cognitoGsiProps.getIndexName())
                                                                    .keyConditionExpression("#memberId = :memberId")
-                                                                   .expressionAttributeNames(singletonMap("#memberId", cognitoGsiProps.getPartitionKey()
-                                                                                                                                      .getName()))
+                                                                   .expressionAttributeNames(singletonMap("#memberId", cognitoGsiPK.getName()))
                                                                    .expressionAttributeValues(singletonMap(":memberId", AttributeValue.fromS(ddbMemberId)))
                                                                    .limit(1)
                                                                    .build();

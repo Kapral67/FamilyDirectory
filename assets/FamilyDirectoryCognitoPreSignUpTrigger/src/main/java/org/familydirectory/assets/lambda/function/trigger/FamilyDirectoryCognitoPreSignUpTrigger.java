@@ -42,11 +42,11 @@ class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUs
 
             //  Find Member By Email
             final GlobalSecondaryIndexProps emailGsiProps = requireNonNull(MemberTableParameter.EMAIL.gsiProps());
+            final var emailGsiPK = requireNonNull(emailGsiProps.getPartitionKey());
             final QueryRequest memberEmailQueryRequest = QueryRequest.builder()
                                                                      .tableName(DdbTable.MEMBER.name())
                                                                      .indexName(emailGsiProps.getIndexName())
-                                                                     .keyConditionExpression("%s = :email".formatted(emailGsiProps.getPartitionKey()
-                                                                                                                                  .getName()))
+                                                                     .keyConditionExpression("%s = :email".formatted(emailGsiPK.getName()))
                                                                      .expressionAttributeValues(singletonMap(":email", AttributeValue.fromS(email)))
                                                                      .limit(2)
                                                                      .build();
@@ -72,12 +72,12 @@ class FamilyDirectoryCognitoPreSignUpTrigger implements RequestHandler<CognitoUs
 
             //  Check If Member Signed Up Previously
             final GlobalSecondaryIndexProps cognitoGsiProps = requireNonNull(CognitoTableParameter.MEMBER.gsiProps());
+            final var cognitoGsiPK = requireNonNull(cognitoGsiProps.getPartitionKey());
             final QueryRequest cognitoMemberQueryRequest = QueryRequest.builder()
                                                                        .tableName(DdbTable.COGNITO.name())
                                                                        .indexName(cognitoGsiProps.getIndexName())
                                                                        .keyConditionExpression("#member = :member")
-                                                                       .expressionAttributeNames(singletonMap("#member", cognitoGsiProps.getPartitionKey()
-                                                                                                                                        .getName()))
+                                                                       .expressionAttributeNames(singletonMap("#member", cognitoGsiPK.getName()))
                                                                        .expressionAttributeValues(singletonMap(":member", AttributeValue.fromS(memberId)))
                                                                        .limit(1)
                                                                        .build();
