@@ -123,7 +123,7 @@ class MemberModel {
         final StringBuilder stringBuilder = new StringBuilder("{");
         for (final MemberTableParameter field : MemberTableParameter.values()) {
             switch (field) {
-                case LAST_MODIFIED, ID, FAMILY_ID, VCARD, ETAG -> {
+                case LAST_MODIFIED, ID, FAMILY_ID, ETAG -> {
                     continue;
                 }
                 default -> stringBuilder.append("%s: ".formatted(field.jsonFieldName()));
