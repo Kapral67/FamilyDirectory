@@ -59,8 +59,4 @@ class FDResourceFactory implements ResourceFactory {
     Set<AbstractResourceObject> getResources () {
         return Collections.unmodifiableSet(this.resources);
     }
-
-    RootCollectionResource getRoot() {
-        return this.rootCollectionResource;
-    }
 }

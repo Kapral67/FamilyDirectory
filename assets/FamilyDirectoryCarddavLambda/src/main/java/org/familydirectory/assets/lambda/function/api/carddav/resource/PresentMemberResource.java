@@ -13,8 +13,10 @@ import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
 import static java.time.ZoneOffset.UTC;
+import static java.util.Collections.singletonList;
 import static org.apache.commons.codec.binary.StringUtils.getBytesUtf8;
 import static org.apache.commons.codec.binary.StringUtils.newStringUtf8;
+import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.VCARD_CONTENT_TYPE;
 
 public final
@@ -30,7 +32,15 @@ class PresentMemberResource extends AbstractResource implements IMemberResource,
     PresentMemberResource (@NotNull CarddavLambdaHelper carddavLambdaHelper, @NotNull MemberRecord member) {
         super(carddavLambdaHelper, member.id().toString());
         this.member = member;
-        this.vcard = getBytesUtf8(new Vcard(this.member).toString());
+        final var parent = this.resourceFactory.getResources()
+                                               .stream()
+                                               .filter(FamilyDirectoryResource.class::isInstance)
+                                               .map(FamilyDirectoryResource.class::cast)
+                                               .findAny()
+                                               .orElseThrow();
+        final var _vcard = new Vcard(this.member, singletonList(parent.getDescription()
+                                                                      .getValue()));
+        this.vcard = getBytesUtf8(_vcard.toString());
     }
 
     @Override
@@ -76,7 +86,7 @@ class PresentMemberResource extends AbstractResource implements IMemberResource,
     @Override
     public
     String getEtag () {
-        return this.member.member().getEtag();
+        return sha256Hex(this.vcard);
     }
 
     @Override

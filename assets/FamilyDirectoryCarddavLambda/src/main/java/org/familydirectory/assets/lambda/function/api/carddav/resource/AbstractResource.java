@@ -38,8 +38,7 @@ class AbstractResource extends AbstractResourceObject implements PropFindableRes
     @Override
     public final
     Map<Principal, List<Priviledge>> getAccessControlList () {
-        return this.resourceFactory.getRoot()
-                                   .getChildren()
+        return this.resourceFactory.getResources()
                                    .stream()
                                    .filter(PrincipalCollectionResource.class::isInstance)
                                    .map(PrincipalCollectionResource.class::cast)

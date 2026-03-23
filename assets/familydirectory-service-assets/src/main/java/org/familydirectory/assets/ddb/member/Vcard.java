@@ -45,11 +45,16 @@ public final class Vcard {
     private static final String DDAY_FORMAT = ITEM_FORMAT + "X-ABDATE:%s" + CRLF;
     private static final String DDAY_LABEL = "deathday";
 
+    private static final String CATEGORIES_FORMAT = "CATEGORIES:%s" + CRLF;
+
     @NotNull
     private final MemberRecord member;
+    @NotNull
+    private final List<String> categories;
 
-    public Vcard(@NotNull final MemberRecord member) {
+    public Vcard(@NotNull final MemberRecord member, @NotNull final List<String> categories) {
         this.member = requireNonNull(member);
+        this.categories = requireNonNull(categories);
     }
 
     @NotNull
@@ -165,6 +170,9 @@ public final class Vcard {
         appendItem(item, vcard, this::adr);
         vcard.append(BDAY_FORMAT.formatted(this.member.member().getBirthday().format(VCARD_DATE_FORMATTER)));
         appendItem(item, vcard, this::deathday);
+        if (!this.categories.isEmpty()) {
+            vcard.append(CATEGORIES_FORMAT.formatted(String.join(",", this.categories)));
+        }
         vcard.append(END);
         return vcard.toString();
     }
