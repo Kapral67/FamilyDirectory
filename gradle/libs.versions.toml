@@ -2,7 +2,6 @@
 aws-cdk = "2.221.1"
 aws-cdk-alpha = "2.221.1-alpha.0"
 github-spotbugs = "4.9.8"
-jackson = "2.19.4"
 
 [libraries]
 apache-commons-text = { module = "org.apache.commons:commons-text", version = "1.15.0" }
@@ -22,8 +21,8 @@ github-spotbugs = { module = "com.github.spotbugs:spotbugs", version.ref = "gith
 github-spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "github-spotbugs" }
 googlecode-lanterna = { module = "com.googlecode.lanterna:lanterna", version = "3.1.5" }
 googlecode-libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version = "9.0.26" }
-jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
-jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version = "2.21" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version = "2.21.2" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.1.0" }
 jug = { module = "com.fasterxml.uuid:java-uuid-generator", version = "5.2.0" }
 leego-banana = { module = "io.leego:banana", version = "2.1.0" }
