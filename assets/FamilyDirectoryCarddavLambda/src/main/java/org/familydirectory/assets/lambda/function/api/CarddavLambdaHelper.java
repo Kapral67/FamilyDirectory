@@ -20,11 +20,13 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.xml.namespace.QName;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.cognito.CognitoTableParameter;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
+import org.familydirectory.assets.ddb.models.family.FamilyRecord;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.api.carddav.request.CarddavRequest;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResourceObject;
@@ -98,6 +100,8 @@ class CarddavLambdaHelper extends ApiHelper {
     private FDResourceFactory resourceFactory = null;
     @NotNull
     private final Set<MemberRecord> memberRecords = new HashSet<>(INITIAL_RESOURCE_CONTAINER_SIZE);
+    @NotNull
+    private final Map<UUID, FamilyRecord> familyRecords = new HashMap<>(INITIAL_RESOURCE_CONTAINER_SIZE);
     private final CarddavRequest request;
 
     CarddavLambdaHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) throws CarddavResponseException {
@@ -370,34 +374,40 @@ class CarddavLambdaHelper extends ApiHelper {
                               .build();
     }
 
+    private void scanDdb(DdbTable table, Consumer<Map<String, AttributeValue>> itemConsumer) {
+        Map<String, AttributeValue> lastEvaluatedKey = emptyMap();
+        do {
+            final var scanRequestBuilder = ScanRequest.builder().tableName(table.name());
+            if (!lastEvaluatedKey.isEmpty()) {
+                scanRequestBuilder.exclusiveStartKey(lastEvaluatedKey);
+            }
+            final var scanResponse = this.getDynamoDbClient().scan(scanRequestBuilder.build());
+            scanResponse.items().forEach(itemConsumer);
+            lastEvaluatedKey = scanResponse.lastEvaluatedKey();
+        } while (!lastEvaluatedKey.isEmpty());
+    }
+
     @NotNull
     @UnmodifiableView
     public
     Set<MemberRecord> scanMemberDdb () {
-        if (!this.memberRecords.isEmpty()) {
-            return Collections.unmodifiableSet(this.memberRecords);
+        if (this.memberRecords.isEmpty()) {
+            this.scanDdb(DdbTable.MEMBER, ddbMap -> this.memberRecords.add(MemberRecord.convertDdbMap(ddbMap)));
         }
-
-        Map<String, AttributeValue> lastEvaluatedKey = emptyMap();
-        do {
-            final ScanRequest.Builder scanRequestBuilder = ScanRequest.builder().tableName(DdbTable.MEMBER.name());
-
-            if (!lastEvaluatedKey.isEmpty()) {
-                scanRequestBuilder.exclusiveStartKey(lastEvaluatedKey);
-            }
-
-            final ScanResponse scanResponse = this.getDynamoDbClient().scan(scanRequestBuilder.build());
-
-            scanResponse.items()
-                        .stream()
-                        .map(MemberRecord::convertDdbMap)
-                        .forEach(this.memberRecords::add);
-
-            lastEvaluatedKey = scanResponse.lastEvaluatedKey();
-
-        } while (!lastEvaluatedKey.isEmpty());
-
         return Collections.unmodifiableSet(this.memberRecords);
+    }
+
+    @NotNull
+    @UnmodifiableView
+    public
+    Map<UUID, FamilyRecord> scanFamilyDdb () {
+        if (this.familyRecords.isEmpty()) {
+            this.scanDdb(DdbTable.FAMILY, ddbMap -> {
+                final var familyRecord = FamilyRecord.convertDdbMap(ddbMap);
+                this.familyRecords.put(familyRecord.id(), familyRecord);
+            });
+        }
+        return Collections.unmodifiableMap(this.familyRecords);
     }
 
     @NotNull
