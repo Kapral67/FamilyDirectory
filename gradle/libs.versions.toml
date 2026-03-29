@@ -13,7 +13,7 @@ aws-lambda-java-core = { module = "com.amazonaws:aws-lambda-java-core", version 
 aws-lambda-java-events = { module = "com.amazonaws:aws-lambda-java-events", version = "3.16.1" }
 aws-lambda-java-events-transformer = { module = "com.amazonaws:aws-lambda-java-events-sdk-transformer", version = "3.1.1" }
 aws-lambda-snapstart-java-rules = { module = "software.amazon.lambda.snapstart:aws-lambda-snapstart-java-rules", version = "0.2.1" }
-aws-sdk-bom = { module = "software.amazon.awssdk:bom", version = "2.42.18" }
+aws-sdk-bom = { module = "software.amazon.awssdk:bom", version = "2.42.23" }
 commons-codec = { module = "commons-codec:commons-codec", version = "1.21.0" }
 commons-validator = { module = "commons-validator:commons-validator", version = "1.10.1" }
 constructs = { module = "software.constructs:constructs", version = "10.5.1" }
