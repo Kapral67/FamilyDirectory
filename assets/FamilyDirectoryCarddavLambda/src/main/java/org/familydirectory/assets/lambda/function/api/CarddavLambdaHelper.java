@@ -5,6 +5,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.milton.http.Response;
 import io.milton.http.exceptions.BadRequestException;
 import io.milton.http.exceptions.MiltonException;
@@ -47,9 +48,12 @@ import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.familydirectory.assets.lambda.function.utility.LambdaUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.AsUnmodifiableGraph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
-import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import static com.amazonaws.services.lambda.runtime.logging.LogLevel.INFO;
 import static io.milton.http.ResponseStatus.SC_UNAUTHORIZED;
 import static java.util.Collections.emptyList;
@@ -102,6 +106,7 @@ class CarddavLambdaHelper extends ApiHelper {
     private final Set<MemberRecord> memberRecords = new HashSet<>(INITIAL_RESOURCE_CONTAINER_SIZE);
     @NotNull
     private final Map<UUID, FamilyRecord> familyRecords = new HashMap<>(INITIAL_RESOURCE_CONTAINER_SIZE);
+    private Graph<FamilyRecord, DefaultEdge> familyGraph = null;
     private final CarddavRequest request;
 
     CarddavLambdaHelper (final @NotNull LambdaLogger logger, final @NotNull APIGatewayProxyRequestEvent requestEvent) throws CarddavResponseException {
@@ -399,7 +404,7 @@ class CarddavLambdaHelper extends ApiHelper {
 
     @NotNull
     @UnmodifiableView
-    public
+    private
     Map<UUID, FamilyRecord> scanFamilyDdb () {
         if (this.familyRecords.isEmpty()) {
             this.scanDdb(DdbTable.FAMILY, ddbMap -> {
@@ -408,6 +413,24 @@ class CarddavLambdaHelper extends ApiHelper {
             });
         }
         return Collections.unmodifiableMap(this.familyRecords);
+    }
+
+    @NotNull
+    @UnmodifiableView
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public
+    Graph<FamilyRecord, DefaultEdge> getFamilyGraph () {
+        if (this.familyGraph != null) {
+            return this.familyGraph;
+        }
+        final var familyRecordMap = this.scanFamilyDdb();
+        final var familyRecords = familyRecordMap.values();
+        final var graph = new DirectedAcyclicGraph<FamilyRecord, DefaultEdge>(DefaultEdge.class);
+        familyRecords.forEach(graph::addVertex);
+        familyRecords.stream()
+                     .filter(familyRecord -> !familyRecord.id().equals(familyRecord.ancestor()))
+                     .forEach(familyRecord -> graph.addEdge(familyRecordMap.get(familyRecord.ancestor()), familyRecord));
+        return this.familyGraph = new AsUnmodifiableGraph<>(graph);
     }
 
     @NotNull
