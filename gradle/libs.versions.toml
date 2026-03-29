@@ -27,7 +27,7 @@ jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.1.
 jug = { module = "com.fasterxml.uuid:java-uuid-generator", version = "5.2.0" }
 leego-banana = { module = "io.leego:banana", version = "2.1.0" }
 lombok = { module = "org.projectlombok:lombok", version = "1.18.44" }
-milton-api = { module = "io.milton:milton-api", version = "4.1.0.2601" }
+milton-api = { module = "io.milton:milton-api", version = "4.1.1.2676" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop", version = "2.0.17" }
 jgrapht-core = { module = "org.jgrapht:jgrapht-core", version = "1.5.2" }
 
