@@ -16,7 +16,7 @@ import javax.xml.namespace.QName;
 import org.familydirectory.assets.lambda.function.api.carddav.request.CarddavRequest;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractResourceObject;
-import org.familydirectory.assets.lambda.function.api.carddav.resource.PresentMemberResource;
+import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractVcardResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PrincipalCollectionResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.RootCollectionResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.SystemPrincipal;
@@ -110,12 +110,12 @@ enum CarddavResponseUtils {
     }
 
     static
-    List<DavProperty> getPresentMemberResourceProps(PresentMemberResource resource) {
-        return getPresentMemberResourceProps(resource, emptyList(), false);
+    List<DavProperty> getVcardResourceProps (AbstractVcardResource resource) {
+        return getVcardResourceProps(resource, emptyList(), false);
     }
 
     static
-    Map<QName, DavProperty> getPresentMemberResourceSupportedProps(PresentMemberResource resource, boolean isPropFind) {
+    Map<QName, DavProperty> getVcardResourceSupportedProps (AbstractVcardResource resource, boolean isPropFind) {
         final var supported = new HashMap<>(Map.of(
             new QName(DAV_NS, "getetag"), dProp("getetag", '"' + resource.getEtag() + '"'),
             new QName(DAV_NS, "getlastmodified"), dProp("getlastmodified", formatForWebDavModifiedDate(resource.getModifiedDate())),
@@ -132,13 +132,13 @@ enum CarddavResponseUtils {
     }
 
     static
-    List<DavProperty> getPresentMemberResourceProps(PresentMemberResource resource, Collection<QName> requested, boolean isPropFind) {
+    List<DavProperty> getVcardResourceProps (AbstractVcardResource resource, Collection<QName> requested, boolean isPropFind) {
         Predicate<QName> wants = qn -> requested.isEmpty() || requested.contains(qn);
-        return getPresentMemberResourceSupportedProps(resource, isPropFind).entrySet()
-                                                                           .stream()
-                                                                           .filter(e -> wants.test(e.getKey()))
-                                                                           .map(Map.Entry::getValue)
-                                                                           .toList();
+        return getVcardResourceSupportedProps(resource, isPropFind).entrySet()
+                                                                   .stream()
+                                                                   .filter(e -> wants.test(e.getKey()))
+                                                                   .map(Map.Entry::getValue)
+                                                                   .toList();
     }
 
     static
@@ -271,7 +271,7 @@ enum CarddavResponseUtils {
     }
 
     static
-    CarddavResponse handlePresentMemberResource(CarddavRequest request, PresentMemberResource resource) throws BadRequestException {
+    CarddavResponse handleVcardResource (CarddavRequest request, AbstractVcardResource resource) throws BadRequestException {
         return switch (request.getMethod()) {
             case OPTIONS -> options(resource);
             case GET, HEAD -> {
@@ -288,7 +288,7 @@ enum CarddavResponseUtils {
             }
             case PROPFIND -> {
                 final var pf = parsePropFind(request::getInputStream);
-                final var supported = getPresentMemberResourceSupportedProps(resource, true);
+                final var supported = getVcardResourceSupportedProps(resource, true);
                 final var propStats = buildPropStatsForFixedProps(pf, supported);
                 final var davResponse = new DavResponse(resource.getHref(), propStats);
                 yield CarddavResponse.builder()

@@ -20,7 +20,7 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 
 public sealed abstract
 class AbstractResource extends AbstractResourceObject implements PropFindableResource, AccessControlledResource
-    permits RootCollectionResource, PrincipalCollectionResource, FamilyDirectoryResource, AbstractPrincipal, PresentMemberResource
+    permits RootCollectionResource, PrincipalCollectionResource, FamilyDirectoryResource, AbstractPrincipal, AbstractVcardResource
 {
     protected
     AbstractResource (@NotNull CarddavLambdaHelper carddavLambdaHelper, @NotNull String name) {

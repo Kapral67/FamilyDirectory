@@ -35,7 +35,7 @@ import org.familydirectory.assets.lambda.function.api.carddav.resource.DeletedMe
 import org.familydirectory.assets.lambda.function.api.carddav.resource.FDResourceFactory;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.FamilyDirectoryResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.IMemberResource;
-import org.familydirectory.assets.lambda.function.api.carddav.resource.PresentMemberResource;
+import org.familydirectory.assets.lambda.function.api.carddav.resource.AbstractVcardResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.PrincipalCollectionResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.RootCollectionResource;
 import org.familydirectory.assets.lambda.function.api.carddav.resource.SystemPrincipal;
@@ -65,10 +65,10 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.FORBIDDEN;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.buildPropStatsForFixedProps;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getDefaultMethodResponse;
-import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getPresentMemberResourceProps;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getVcardResourceProps;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.getPrincipalUrlProp;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleDeletedMemberResource;
-import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handlePresentMemberResource;
+import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleVcardResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handlePrincipalCollectionResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleRootCollectionResource;
 import static org.familydirectory.assets.lambda.function.api.CarddavResponseUtils.handleSystemPrincipal;
@@ -186,7 +186,7 @@ class CarddavLambdaHelper extends ApiHelper {
             case RootCollectionResource root -> handleRootCollectionResource(this.request, root);
             case PrincipalCollectionResource principals -> handlePrincipalCollectionResource(this.request, principals);
             case FamilyDirectoryResource addressbook -> processAddressBookRequest(addressbook);
-            case PresentMemberResource presentMember -> handlePresentMemberResource(this.request, presentMember);
+            case AbstractVcardResource vcard -> handleVcardResource(this.request, vcard);
             case DeletedMemberResource ignored -> handleDeletedMemberResource();
             case SystemPrincipal systemPrincipal -> handleSystemPrincipal(this.request, systemPrincipal);
             case UserPrincipal callerPrincipal -> handleUserPrincipal(this.request, callerPrincipal);
@@ -252,8 +252,8 @@ class CarddavLambdaHelper extends ApiHelper {
                 switch (resource) {
                     case DeletedMemberResource ignored ->
                         new DavResponse(href, singletonList(statusPropstat(Response.Status.SC_NOT_FOUND, emptyList())));
-                    case PresentMemberResource presentMemberResource ->
-                        new DavResponse(href, singletonList(okPropstat(getPresentMemberResourceProps(presentMemberResource, requestProps, false))));
+                    case AbstractVcardResource vcard ->
+                        new DavResponse(href, singletonList(okPropstat(getVcardResourceProps(vcard, requestProps, false))));
                 }
             );
         }
@@ -296,8 +296,8 @@ class CarddavLambdaHelper extends ApiHelper {
         final var responses = changesSinceLastSync.stream().map(memberResource -> switch (memberResource) {
             case DeletedMemberResource deleted ->
                 new DavResponse(deleted.getHref(), singletonList(statusPropstat(Response.Status.SC_NOT_FOUND, emptyList())));
-            case PresentMemberResource present ->
-                new DavResponse(present.getHref(), singletonList(okPropstat(getPresentMemberResourceProps(present, requestProps, false))));
+            case AbstractVcardResource present ->
+                new DavResponse(present.getHref(), singletonList(okPropstat(getVcardResourceProps(present, requestProps, false))));
         }).toList();
 
         return CarddavResponse.builder().status(Response.Status.SC_MULTI_STATUS)
@@ -365,10 +365,10 @@ class CarddavLambdaHelper extends ApiHelper {
             };
             addressbook.getChildren()
                        .stream()
-                       .filter(PresentMemberResource.class::isInstance)
-                       .map(PresentMemberResource.class::cast)
+                       .filter(AbstractVcardResource.class::isInstance)
+                       .map(AbstractVcardResource.class::cast)
                        .map(child -> {
-                           final var childProps = getPresentMemberResourceProps(child, childRequestedProps, true);
+                           final var childProps = getVcardResourceProps(child, childRequestedProps, true);
                            return new DavResponse(child.getHref(), singletonList(okPropstat(childProps)));
                        }).forEach(responses::add);
         }

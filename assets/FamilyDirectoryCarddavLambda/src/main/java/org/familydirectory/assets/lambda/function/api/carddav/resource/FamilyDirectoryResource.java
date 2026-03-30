@@ -86,9 +86,9 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
         if (!this.isMemberResourcesComplete) {
             final var existingResources = this.resourceFactory.getResources()
                                                               .stream()
-                                                              .filter(PresentMemberResource.class::isInstance)
-                                                              .map(PresentMemberResource.class::cast)
-                                                              .map(PresentMemberResource::getName)
+                                                              .filter(AbstractVcardResource.class::isInstance)
+                                                              .map(AbstractVcardResource.class::cast)
+                                                              .map(AbstractVcardResource::getName)
                                                               .collect(toUnmodifiableSet());
             this.carddavLambdaHelper.scanMemberDdb()
                                     .stream()
