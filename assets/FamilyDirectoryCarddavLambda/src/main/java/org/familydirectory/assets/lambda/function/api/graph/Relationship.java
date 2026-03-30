@@ -10,7 +10,8 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 @Getter
 public
 enum Relationship {
-    FIRST_COUSIN("First Cousin", 1, 1);
+    SIBLING("Sibling", 1, 1),
+    FIRST_COUSIN("First Cousin", 2, 2);
 
     private final String displayLabel;
     private final int edgesToCallerFromLCA;
