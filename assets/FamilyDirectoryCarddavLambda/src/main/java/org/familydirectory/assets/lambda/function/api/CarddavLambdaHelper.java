@@ -266,7 +266,7 @@ class CarddavLambdaHelper extends ApiHelper {
     }
 
     private
-    CarddavResponse handleAddressbookSyncReport(FamilyDirectoryResource addressbook) {
+    CarddavResponse handleAddressbookSyncReport(FamilyDirectoryResource addressbook) throws BadRequestException {
         final URI syncTokenUri;
         final Set<IMemberResource> changesSinceLastSync;
         final List<QName> requestProps;
@@ -284,7 +284,7 @@ class CarddavLambdaHelper extends ApiHelper {
                              .stream()
                              .map(IMemberResource.class::cast);
             changesSinceLastSync = stream.collect(toUnmodifiableSet());
-        } catch (final Exception e) {
+        } catch (final NoSuchTokenException e) {
             LambdaUtils.logTrace(this.getLogger(), e, LogLevel.INFO);
             return CarddavResponse.builder()
                                   .status(Response.Status.SC_FORBIDDEN)

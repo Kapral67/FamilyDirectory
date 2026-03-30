@@ -13,13 +13,13 @@ enum Relationship {
     FIRST_COUSIN("First Cousin", 1, 1);
 
     private final String displayLabel;
-    private final int edgesFromCallerToLCA;
+    private final int edgesToCallerFromLCA;
     private final int edgesToTargetFromLCA;
 
     public static
-    Set<Relationship> fromEdges(int edgesFromCallerToLCA, int edgesToTargetFromLCA) {
+    Set<Relationship> fromEdges(int edgesToCallerFromLCA, int edgesToTargetFromLCA) {
         return Arrays.stream(values())
-                     .filter(r -> r.getEdgesFromCallerToLCA() == edgesFromCallerToLCA)
+                     .filter(r -> r.getEdgesToCallerFromLCA() == edgesToCallerFromLCA)
                      .filter(r -> r.getEdgesToTargetFromLCA() == edgesToTargetFromLCA)
                      .collect(toUnmodifiableSet());
     }

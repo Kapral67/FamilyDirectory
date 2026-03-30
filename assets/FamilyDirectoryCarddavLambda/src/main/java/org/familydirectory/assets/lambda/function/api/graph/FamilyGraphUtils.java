@@ -28,11 +28,11 @@ enum FamilyGraphUtils {
         final var targetPseudoVertex = new FamilyRecord(target.familyId(), UUIDUtil.maxUUID(), null, Collections.emptySet());
         final var lca = new NaiveLCAFinder<>(graph).getLCA(callerPseudoVertex, targetPseudoVertex);
 
-        final int edgesFromCallerToLCA = BFSShortestPath.findPathBetween(graph, callerPseudoVertex, lca)
+        final int edgesToCallerFromLCA = BFSShortestPath.findPathBetween(graph, lca, callerPseudoVertex)
                                                         .getLength();
         final int edgesToTargetFromLCA = BFSShortestPath.findPathBetween(graph, lca, targetPseudoVertex)
                                                         .getLength();
 
-        return Relationship.fromEdges(edgesFromCallerToLCA, edgesToTargetFromLCA);
+        return Relationship.fromEdges(edgesToCallerFromLCA, edgesToTargetFromLCA);
     }
 }
