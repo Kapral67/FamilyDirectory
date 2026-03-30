@@ -6,17 +6,22 @@ import io.milton.resource.AddressResource;
 import io.milton.resource.GetableResource;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
 import org.familydirectory.assets.ddb.member.Vcard;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
+import org.familydirectory.assets.lambda.function.api.graph.FamilyGraphUtils;
+import org.familydirectory.assets.lambda.function.api.graph.Relationship;
+import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.jetbrains.annotations.NotNull;
 import static java.time.ZoneOffset.UTC;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.unmodifiableList;
 import static org.apache.commons.codec.binary.StringUtils.getBytesUtf8;
 import static org.apache.commons.codec.binary.StringUtils.newStringUtf8;
 import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
+import static org.apache.commons.lang3.exception.ExceptionUtils.asRuntimeException;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.VCARD_CONTENT_TYPE;
 
 public final
@@ -38,8 +43,21 @@ class PresentMemberResource extends AbstractResource implements IMemberResource,
                                                .map(FamilyDirectoryResource.class::cast)
                                                .findAny()
                                                .orElseThrow();
-        final var _vcard = new Vcard(this.member, singletonList(parent.getDescription()
-                                                                      .getValue()));
+        final MemberRecord caller;
+        try {
+            caller = carddavLambdaHelper.getCaller()
+                                        .caller();
+        } catch (ApiHelper.ResponseException e) {
+            throw asRuntimeException(e);
+        }
+
+        final var categories = new ArrayList<String>();
+        categories.add(parent.getDescription().getValue());
+        FamilyGraphUtils.getRelationships(carddavLambdaHelper.getFamilyGraph(), caller, member)
+                        .stream()
+                        .map(Relationship::getDisplayLabel)
+                        .forEach(categories::add);
+        final var _vcard = new Vcard(this.member, unmodifiableList(categories));
         this.vcard = getBytesUtf8(_vcard.toString());
     }
 
