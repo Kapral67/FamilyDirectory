@@ -1,8 +1,8 @@
-package org.familydirectory.assets.ddb.member;
+package org.familydirectory.assets.lambda.function.api.carddav.utils.vcf;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -10,12 +10,16 @@ import java.util.Set;
 import java.util.function.Function;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
+import org.familydirectory.assets.ddb.member.Member;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 
-public final class Vcard {
+@SuppressFBWarnings("VA_FORMAT_STRING_USES_NEWLINE")
+public final class ContactVCF extends AbstractVCF {
     private static final DateTimeFormatter VCARD_DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
     private static final String CRLF = "\r\n";
 
@@ -53,9 +57,10 @@ public final class Vcard {
     @NotNull
     private final Set<String> categories;
 
-    public Vcard(@NotNull final MemberRecord member, @NotNull final Set<String> categories) {
+    public
+    ContactVCF (@NotNull final MemberRecord member, @NotNull final Set<String> categories) {
         this.member = requireNonNull(member);
-        this.categories = requireNonNull(categories);
+        this.categories = unmodifiableSet(categories);
     }
 
     @NotNull
@@ -90,7 +95,7 @@ public final class Vcard {
                     email.add(address);
                     email.add(X_ABLABEL_FORMAT.formatted(item, EMAIL_LABEL));
                 });
-        return Collections.unmodifiableList(email);
+        return unmodifiableList(email);
     }
 
     @NotNull
@@ -107,7 +112,7 @@ public final class Vcard {
                     adr.add(address);
                     adr.add(X_ABLABEL_FORMAT.formatted(item, ADR_LABEL));
                 });
-        return Collections.unmodifiableList(adr);
+        return unmodifiableList(adr);
     }
 
     @NotNull
@@ -125,7 +130,7 @@ public final class Vcard {
                     tel.add(phone);
                     tel.add(X_ABLABEL_FORMAT.formatted(item, type.name().toLowerCase(Locale.ROOT)));
                 });
-        return Collections.unmodifiableList(tel);
+        return unmodifiableList(tel);
     }
 
     @NotNull
@@ -140,7 +145,7 @@ public final class Vcard {
                     deathday.add(dday);
                     deathday.add(X_ABLABEL_FORMAT.formatted(item, DDAY_LABEL));
                 });
-        return Collections.unmodifiableList(deathday);
+        return unmodifiableList(deathday);
     }
 
     private static void appendItem(

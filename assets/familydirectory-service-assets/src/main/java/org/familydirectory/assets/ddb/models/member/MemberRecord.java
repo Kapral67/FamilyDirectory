@@ -7,11 +7,10 @@ import org.familydirectory.assets.ddb.enums.member.MemberTableParameter;
 import org.familydirectory.assets.ddb.member.Member;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
 
 public
-record MemberRecord(@NotNull UUID id, @NotNull Member member, @NotNull UUID familyId) {
+record MemberRecord(@NotNull UUID id, @NotNull Member member, @NotNull UUID familyId) implements IMemberRecord {
     public MemberRecord {
         requireNonNull(id);
         requireNonNull(member);
@@ -31,27 +30,16 @@ record MemberRecord(@NotNull UUID id, @NotNull Member member, @NotNull UUID fami
         return new MemberRecord(memberId, Member.convertDdbMap(memberMap), familyId);
     }
 
-    public boolean isInLaw() {
-        return !this.id.equals(this.familyId);
-    }
-
     @Override
     public
     boolean equals (final Object o) {
-        if (this == o) {
-            return true;
-        } else if (isNull(o) || !this.getClass()
-                                     .equals(o.getClass()))
-        {
-            return false;
-        }
-        return this.id.equals(((MemberRecord) o).id());
+        return IMemberRecord.equals(this, o);
     }
 
     @Override
     public
     int hashCode () {
-        return this.id.hashCode();
+        return IMemberRecord.hashCode(this);
     }
 
     @Override

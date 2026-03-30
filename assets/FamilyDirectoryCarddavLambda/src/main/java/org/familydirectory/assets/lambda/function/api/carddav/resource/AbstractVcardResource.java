@@ -9,11 +9,9 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
-import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.jetbrains.annotations.NotNull;
 import static org.apache.commons.codec.binary.StringUtils.newStringUtf8;
 import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
-import static org.apache.commons.lang3.exception.ExceptionUtils.asRuntimeException;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavConstants.VCARD_CONTENT_TYPE;
 
 public sealed abstract
@@ -37,14 +35,6 @@ class AbstractVcardResource extends AbstractResource implements IMemberResource,
                                   .map(FamilyDirectoryResource.class::cast)
                                   .findAny()
                                   .orElseThrow();
-    }
-
-    protected static ApiHelper.Caller getCaller(CarddavLambdaHelper carddavLambdaHelper) {
-        try {
-            return carddavLambdaHelper.getCaller();
-        } catch (ApiHelper.ResponseException e) {
-            throw asRuntimeException(e);
-        }
     }
 
     @Override

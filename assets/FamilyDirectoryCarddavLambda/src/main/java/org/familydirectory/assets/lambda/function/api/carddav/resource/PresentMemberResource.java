@@ -2,10 +2,9 @@ package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
 import java.util.Date;
 import java.util.HashSet;
-import org.familydirectory.assets.ddb.member.Vcard;
+import org.familydirectory.assets.lambda.function.api.carddav.utils.vcf.ContactVCF;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
-import org.familydirectory.assets.lambda.function.api.graph.FamilyGraphUtils;
 import org.familydirectory.assets.lambda.function.api.graph.Relationship;
 import org.jetbrains.annotations.NotNull;
 import static java.time.ZoneOffset.UTC;
@@ -23,16 +22,16 @@ class PresentMemberResource extends AbstractVcardResource {
     PresentMemberResource (final @NotNull CarddavLambdaHelper carddavLambdaHelper, final @NotNull MemberRecord member) {
         super(carddavLambdaHelper, member.id().toString(), () -> {
             final var parent = getParent(carddavLambdaHelper);
-            final var caller = getCaller(carddavLambdaHelper).caller();
             final var categories = new HashSet<String>();
             categories.add(parent.getDescription()
                                  .getValue());
-            FamilyGraphUtils.getRelationships(carddavLambdaHelper.getFamilyGraph(), caller, member)
-                            .stream()
-                            .map(Relationship::getDisplayLabel)
-                            .forEach(categories::add);
-            final var _vcard = new Vcard(member, unmodifiableSet(categories));
-            return getBytesUtf8(_vcard.toString());
+            carddavLambdaHelper.getFamilyTree()
+                               .getRelationships(member)
+                               .stream()
+                               .map(Relationship::getDisplayLabel)
+                               .forEach(categories::add);
+            final var vcard = new ContactVCF(member, unmodifiableSet(categories));
+            return getBytesUtf8(vcard.toString());
         });
         this.member = member;
     }
