@@ -20,10 +20,6 @@ enum FamilyGraphUtils {
             // Caller is In-Law
             return Collections.emptySet();
         }
-        if (!target.id().equals(target.familyId())) {
-            // Target is In-Law
-            return Collections.emptySet();
-        }
         final var callerPseudoVertex = new FamilyRecord(caller.familyId(), UUIDUtil.maxUUID(), null, Collections.emptySet());
         final var targetPseudoVertex = new FamilyRecord(target.familyId(), UUIDUtil.maxUUID(), null, Collections.emptySet());
         final var lca = new NaiveLCAFinder<>(graph).getLCA(callerPseudoVertex, targetPseudoVertex);
@@ -33,6 +29,6 @@ enum FamilyGraphUtils {
         final int edgesToTargetFromLCA = BFSShortestPath.findPathBetween(graph, lca, targetPseudoVertex)
                                                         .getLength();
 
-        return Relationship.fromEdges(edgesToCallerFromLCA, edgesToTargetFromLCA);
+        return Relationship.fromEdges(edgesToCallerFromLCA, edgesToTargetFromLCA, target.isInLaw());
     }
 }

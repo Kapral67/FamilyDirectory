@@ -31,6 +31,10 @@ record MemberRecord(@NotNull UUID id, @NotNull Member member, @NotNull UUID fami
         return new MemberRecord(memberId, Member.convertDdbMap(memberMap), familyId);
     }
 
+    public boolean isInLaw() {
+        return !this.id.equals(this.familyId);
+    }
+
     @Override
     public
     boolean equals (final Object o) {

@@ -10,6 +10,7 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 @Getter
 public
 enum Relationship {
+    AUNT_UNCLE("Aunt/Uncle", 2, 1),
     SIBLING("Sibling", 1, 1),
     FIRST_COUSIN("First Cousin", 2, 2);
 
@@ -18,8 +19,9 @@ enum Relationship {
     private final int edgesToTargetFromLCA;
 
     public static
-    Set<Relationship> fromEdges(int edgesToCallerFromLCA, int edgesToTargetFromLCA) {
+    Set<Relationship> fromEdges(final int edgesToCallerFromLCA, final int edgesToTargetFromLCA, final boolean isInLaw) {
         return Arrays.stream(values())
+                     .filter(r -> !isInLaw || r.getEdgesToCallerFromLCA() > r.getEdgesToTargetFromLCA())
                      .filter(r -> r.getEdgesToCallerFromLCA() == edgesToCallerFromLCA)
                      .filter(r -> r.getEdgesToTargetFromLCA() == edgesToTargetFromLCA)
                      .collect(toUnmodifiableSet());
