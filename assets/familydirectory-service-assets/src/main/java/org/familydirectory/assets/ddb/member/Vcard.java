@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import org.familydirectory.assets.ddb.enums.PhoneType;
 import org.familydirectory.assets.ddb.enums.SuffixType;
@@ -50,9 +51,9 @@ public final class Vcard {
     @NotNull
     private final MemberRecord member;
     @NotNull
-    private final List<String> categories;
+    private final Set<String> categories;
 
-    public Vcard(@NotNull final MemberRecord member, @NotNull final List<String> categories) {
+    public Vcard(@NotNull final MemberRecord member, @NotNull final Set<String> categories) {
         this.member = requireNonNull(member);
         this.categories = requireNonNull(categories);
     }

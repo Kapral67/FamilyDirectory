@@ -2,6 +2,7 @@ package org.familydirectory.assets.lambda.function.api.graph;
 
 import java.util.Arrays;
 import java.util.Set;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import static java.util.stream.Collectors.toUnmodifiableSet;
@@ -10,20 +11,34 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 @Getter
 public
 enum Relationship {
-    AUNT_UNCLE("Aunt/Uncle", 2, 1),
-    SIBLING("Sibling", 1, 1),
-    FIRST_COUSIN("First Cousin", 2, 2);
+    PIBLING("Pibling", 2, 1, InLaw.INCLUDED),
+    SIBLING("Sibling", 1, 1, InLaw.EXCLUDED),
+    NIBLING("Nibling", 1, 2, InLaw.EXCLUDED),
+    FIRST_COUSIN("First Cousin", 2, 2, InLaw.EXCLUDED);
 
     private final String displayLabel;
     private final int edgesToCallerFromLCA;
     private final int edgesToTargetFromLCA;
+    @Getter(AccessLevel.PRIVATE)
+    private final InLaw inLaws;
 
     public static
     Set<Relationship> fromEdges(final int edgesToCallerFromLCA, final int edgesToTargetFromLCA, final boolean isInLaw) {
         return Arrays.stream(values())
-                     .filter(r -> !isInLaw || r.getEdgesToCallerFromLCA() > r.getEdgesToTargetFromLCA())
+                     .filter(r -> r.shouldInclude(isInLaw))
                      .filter(r -> r.getEdgesToCallerFromLCA() == edgesToCallerFromLCA)
                      .filter(r -> r.getEdgesToTargetFromLCA() == edgesToTargetFromLCA)
                      .collect(toUnmodifiableSet());
+    }
+
+    private boolean shouldInclude(boolean isInLaw) {
+        return this.inLaws == InLaw.INCLUDED
+               || this.inLaws == InLaw.ONLY == isInLaw;
+    }
+
+    enum InLaw {
+        ONLY,
+        INCLUDED,
+        EXCLUDED
     }
 }

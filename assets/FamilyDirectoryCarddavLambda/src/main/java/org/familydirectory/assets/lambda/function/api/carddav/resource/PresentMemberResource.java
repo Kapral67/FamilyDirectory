@@ -6,8 +6,8 @@ import io.milton.resource.AddressResource;
 import io.milton.resource.GetableResource;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Map;
 import org.familydirectory.assets.ddb.member.Vcard;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
@@ -17,7 +17,7 @@ import org.familydirectory.assets.lambda.function.api.graph.Relationship;
 import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.jetbrains.annotations.NotNull;
 import static java.time.ZoneOffset.UTC;
-import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableSet;
 import static org.apache.commons.codec.binary.StringUtils.getBytesUtf8;
 import static org.apache.commons.codec.binary.StringUtils.newStringUtf8;
 import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
@@ -51,13 +51,13 @@ class PresentMemberResource extends AbstractResource implements IMemberResource,
             throw asRuntimeException(e);
         }
 
-        final var categories = new ArrayList<String>();
+        final var categories = new HashSet<String>();
         categories.add(parent.getDescription().getValue());
         FamilyGraphUtils.getRelationships(carddavLambdaHelper.getFamilyGraph(), caller, member)
                         .stream()
                         .map(Relationship::getDisplayLabel)
                         .forEach(categories::add);
-        final var _vcard = new Vcard(this.member, unmodifiableList(categories));
+        final var _vcard = new Vcard(this.member, unmodifiableSet(categories));
         this.vcard = getBytesUtf8(_vcard.toString());
     }
 
