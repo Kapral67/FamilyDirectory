@@ -2,7 +2,6 @@ package org.familydirectory.assets.lambda.function.api.graph;
 
 import java.util.Arrays;
 import java.util.Set;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import static java.util.stream.Collectors.toUnmodifiableSet;
@@ -19,7 +18,6 @@ enum Relationship {
     private final String displayLabel;
     private final int edgesToCallerFromLCA;
     private final int edgesToTargetFromLCA;
-    @Getter(AccessLevel.PRIVATE)
     private final InLaw inLaws;
 
     public static
@@ -36,7 +34,7 @@ enum Relationship {
                || this.inLaws == InLaw.ONLY == isInLaw;
     }
 
-    enum InLaw {
+    public enum InLaw {
         ONLY,
         INCLUDED,
         EXCLUDED

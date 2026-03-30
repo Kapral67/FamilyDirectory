@@ -7,12 +7,10 @@ import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.familydirectory.assets.lambda.function.api.graph.FamilyGraphUtils;
 import org.familydirectory.assets.lambda.function.api.graph.Relationship;
-import org.familydirectory.assets.lambda.function.api.helper.ApiHelper;
 import org.jetbrains.annotations.NotNull;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.unmodifiableSet;
 import static org.apache.commons.codec.binary.StringUtils.getBytesUtf8;
-import static org.apache.commons.lang3.exception.ExceptionUtils.asRuntimeException;
 
 public final
 class PresentMemberResource extends AbstractVcardResource {
@@ -24,20 +22,8 @@ class PresentMemberResource extends AbstractVcardResource {
      */
     PresentMemberResource (final @NotNull CarddavLambdaHelper carddavLambdaHelper, final @NotNull MemberRecord member) {
         super(carddavLambdaHelper, member.id().toString(), () -> {
-            final var parent = carddavLambdaHelper.getResourceFactory().getResources()
-                                                  .stream()
-                                                  .filter(FamilyDirectoryResource.class::isInstance)
-                                                  .map(FamilyDirectoryResource.class::cast)
-                                                  .findAny()
-                                                  .orElseThrow();
-            final MemberRecord caller;
-            try {
-                caller = carddavLambdaHelper.getCaller()
-                                            .caller();
-            } catch (ApiHelper.ResponseException e) {
-                throw asRuntimeException(e);
-            }
-
+            final var parent = getParent(carddavLambdaHelper);
+            final var caller = getCaller(carddavLambdaHelper).caller();
             final var categories = new HashSet<String>();
             categories.add(parent.getDescription()
                                  .getValue());
