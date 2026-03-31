@@ -295,6 +295,13 @@ enum CarddavXmlUtils {
             xw.writeCharacters(r.href());
             xw.writeEndElement();
 
+            final var status = r.status();
+            if (status != null) {
+                xw.writeStartElement(dPrefix, "status", DAV_NS);
+                xw.writeCharacters(status.toString());
+                xw.writeEndElement();
+            }
+
             for (DavPropStat ps : r.propStats()) {
                 writePropStat(ps);
             }
@@ -403,9 +410,15 @@ enum CarddavXmlUtils {
     /**
      * Single <d:response> (href + propstats ?+ error) .
      */
-    public record DavResponse(String href, List<DavPropStat> propStats, @Nullable DavError error) {
+    public record DavResponse(String href, List<DavPropStat> propStats, @Nullable DavError error, @Nullable Response.Status status) {
+        public DavResponse(String href, Response.Status status) {
+            this(href, emptyList(), null, status);
+        }
         public DavResponse(String href, List<DavPropStat> propStats) {
-            this(href, propStats, null);
+            this(href, propStats, null, null);
+        }
+        public DavResponse(String href, Response.Status status, DavError error) {
+            this(href, emptyList(), error, status);
         }
     }
 

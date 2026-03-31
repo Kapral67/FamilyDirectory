@@ -219,7 +219,7 @@ class CarddavLambdaHelper extends ApiHelper {
     CarddavResponse handleAddressbookQueryReport(FamilyDirectoryResource addressbook) {
         final var response = singletonList(new DavResponse(
             ADDRESS_BOOK_PATH,
-            singletonList(statusPropstat(Response.Status.SC_INSUFFICIENT_STORAGE, emptyList())),
+            Response.Status.SC_INSUFFICIENT_STORAGE,
             new CarddavXmlUtils.DavError(singletonList(dEmpty("number-of-matches-within-limits")))
         ));
 
@@ -243,15 +243,12 @@ class CarddavLambdaHelper extends ApiHelper {
                 resource = (IMemberResource) this.resourceFactory.getResource("", path);
             } catch (final Exception e) {
                 LambdaUtils.logTrace(this.getLogger(), e, LogLevel.INFO);
-                responses.add(
-                    new DavResponse(href, singletonList(statusPropstat(Response.Status.SC_BAD_REQUEST, emptyList())))
-                );
+                responses.add(new DavResponse(href, Response.Status.SC_BAD_REQUEST));
                 continue;
             }
             responses.add(
                 switch (resource) {
-                    case DeletedMemberResource ignored ->
-                        new DavResponse(href, singletonList(statusPropstat(Response.Status.SC_NOT_FOUND, emptyList())));
+                    case DeletedMemberResource ignored -> new DavResponse(href, Response.Status.SC_NOT_FOUND);
                     case AbstractVcardResource vcard ->
                         new DavResponse(href, singletonList(okPropstat(getVcardResourceProps(vcard, requestProps, false))));
                 }
@@ -294,8 +291,7 @@ class CarddavLambdaHelper extends ApiHelper {
         }
 
         final var responses = changesSinceLastSync.stream().map(memberResource -> switch (memberResource) {
-            case DeletedMemberResource deleted ->
-                new DavResponse(deleted.getHref(), singletonList(statusPropstat(Response.Status.SC_NOT_FOUND, emptyList())));
+            case DeletedMemberResource deleted -> new DavResponse(deleted.getHref(), Response.Status.SC_NOT_FOUND);
             case AbstractVcardResource present ->
                 new DavResponse(present.getHref(), singletonList(okPropstat(getVcardResourceProps(present, requestProps, false))));
         }).toList();
