@@ -6,6 +6,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 
+/**
+ * Note when deleting/renaming enums:
+ * - Need to add Relationship::name to a new SYNC table token
+ */
 @AllArgsConstructor
 @Getter
 public
@@ -13,7 +17,10 @@ enum Relationship {
     PIBLING("Pibling", 2, 1, InLaw.INCLUDED),
     SIBLING("Sibling", 1, 1, InLaw.EXCLUDED),
     NIBLING("Nibling", 1, 2, InLaw.EXCLUDED),
-    FIRST_COUSIN("First Cousin", 2, 2, InLaw.EXCLUDED);
+    FIRST_COUSIN("First Cousin", 2, 2, InLaw.EXCLUDED),
+    CHILD("Child", 0, 1, InLaw.EXCLUDED),
+    GRAND_CHILD("Grand Child", 0, 2, InLaw.EXCLUDED),
+    GREAT_GRAND_CHILD("Great Grand Child", 0, 3, InLaw.EXCLUDED);
 
     private final String displayLabel;
     private final int edgesToCallerFromLCA;

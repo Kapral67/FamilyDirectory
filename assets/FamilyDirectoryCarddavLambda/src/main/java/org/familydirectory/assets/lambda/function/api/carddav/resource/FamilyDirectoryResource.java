@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
@@ -32,6 +33,7 @@ import static com.fasterxml.uuid.UUIDType.TIME_BASED_EPOCH;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyMap;
 import static java.util.Locale.ENGLISH;
+import static java.util.Objects.requireNonNullElseGet;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static java.util.stream.Collectors.toUnmodifiableSet;
@@ -62,29 +64,29 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
     @Override
     @NotNull
     public
-    IMemberResource child (String uuid) {
+    IMemberResource child (String childName) {
         final var prefetch = this.resourceFactory.getResources()
                                                  .stream()
                                                  .filter(IMemberResource.class::isInstance)
                                                  .map(IMemberResource.class::cast)
-                                                 .filter(memberResource -> memberResource.getName().equals(uuid))
+                                                 .filter(memberResource -> memberResource.getName().equals(childName))
                                                  .findAny();
         if (prefetch.isPresent()) {
             return prefetch.get();
         }
-        final var relationship = stream(Relationship.values()).filter(i -> i.name().equals(uuid))
+        final Supplier<DeletedMemberResource> deleted = () -> new DeletedMemberResource(this.carddavLambdaHelper, childName, this.getModifiedDate());
+        final var relationship = stream(Relationship.values()).filter(i -> i.name().equals(childName))
                                                               .findAny();
         if (relationship.isPresent()) {
-            return new KindResource(this.carddavLambdaHelper, relationship.get());
+            return requireNonNullElseGet(KindResource.create(this.carddavLambdaHelper, relationship.get()), deleted);
         }
-        final UUID memberId = UUID.fromString(uuid);
         if (this.isMemberResourcesComplete) {
-            return new DeletedMemberResource(this.carddavLambdaHelper, memberId, this.getModifiedDate());
+            return deleted.get();
         }
-        return Optional.ofNullable(this.carddavLambdaHelper.getDdbItem(uuid, DdbTable.MEMBER))
+        return Optional.ofNullable(this.carddavLambdaHelper.getDdbItem(childName, DdbTable.MEMBER))
                        .map(MemberRecord::convertDdbMap)
                        .map(memberRecord -> (IMemberResource) new PresentMemberResource(this.carddavLambdaHelper, memberRecord))
-                       .orElseGet(() -> new DeletedMemberResource(this.carddavLambdaHelper, memberId, this.getModifiedDate()));
+                       .orElseGet(deleted);
     }
 
     @Override
@@ -103,7 +105,7 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
                                     .stream()
                                     .filter(memberRecord -> !existingResources.contains(memberRecord.id().toString()))
                                     .forEach(memberRecord -> new PresentMemberResource(this.carddavLambdaHelper, memberRecord));
-            stream(Relationship.values()).forEach(relationship -> new KindResource(this.carddavLambdaHelper, relationship));
+            stream(Relationship.values()).forEach(relationship -> KindResource.create(this.carddavLambdaHelper, relationship));
             this.isMemberResourcesComplete = true;
         }
         return this.resourceFactory.getResources()
