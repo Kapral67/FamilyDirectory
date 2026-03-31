@@ -14,6 +14,8 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 @Getter
 public
 enum Relationship {
+    GREAT_GRAND_PIBLING("Great Grand Pibling", 4, 1, InLaw.INCLUDED),
+    GRAND_PIBLING("Grand Pibling", 3, 1, InLaw.INCLUDED),
     PIBLING("Pibling", 2, 1, InLaw.INCLUDED),
     SIBLING("Sibling", 1, 1, InLaw.EXCLUDED),
     NIBLING("Nibling", 1, 2, InLaw.EXCLUDED),
