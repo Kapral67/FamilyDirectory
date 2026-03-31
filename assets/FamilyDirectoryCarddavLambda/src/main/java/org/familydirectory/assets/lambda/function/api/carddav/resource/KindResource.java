@@ -11,19 +11,17 @@ import static org.apache.commons.codec.binary.StringUtils.getBytesUtf8;
 
 public final
 class KindResource extends AbstractVcardResource {
-    private final Relationship relationship;
 
     /**
      * @see FDResourceFactory
      */
     KindResource(final @NotNull CarddavLambdaHelper carddavLambdaHelper, final @NotNull Relationship relationship) {
         super(carddavLambdaHelper, relationship.name(), () -> {
-            carddavLambdaHelper.getFamilyTree()
-                               .getRelatives(relationship);
-            final var vcard = new GroupVCF();
+            final var relatives = carddavLambdaHelper.getFamilyTree()
+                                                     .getRelatives(relationship);
+            final var vcard = new GroupVCF(relationship.name(), relationship.getDisplayLabel(), relatives);
             return getBytesUtf8(vcard.toString());
         });
-        this.relationship = relationship;
     }
 
     @Override

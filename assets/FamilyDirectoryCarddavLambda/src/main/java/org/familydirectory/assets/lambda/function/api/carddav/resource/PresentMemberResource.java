@@ -2,6 +2,7 @@ package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Set;
 import org.familydirectory.assets.lambda.function.api.carddav.utils.vcf.ContactVCF;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
@@ -50,5 +51,11 @@ class PresentMemberResource extends AbstractVcardResource {
                                     .getBirthday()
                                     .atStartOfDay(UTC)
                                     .toInstant());
+    }
+
+    public
+    Set<Relationship> getRelationships () {
+        return this.carddavLambdaHelper.getFamilyTree()
+                                       .getRelationships(this.member);
     }
 }

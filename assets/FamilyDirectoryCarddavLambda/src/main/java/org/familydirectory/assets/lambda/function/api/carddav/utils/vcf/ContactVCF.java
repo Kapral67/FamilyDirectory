@@ -1,7 +1,7 @@
 package org.familydirectory.assets.lambda.function.api.carddav.utils.vcf;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.time.format.DateTimeFormatter;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -20,16 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 @SuppressFBWarnings("VA_FORMAT_STRING_USES_NEWLINE")
 public final class ContactVCF extends AbstractVCF {
-    private static final DateTimeFormatter VCARD_DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
-    private static final String CRLF = "\r\n";
-
-    private static final String BEGIN = "BEGIN:VCARD" + CRLF;
-    private static final String VERSION = "VERSION:3.0" + CRLF;
-    private static final String END = "END:VCARD" + CRLF;
-
-    private static final String UID_FORMAT = "UID:%s" + CRLF;
-    private static final String REV_FORMAT = "REV:%s" + CRLF;
-
     private static final String ITEM_FORMAT = "item%d.";
     private static final String X_ABLABEL_FORMAT = ITEM_FORMAT + "X-ABLabel:%s" + CRLF;
 
@@ -78,10 +68,23 @@ public final class ContactVCF extends AbstractVCF {
         );
     }
 
+    @Override
     @NotNull
-    private
+    protected
     String fn () {
-        return "FN:" + this.member.member().getFullName() + CRLF;
+        return this.member.member().getFullName();
+    }
+
+    @Override
+    protected
+    String uid () {
+        return this.member.id().toString();
+    }
+
+    @Override
+    protected
+    Instant rev () {
+        return this.member.member().getLastModified();
     }
 
     @NotNull
@@ -162,24 +165,20 @@ public final class ContactVCF extends AbstractVCF {
     @NotNull
     public
     String toString () {
-        final int[] item = {1};
-        final StringBuilder vcard = new StringBuilder();
-        vcard.append(BEGIN);
-        vcard.append(VERSION);
-        vcard.append(UID_FORMAT.formatted(this.member.id().toString()));
-        vcard.append(REV_FORMAT.formatted(this.member.member().getLastModified().toString()));
-        vcard.append(n());
-        vcard.append(fn());
-        appendItem(item, vcard, this::email);
-        appendItem(item, vcard, i -> this.tel(i, PhoneType.LANDLINE));
-        appendItem(item, vcard, i -> this.tel(i, PhoneType.MOBILE));
-        appendItem(item, vcard, this::adr);
-        vcard.append(BDAY_FORMAT.formatted(this.member.member().getBirthday().format(VCARD_DATE_FORMATTER)));
-        appendItem(item, vcard, this::deathday);
-        if (!this.categories.isEmpty()) {
-            vcard.append(CATEGORIES_FORMAT.formatted(String.join(",", this.categories)));
-        }
-        vcard.append(END);
-        return vcard.toString();
+        return this.createVCF(vcard -> {
+            final int[] item = {1};
+            vcard.append(n());
+            appendItem(item, vcard, this::email);
+            appendItem(item, vcard, i -> this.tel(i, PhoneType.LANDLINE));
+            appendItem(item, vcard, i -> this.tel(i, PhoneType.MOBILE));
+            appendItem(item, vcard, this::adr);
+            vcard.append(BDAY_FORMAT.formatted(this.member.member()
+                                                          .getBirthday()
+                                                          .format(VCARD_DATE_FORMATTER)));
+            appendItem(item, vcard, this::deathday);
+            if (!this.categories.isEmpty()) {
+                vcard.append(CATEGORIES_FORMAT.formatted(String.join(",", this.categories)));
+            }
+        });
     }
 }

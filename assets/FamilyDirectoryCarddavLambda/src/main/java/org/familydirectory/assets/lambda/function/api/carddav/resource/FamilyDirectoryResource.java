@@ -12,20 +12,24 @@ import io.milton.resource.Resource;
 import io.milton.resource.SyncCollectionResource;
 import java.net.URI;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.familydirectory.assets.ddb.enums.DdbTable;
 import org.familydirectory.assets.ddb.enums.sync.SyncTableParameter;
 import org.familydirectory.assets.ddb.models.member.MemberRecord;
 import org.familydirectory.assets.ddb.utils.DdbUtils;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
+import org.familydirectory.assets.lambda.function.api.graph.Relationship;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import static com.fasterxml.uuid.UUIDType.TIME_BASED_EPOCH;
+import static java.util.Arrays.stream;
 import static java.util.Collections.emptyMap;
 import static java.util.Locale.ENGLISH;
 import static java.util.function.Function.identity;
@@ -59,7 +63,6 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
     @NotNull
     public
     IMemberResource child (String uuid) {
-        final UUID memberId = UUID.fromString(uuid);
         final var prefetch = this.resourceFactory.getResources()
                                                  .stream()
                                                  .filter(IMemberResource.class::isInstance)
@@ -69,6 +72,12 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
         if (prefetch.isPresent()) {
             return prefetch.get();
         }
+        final var relationship = stream(Relationship.values()).filter(i -> i.name().equals(uuid))
+                                                              .findAny();
+        if (relationship.isPresent()) {
+            return new KindResource(this.carddavLambdaHelper, relationship.get());
+        }
+        final UUID memberId = UUID.fromString(uuid);
         if (this.isMemberResourcesComplete) {
             return new DeletedMemberResource(this.carddavLambdaHelper, memberId, this.getModifiedDate());
         }
@@ -94,6 +103,7 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
                                     .stream()
                                     .filter(memberRecord -> !existingResources.contains(memberRecord.id().toString()))
                                     .forEach(memberRecord -> new PresentMemberResource(this.carddavLambdaHelper, memberRecord));
+            stream(Relationship.values()).forEach(relationship -> new KindResource(this.carddavLambdaHelper, relationship));
             this.isMemberResourcesComplete = true;
         }
         return this.resourceFactory.getResources()
@@ -183,11 +193,30 @@ class FamilyDirectoryResource extends AbstractResource implements AddressBookRes
                 return emptyMap();
             }
             final var syncToken = UUID.fromString(syncTokenUri.toString());
-            return this.carddavLambdaHelper.traverseSyncDdb(syncToken)
-                                           .stream()
-                                           .map(UUID::toString)
-                                           .map(this::child)
-                                           .collect(toUnmodifiableMap(IMemberResource::getHref, identity()));
+            final Map<String, Resource> resourceMap = this.carddavLambdaHelper.traverseSyncDdb(syncToken)
+                                                      .stream()
+                                                      .map(UUID::toString)
+                                                      .map(this::child)
+                                                      .collect(toUnmodifiableMap(IMemberResource::getHref, identity()));
+            final var relationshipsToRefresh = EnumSet.noneOf(Relationship.class);
+            final var resourceIterator = resourceMap.values().iterator();
+            while(resourceIterator.hasNext() && relationshipsToRefresh.size() < Relationship.values().length) {
+                final var resource = resourceIterator.next();
+                if (!(resource instanceof PresentMemberResource member)) {
+                    continue;
+                }
+                relationshipsToRefresh.addAll(member.getRelationships());
+            }
+            if (relationshipsToRefresh.isEmpty()) {
+                return resourceMap;
+            }
+            return Stream.concat(resourceMap.values()
+                                            .stream()
+                                            .map(IMemberResource.class::cast),
+                                 relationshipsToRefresh.stream()
+                                                       .map(Relationship::name)
+                                                       .map(this::child))
+                         .collect(toUnmodifiableMap(IMemberResource::getHref, identity()));
         } catch (final CarddavLambdaHelper.NoSuchTokenException e) {
             throw e;
         } catch (final Exception e) {
