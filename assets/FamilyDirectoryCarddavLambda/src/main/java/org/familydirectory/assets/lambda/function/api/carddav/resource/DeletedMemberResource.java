@@ -2,7 +2,6 @@ package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
 import io.milton.resource.RemovedResource;
 import java.util.Date;
-import java.util.UUID;
 import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.jetbrains.annotations.NotNull;
 import static java.util.Objects.requireNonNull;

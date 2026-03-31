@@ -1,17 +1,16 @@
 package org.familydirectory.assets.lambda.function.api.graph;
 
 import java.util.Arrays;
-import java.util.Set;
+import java.util.stream.Stream;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import static java.util.stream.Collectors.toUnmodifiableSet;
 
 /**
  * Note when deleting/renaming enums:
  * - Need to add Relationship::name to a new SYNC table token
  */
 @AllArgsConstructor
-@Getter
 public
 enum Relationship {
     GREAT_GRAND_PIBLING("Great Grand Pibling", 4, 1, InLaw.INCLUDED),
@@ -24,18 +23,21 @@ enum Relationship {
     GRAND_CHILD("Grand Child", 0, 2, InLaw.EXCLUDED),
     GREAT_GRAND_CHILD("Great Grand Child", 0, 3, InLaw.EXCLUDED);
 
+    @Getter
     private final String displayLabel;
+    @Getter(AccessLevel.PACKAGE)
     private final int edgesToCallerFromLCA;
+    @Getter(AccessLevel.PACKAGE)
     private final int edgesToTargetFromLCA;
+    @Getter(AccessLevel.PACKAGE)
     private final InLaw inLaws;
 
-    public static
-    Set<Relationship> fromEdges(final int edgesToCallerFromLCA, final int edgesToTargetFromLCA, final boolean isInLaw) {
+    static
+    Stream<Relationship> fromEdges(final int edgesToCallerFromLCA, final int edgesToTargetFromLCA, final boolean isInLaw) {
         return Arrays.stream(values())
                      .filter(r -> r.shouldInclude(isInLaw))
                      .filter(r -> r.getEdgesToCallerFromLCA() == edgesToCallerFromLCA)
-                     .filter(r -> r.getEdgesToTargetFromLCA() == edgesToTargetFromLCA)
-                     .collect(toUnmodifiableSet());
+                     .filter(r -> r.getEdgesToTargetFromLCA() == edgesToTargetFromLCA);
     }
 
     private boolean shouldInclude(boolean isInLaw) {
@@ -43,7 +45,7 @@ enum Relationship {
                || this.inLaws == InLaw.ONLY == isInLaw;
     }
 
-    public enum InLaw {
+    enum InLaw {
         ONLY,
         INCLUDED,
         EXCLUDED

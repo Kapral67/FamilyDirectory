@@ -5,7 +5,6 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.milton.http.Response;
 import io.milton.http.exceptions.BadRequestException;
 import io.milton.http.exceptions.MiltonException;
@@ -95,7 +94,6 @@ import static org.familydirectory.assets.lambda.function.api.carddav.utils.Cardd
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.parseSyncToken;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.renderMultistatus;
 import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.renderValidSyncTokenError;
-import static org.familydirectory.assets.lambda.function.api.carddav.utils.CarddavXmlUtils.statusPropstat;
 
 public final
 class CarddavLambdaHelper extends ApiHelper {

@@ -8,13 +8,15 @@ import org.familydirectory.assets.lambda.function.api.CarddavLambdaHelper;
 import org.familydirectory.assets.lambda.function.api.carddav.utils.vcf.GroupVCF;
 import org.familydirectory.assets.lambda.function.api.graph.Relationship;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import static java.time.Clock.systemUTC;
 import static org.apache.commons.codec.binary.StringUtils.getBytesUtf8;
 
 public final
 class KindResource extends AbstractVcardResource {
 
-    static KindResource create(final @NotNull CarddavLambdaHelper carddavLambdaHelper, final @NotNull Relationship relationship) {
+    static @Nullable
+    KindResource create(final @NotNull CarddavLambdaHelper carddavLambdaHelper, final @NotNull Relationship relationship) {
         final var relatives = carddavLambdaHelper.getFamilyTree().getRelatives(relationship);
         if (relatives.isEmpty()) {
             return null;

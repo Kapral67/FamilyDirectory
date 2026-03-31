@@ -69,9 +69,6 @@ class FamilyTree {
     public
     Set<Relationship> getRelationships(final IMemberRecord relative) {
         return relationshipCache.computeIfAbsent(relative, target -> {
-            if (caller.isInLaw()) {
-                return Collections.emptySet();
-            }
             final var targetPseudoVertex = getPseudoVertex(target.familyId());
             final var lca = naiveLCAFinder.getLCA(callerPseudoVertex, targetPseudoVertex);
 
@@ -80,7 +77,13 @@ class FamilyTree {
             final int edgesToTargetFromLCA = bfsShortestPath.getPath(lca, targetPseudoVertex)
                                                             .getLength();
 
-            return Relationship.fromEdges(edgesToCallerFromLCA, edgesToTargetFromLCA, target.isInLaw());
+            final boolean isInLawByCaller = caller.isInLaw() && edgesToTargetFromLCA <= edgesToCallerFromLCA;
+            final boolean isInLaw = isInLawByCaller || target.isInLaw();
+            var relationships = Relationship.fromEdges(edgesToCallerFromLCA, edgesToTargetFromLCA, isInLaw);
+            if (isInLawByCaller) {
+                relationships = relationships.filter(r -> r.getInLaws() == Relationship.InLaw.ONLY);
+            }
+            return relationships.collect(toUnmodifiableSet());
         });
     }
 
