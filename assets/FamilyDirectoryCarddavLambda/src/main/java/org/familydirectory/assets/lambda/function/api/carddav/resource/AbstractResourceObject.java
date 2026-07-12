@@ -1,5 +1,6 @@
 package org.familydirectory.assets.lambda.function.api.carddav.resource;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.milton.http.Request;
 import io.milton.resource.GetableResource;
 import io.milton.resource.PropFindableResource;
@@ -21,6 +22,7 @@ class AbstractResourceObject implements IResource permits AbstractResource, Dele
     @NotNull
     private final String name;
 
+    @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
     protected
     AbstractResourceObject (@NotNull CarddavLambdaHelper carddavLambdaHelper, @NotNull String name) {
         this.carddavLambdaHelper = requireNonNull(carddavLambdaHelper);
