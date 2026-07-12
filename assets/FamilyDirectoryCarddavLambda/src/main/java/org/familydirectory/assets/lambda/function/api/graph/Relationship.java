@@ -19,6 +19,8 @@ enum Relationship {
     SIBLING("Sibling", 1, 1, InLaw.EXCLUDED),
     NIBLING("Nibling", 1, 2, InLaw.EXCLUDED),
     FIRST_COUSIN("Cousin", 2, 2, InLaw.EXCLUDED),
+    FIRST_COUSIN_ONCE_REMOVED_DOWNWARDS("Cousin’", 2, 3, InLaw.EXCLUDED),
+    FIRST_COUSIN_ONCE_REMOVED_UPWARDS("Cousin’", 3, 2, InLaw.EXCLUDED),
     CHILD("Child", 0, 1, InLaw.EXCLUDED),
     GRAND_CHILD("Grand Child", 0, 2, InLaw.EXCLUDED),
     GREAT_GRAND_CHILD("Great Grand Child", 0, 3, InLaw.EXCLUDED);
