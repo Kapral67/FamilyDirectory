@@ -1,6 +1,6 @@
 [versions]
-aws-cdk = "2.261.0"
-aws-cdk-alpha = "2.261.0-alpha.0"
+aws-cdk = "2.262.1"
+aws-cdk-alpha = "2.262.1-alpha.0"
 github-spotbugs = "4.10.2"
 
 [libraries]
