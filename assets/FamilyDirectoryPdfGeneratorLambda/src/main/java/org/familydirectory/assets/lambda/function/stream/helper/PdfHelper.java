@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -43,6 +44,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toCollection;
 
 public final
 class PdfHelper implements LambdaFunctionHelper {
@@ -226,19 +228,21 @@ class PdfHelper implements LambdaFunctionHelper {
 
         final @NotNull Map<String, AttributeValue> family = this.retrieveFamily(id);
         final @NotNull Member member = requireNonNull(this.retrieveMember(id)).member();
-        final @Nullable Member spouse = ofNullable(this.retrieveMember(ofNullable(family.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
-                                                                                                                                          .filter(Predicate.not(String::isBlank))
-                                                                                                                                          .orElse(null))).map(MemberRecord::member)
-                                                                                                                                                         .orElse(null);
+        final String spouseId = ofNullable(family.get(FamilyTableParameter.SPOUSE.jsonFieldName())).map(AttributeValue::s)
+                                                                                           .filter(Predicate.not(String::isBlank))
+                                                                                           .orElse(null);
+        final @Nullable Member spouse = ofNullable(this.retrieveMember(spouseId)).map(MemberRecord::member).orElse(null);
         final @NotNull List<Member> deadEndDescendants = new ArrayList<>();
         final @NotNull List<String> recursiveDescendantIds = new ArrayList<>();
-        final @NotNull List<Map.Entry<String, Member>> descendants = new ArrayList<>();
-        ofNullable(family.get(FamilyTableParameter.DESCENDANTS.jsonFieldName())).map(AttributeValue::ss)
-                                                                                .filter(Predicate.not(List::isEmpty))
-                                                                                .ifPresent(ss -> ss.stream()
-                                                                                                   .filter(Predicate.not(String::isBlank))
-                                                                                                   .forEach(s -> descendants.add(Map.entry(s, this.retrieveMember(s)
-                                                                                                                                                  .member()))));
+        final @NotNull List<Map.Entry<String, Member>> descendants = ofNullable(family.get(FamilyTableParameter.DESCENDANTS.jsonFieldName()))
+                .map(AttributeValue::ss)
+                .stream()
+                .flatMap(List::stream)
+                .filter(Predicate.not(String::isBlank))
+                .map(this::retrieveMember)
+                .filter(Objects::nonNull)
+                .map(mr -> Map.entry(mr.id().toString(), mr.member()))
+                .collect(toCollection(ArrayList::new));
 
         if (!descendants.isEmpty()) {
             descendants.sort(DESCENDANT_COMPARATOR);

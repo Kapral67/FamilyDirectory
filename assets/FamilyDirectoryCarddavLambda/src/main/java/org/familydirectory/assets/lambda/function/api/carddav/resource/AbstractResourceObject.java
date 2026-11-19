@@ -22,7 +22,7 @@ class AbstractResourceObject implements IResource permits AbstractResource, Dele
     @NotNull
     private final String name;
 
-    @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
+//    @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
     protected
     AbstractResourceObject (@NotNull CarddavLambdaHelper carddavLambdaHelper, @NotNull String name) {
         this.carddavLambdaHelper = requireNonNull(carddavLambdaHelper);
