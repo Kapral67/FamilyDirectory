@@ -28,6 +28,7 @@ dependencies {
     implementation 'software.amazon.awssdk:amplify'
     implementation libs.aws.cdk.lib
     implementation libs.constructs
+    implementation libs.jetbrains.annotations
     // Unstable Dependencies
     implementation libs.aws.cdk.amplify.alpha
 }
