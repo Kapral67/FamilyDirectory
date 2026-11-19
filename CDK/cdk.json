@@ -114,6 +114,11 @@
     "@aws-cdk/core:automaticL1Traits": true,
     "@aws-cdk/aws-batch:defaultToAL2023": true,
     "@aws-cdk/aws-eks:defaultToAL2023": true,
-    "@aws-cdk/core:annotationsInValidationReport": true
+    "@aws-cdk/core:annotationsInValidationReport": true,
+    "@aws-cdk/core:validateAgainstDefaultRules": true,
+    "@aws-cdk/aws-ecs:removeEmptyLoadBalancers": true,
+    "@aws-cdk/aws-cloudfront:defaultViewerProtocolPolicyRedirectToHttps": true,
+    "@aws-cdk/aws-apigateway:logGroupDestinationArnWithoutWildcard": true,
+    "@aws-cdk/aws-stepfunctions-tasks:evaluateExpressionDedicatedFunction": true
   }
 }
