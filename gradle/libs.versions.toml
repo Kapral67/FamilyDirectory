@@ -4,7 +4,7 @@ aws-cdk-alpha = "2.261.0-alpha.0"
 github-spotbugs = "4.10.2"
 
 [libraries]
-apache-commons-lang = { module = "org.apache.commons:commons-lang3", version = "3.20.0" }
+apache-commons-lang = { module = "org.apache.commons:commons-lang3", version = "3.22.0" }
 apache-commons-text = { module = "org.apache.commons:commons-text", version = "1.15.0" }
 apache-httpcomponents-httpcore = { module = "org.apache.httpcomponents:httpcore", version = "4.4.16" }
 apache-pdfbox = { module = "org.apache.pdfbox:pdfbox", version = "2.0.37" }
