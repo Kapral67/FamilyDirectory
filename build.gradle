@@ -44,6 +44,7 @@ subprojects {
             compileOnly libs.github.spotbugs.annotations
             implementation libs.aws.lambda.java.core
             implementation libs.aws.lambda.java.events
+            implementation libs.jetbrains.annotations
             implementation libs.slf4j.nop
             implementation 'software.amazon.awssdk:dynamodb-enhanced'
         }

@@ -9,6 +9,7 @@ dependencies {
     compileOnly libs.lombok
     annotationProcessor libs.lombok
     implementation libs.jackson.databind
+    implementation libs.jetbrains.annotations
     implementation libs.jug
     implementation libs.googlecode.libphonenumber
     implementation libs.commons.codec

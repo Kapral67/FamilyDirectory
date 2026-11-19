@@ -1,6 +1,6 @@
 [versions]
-aws-cdk = "2.261.0"
-aws-cdk-alpha = "2.261.0-alpha.0"
+aws-cdk = "2.277.0"
+aws-cdk-alpha = "2.277.0-alpha.0"
 github-spotbugs = "4.10.5"
 
 [libraries]
@@ -16,7 +16,7 @@ aws-lambda-java-events-transformer = { module = "com.amazonaws:aws-lambda-java-e
 aws-lambda-snapstart-java-rules = { module = "software.amazon.lambda.snapstart:aws-lambda-snapstart-java-rules", version = "0.2.1" }
 aws-sdk-bom = { module = "software.amazon.awssdk:bom", version = "2.59.1" }
 commons-codec = { module = "commons-codec:commons-codec", version = "1.23.0" }
-commons-validator = { module = "commons-validator:commons-validator", version = "1.10.1" }
+commons-validator = { module = "commons-validator:commons-validator", version = "1.11.0" }
 constructs = { module = "software.constructs:constructs", version = "10.8.1" }
 github-spotbugs = { module = "com.github.spotbugs:spotbugs", version.ref = "github-spotbugs" }
 github-spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "github-spotbugs" }
@@ -28,9 +28,9 @@ jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.1.
 jgrapht-core = { module = "org.jgrapht:jgrapht-core", version = "1.5.3" }
 jug = { module = "com.fasterxml.uuid:java-uuid-generator", version = "5.2.0" }
 leego-banana = { module = "io.leego:banana", version = "2.1.0" }
-lombok = { module = "org.projectlombok:lombok", version = "1.18.46" }
+lombok = { module = "org.projectlombok:lombok", version = "1.18.48" }
 milton-api = { module = "io.milton:milton-api", version = "4.2.0.2712" }
-slf4j-nop = { module = "org.slf4j:slf4j-nop", version = "2.0.18" }
+slf4j-nop = { module = "org.slf4j:slf4j-nop", version = "2.0.20" }
 
 [plugins]
 github-spotbugs = "com.github.spotbugs:6.5.13"
