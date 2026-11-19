@@ -20,10 +20,13 @@ import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cognito.AccountRecovery;
 import software.amazon.awscdk.services.cognito.AuthFlow;
 import software.amazon.awscdk.services.cognito.AutoVerifiedAttrs;
+import software.amazon.awscdk.services.cognito.CfnManagedLoginBranding;
+import software.amazon.awscdk.services.cognito.CfnManagedLoginBrandingProps;
 import software.amazon.awscdk.services.cognito.ClientAttributes;
 import software.amazon.awscdk.services.cognito.CustomDomainOptions;
 import software.amazon.awscdk.services.cognito.FeaturePlan;
 import software.amazon.awscdk.services.cognito.KeepOriginalAttrs;
+import software.amazon.awscdk.services.cognito.ManagedLoginVersion;
 import software.amazon.awscdk.services.cognito.Mfa;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
 import software.amazon.awscdk.services.cognito.OAuthScope;
@@ -71,6 +74,7 @@ class FamilyDirectoryCognitoStack extends Stack {
     public static final String COGNITO_A_RECORD_RESOURCE_ID = "CognitoARecord";
     public static final String COGNITO_USER_POOL_CLIENT_RESOURCE_ID = "UserPoolClient";
     public static final String COGNITO_USER_POOL_RESOURCE_ID = "UserPool";
+    public static final String COGNITO_MANAGED_LOGIN_BRANDING_RESOURCE_ID = "ManagedLoginBranding";
     public static final String COGNITO_USER_POOL_ID_EXPORT_NAME = "%sId".formatted(COGNITO_USER_POOL_RESOURCE_ID);
     public static final String COGNITO_USER_POOL_CLIENT_ID_EXPORT_NAME = "%sId".formatted(COGNITO_USER_POOL_CLIENT_RESOURCE_ID);
     public static final String COGNITO_DOMAIN_NAME = "auth.%s".formatted(FamilyDirectoryDomainStack.HOSTED_ZONE_NAME);
@@ -110,7 +114,7 @@ class FamilyDirectoryCognitoStack extends Stack {
 
         final UserPoolProps userPoolProps = UserPoolProps.builder()
                                                          .accountRecovery(AccountRecovery.EMAIL_ONLY)
-                                                         .featurePlan(FeaturePlan.LITE)
+                                                         .featurePlan(FeaturePlan.ESSENTIALS)
                                                          .autoVerify(AutoVerifiedAttrs.builder()
                                                                                       .email(TRUE)
                                                                                       .phone(FALSE)
@@ -214,9 +218,17 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                   .build();
         final UserPoolDomainOptions userPoolDomainOptions = UserPoolDomainOptions.builder()
                                                                                  .customDomain(cognitoCustomDomainOptions)
+                                                                                 .managedLoginVersion(ManagedLoginVersion.NEWER_MANAGED_LOGIN)
                                                                                  .build();
         final UserPoolDomain userPoolDomain = userPool.addDomain(COGNITO_DOMAIN_NAME_RESOURCE_ID, userPoolDomainOptions);
         final UserPoolDomainTarget userPoolDomainTarget = new UserPoolDomainTarget(userPoolDomain);
+
+        final var cfnManagedLoginBrandingProps = CfnManagedLoginBrandingProps.builder()
+                                                                             .userPoolId(userPool.getUserPoolId())
+                                                                             .clientId(userPoolClient.getUserPoolClientId())
+                                                                             .useCognitoProvidedValues(TRUE)
+                                                                             .build();
+        new CfnManagedLoginBranding(this, COGNITO_MANAGED_LOGIN_BRANDING_RESOURCE_ID, cfnManagedLoginBrandingProps);
 
         final ARecordProps cognitoARecordProps = ARecordProps.builder()
                                                              .zone(hostedZone)

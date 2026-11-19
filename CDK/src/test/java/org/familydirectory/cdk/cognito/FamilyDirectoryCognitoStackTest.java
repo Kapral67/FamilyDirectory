@@ -115,7 +115,7 @@ class FamilyDirectoryCognitoStackTest {
                                 Map.of("Mutable", FamilyDirectoryCognitoStack.COGNITO_EMAIL_MUTABLE_ATTRIBUTE, "Name", "email", "Required",
                                        FamilyDirectoryCognitoStack.COGNITO_EMAIL_REQUIRE_ATTRIBUTE))),
                               entry("UserAttributeUpdateSettings", singletonMap("AttributesRequireVerificationBeforeUpdate", singletonList("email"))),
-                              entry("UserPoolTier", "LITE"), entry("UsernameAttributes", singletonList("email")),
+                              entry("UserPoolTier", "ESSENTIALS"), entry("UsernameAttributes", singletonList("email")),
                               entry("UsernameConfiguration", singletonMap("CaseSensitive", FamilyDirectoryCognitoStack.COGNITO_SIGN_IN_CASE_SENSITIVE)), entry("VerificationMessageTemplate",
                                                                                                                                                                Map.of("DefaultEmailOption",
                                                                                                                                                                       "CONFIRM_WITH_LINK",
@@ -177,7 +177,7 @@ class FamilyDirectoryCognitoStackTest {
                                   objectEquals(Map.of("Type", "AWS::SSM::Parameter::Value<String>", "Default", FamilyDirectoryCognitoUsEastOneStack.COGNITO_CERTIFICATE_ARN_PARAMETER_NAME)));
             template.hasResourceProperties("AWS::Cognito::UserPoolDomain", objectLike(
                     Map.of("CustomDomainConfig", singletonMap("CertificateArn", singletonMap("Ref", COGNITO_CERTIFICATE_ARN_PARAMETER_NAME)), "Domain", FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME,
-                           "UserPoolId", singletonMap("Ref", userPoolIdCapture.asString()))));
+                           "UserPoolId", singletonMap("Ref", userPoolIdCapture.asString()), "ManagedLoginVersion", 2)));
         } else {
             final Capture ssmReaderCreateCapture = new Capture();
             final Capture ssmReaderUpdateCapture = new Capture();
@@ -198,7 +198,7 @@ class FamilyDirectoryCognitoStackTest {
             template.hasResourceProperties("AWS::IAM::Policy", objectLike(ssmReaderIamPolicy));
             template.hasResourceProperties("AWS::Cognito::UserPoolDomain", objectLike(
                     Map.of("CustomDomainConfig", singletonMap("CertificateArn", singletonMap("Fn::GetAtt", List.of(ssmParameterReaderId, SSMParameterReader.SSM_PARAMETER_READER_DATA_PATH))), "Domain",
-                           FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME, "UserPoolId", singletonMap("Ref", userPoolIdCapture.asString()))));
+                           FamilyDirectoryCognitoStack.COGNITO_DOMAIN_NAME, "UserPoolId", singletonMap("Ref", userPoolIdCapture.asString()), "ManagedLoginVersion", 2)));
         }
         assertEquals(1, userPoolCloudFrontDomainNameMap.size());
 
@@ -209,5 +209,8 @@ class FamilyDirectoryCognitoStackTest {
         template.hasResourceProperties("AWS::Route53::RecordSet", objectLike(
                 Map.of("AliasTarget", Map.of("DNSName", singletonMap("Fn::GetAtt", List.of(userPoolCloudFrontDomainNameId, "DomainDescription.CloudFrontDistribution"))), "HostedZoneId",
                        singletonMap("Ref", HOSTED_ZONE_ID_PARAMETER_NAME), "Name", FULL_COGNITO_DOMAIN_NAME, "Type", "A")));
+
+        template.hasResourceProperties("AWS::Cognito::ManagedLoginBranding", objectLike(Map.of("ClientId", singletonMap("Ref", userPoolClientIdCapture.asString()), "UseCognitoProvidedValues",
+                                                                                               true, "UserPoolId", singletonMap("Ref", userPoolIdCapture.asString()))));
     }
 }
