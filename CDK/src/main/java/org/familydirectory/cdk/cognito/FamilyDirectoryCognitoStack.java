@@ -17,11 +17,13 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
+import software.amazon.awscdk.services.cloudfront.SecurityPolicyProtocol;
 import software.amazon.awscdk.services.cognito.AccountRecovery;
 import software.amazon.awscdk.services.cognito.AuthFlow;
 import software.amazon.awscdk.services.cognito.AutoVerifiedAttrs;
 import software.amazon.awscdk.services.cognito.CfnManagedLoginBranding;
 import software.amazon.awscdk.services.cognito.CfnManagedLoginBrandingProps;
+import software.amazon.awscdk.services.cognito.CfnUserPoolDomain;
 import software.amazon.awscdk.services.cognito.ClientAttributes;
 import software.amazon.awscdk.services.cognito.CustomDomainOptions;
 import software.amazon.awscdk.services.cognito.FeaturePlan;
@@ -221,6 +223,11 @@ class FamilyDirectoryCognitoStack extends Stack {
                                                                                  .managedLoginVersion(ManagedLoginVersion.NEWER_MANAGED_LOGIN)
                                                                                  .build();
         final UserPoolDomain userPoolDomain = userPool.addDomain(COGNITO_DOMAIN_NAME_RESOURCE_ID, userPoolDomainOptions);
+        final var cfnUserPoolDomain = (CfnUserPoolDomain) userPoolDomain.getNode().getDefaultChild();
+        cfnUserPoolDomain.setCustomDomainConfig(CfnUserPoolDomain.CustomDomainConfigTypeProperty.builder()
+                                                                                                .certificateArn(cognitoCertificate.getCertificateArn())
+                                                                                                .securityPolicy(SecurityPolicyProtocol.TLS_V1_3_2025.name())
+                                                                                                .build());
         final UserPoolDomainTarget userPoolDomainTarget = new UserPoolDomainTarget(userPoolDomain);
 
         final var cfnManagedLoginBrandingProps = CfnManagedLoginBrandingProps.builder()
